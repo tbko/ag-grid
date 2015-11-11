@@ -3574,8 +3574,7 @@ var ag;
 var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 var ag;
 (function (ag) {
@@ -3912,6 +3911,9 @@ var ag;
                 this.vGridCell.addStyles({ width: this.column.actualWidth + "px" });
                 this.createParentOfValue();
                 this.populateCell();
+                if (this.value && this.column.colDef.showCellTooltip) {
+                    this.vGridCell.setAttribute("title", this.value);
+                }
                 if (this.eCheckbox) {
                     this.setSelected(this.selectionController.isNodeSelected(this.node));
                 }
@@ -4431,6 +4433,8 @@ var ag;
                 this.eventService = eventService;
                 var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
                 var rowIsHeaderThatSpans = node.group && groupHeaderTakesEntireRow;
+                if (rowIsHeaderThatSpans && node.level === 0)
+                    return;
                 this.vBodyRow = this.createRowContainer();
                 if (this.pinning) {
                     this.vPinnedRow = this.createRowContainer();
@@ -4539,6 +4543,9 @@ var ag;
             RenderedRow.prototype.isGroup = function () {
                 return this.node.group === true;
             };
+            RenderedRow.prototype.isGroupZero = function () {
+                return this.node.group === true && this.node.level === 0;
+            };
             RenderedRow.prototype.drawNormalRow = function () {
                 var columns = this.columnController.getDisplayedColumns();
                 for (var i = 0; i < columns.length; i++) {
@@ -4561,6 +4568,9 @@ var ag;
                 vElement.elementAttached(element);
             };
             RenderedRow.prototype.createGroupRow = function () {
+                if (this.isGroupZero()) {
+                    return;
+                }
                 var eGroupRow = this.createGroupSpanningEntireRowCell(false);
                 if (this.pinning) {
                     this.vPinnedRow.appendChild(eGroupRow);
@@ -4568,7 +4578,9 @@ var ag;
                     this.vBodyRow.appendChild(eGroupRowPadding);
                 }
                 else {
-                    this.vBodyRow.appendChild(eGroupRow);
+                    if (!this.isGroupZero()) {
+                        this.vBodyRow.appendChild(eGroupRow);
+                    }
                 }
             };
             RenderedRow.prototype.createGroupSpanningEntireRowCell = function (padding) {
@@ -5353,7 +5365,7 @@ var ag;
                 // at the end, this array will contain the items we need to remove
                 var rowsToRemove = Object.keys(this.renderedRows);
                 // add in new rows
-                for (var rowIndex = this.firstVirtualRenderedRow; rowIndex <= this.lastVirtualRenderedRow; rowIndex++) {
+                for (var drawIndex = this.firstVirtualRenderedRow, rowIndex = this.firstVirtualRenderedRow; rowIndex <= this.lastVirtualRenderedRow; rowIndex++) {
                     // see if item already there, and if yes, take it out of the 'to remove' array
                     if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
                         rowsToRemove.splice(rowsToRemove.indexOf(rowIndex.toString()), 1);
@@ -5361,9 +5373,13 @@ var ag;
                     }
                     // check this row actually exists (in case overflow buffer window exceeds real data)
                     var node = this.rowModel.getVirtualRow(rowIndex);
-                    if (node) {
-                        that.insertRow(node, rowIndex, mainRowWidth);
+                    if (node && node.group && node.level === 0) {
+                        continue;
                     }
+                    if (node) {
+                        that.insertRow(node, drawIndex, mainRowWidth);
+                    }
+                    drawIndex++;
                 }
                 // at this point, everything in our 'rowsToRemove' . . .
                 this.removeVirtualRow(rowsToRemove);

@@ -4,3 +4,6 @@ bower_components/
 docs/*/*
 typings/*/*
 dist/*/*
+docs
+typings
+dist

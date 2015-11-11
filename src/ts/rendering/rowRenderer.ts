@@ -348,7 +348,7 @@ module ag.grid {
             var rowsToRemove = Object.keys(this.renderedRows);
 
             // add in new rows
-            for (var rowIndex = this.firstVirtualRenderedRow; rowIndex <= this.lastVirtualRenderedRow; rowIndex++) {
+            for (var drawIndex = this.firstVirtualRenderedRow, rowIndex = this.firstVirtualRenderedRow; rowIndex <= this.lastVirtualRenderedRow; rowIndex++) {
                 // see if item already there, and if yes, take it out of the 'to remove' array
                 if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
                     rowsToRemove.splice(rowsToRemove.indexOf(rowIndex.toString()), 1);
@@ -356,10 +356,18 @@ module ag.grid {
                 }
                 // check this row actually exists (in case overflow buffer window exceeds real data)
                 var node = this.rowModel.getVirtualRow(rowIndex);
-                if (node) {
-                    that.insertRow(node, rowIndex, mainRowWidth);
+
+                // skip upper groups rows
+                if (node && node.group && node.level === 0) {
+                    continue;
                 }
+
+                if (node) {
+                    that.insertRow(node, drawIndex, mainRowWidth);
+                }
+                drawIndex++;
             }
+
 
             // at this point, everything in our 'rowsToRemove' . . .
             this.removeVirtualRow(rowsToRemove);

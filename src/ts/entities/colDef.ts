@@ -30,6 +30,9 @@ module ag.grid {
         /** Tooltip for the column header */
         headerTooltip?: string;
 
+        /** Cell show tooltip with full value */
+        showCellTooltip?: boolean;
+
         /** Expression or function to get the cells value. */
         valueGetter?: string | Function;
 
