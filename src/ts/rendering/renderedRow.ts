@@ -57,7 +57,10 @@ module ag.grid {
                     ePinnedContainer: HTMLElement,
                     node: any,
                     rowIndex: number,
-                    eventService: EventService) {
+                    eventService: EventService,
+                    baseHeight?: any,
+                    realHeight?: any,
+                    accumulatedExtraRows?: any) {
             this.gridOptionsWrapper = gridOptionsWrapper;
             this.valueService = valueService;
             this.parentScope = parentScope;
@@ -118,14 +121,15 @@ module ag.grid {
 
             // if showing scrolls, position on the container
             if (!this.gridOptionsWrapper.isForPrint()) {
-                this.vBodyRow.style.top = (this.gridOptionsWrapper.getRowHeight() * this.rowIndex) + "px";
+                this.vBodyRow.style.top = (baseHeight * (this.rowIndex + accumulatedExtraRows)) + "px";
                 if (this.pinning) {
-                    this.vPinnedRow.style.top = (this.gridOptionsWrapper.getRowHeight() * this.rowIndex) + "px";
+                    this.vPinnedRow.style.top = (baseHeight * (this.rowIndex + accumulatedExtraRows)) + "px";
                 }
             }
-            this.vBodyRow.style.height = (this.gridOptionsWrapper.getRowHeight()) + "px";
+            // console.log(this.vBodyRow.style.top);
+            this.vBodyRow.style.height = (realHeight) + "px";
             if (this.pinning) {
-                this.vPinnedRow.style.height = (this.gridOptionsWrapper.getRowHeight()) + "px";
+                this.vPinnedRow.style.height = (realHeight) + "px";
             }
 
             // if group item, insert the first row
@@ -204,6 +208,10 @@ module ag.grid {
 
         public isGroup(): boolean {
             return this.node.group === true;
+        }
+
+        public getId(): any {
+            return this.node.id;
         }
 
         private drawNormalRow() {

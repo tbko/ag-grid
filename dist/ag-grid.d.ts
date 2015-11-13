@@ -214,7 +214,7 @@ declare module ag.grid {
         getIsScrollLag(): () => boolean;
         getSortingOrder(): string[];
         getSlaveGrids(): GridOptions[];
-        getGroupRowRenderer(): Object | Function;
+        getGroupRowRenderer(): Function | Object;
         getRowHeight(): number;
         getOverlayLoadingTemplate(): string;
         getOverlayNoRowsTemplate(): string;
@@ -540,6 +540,8 @@ declare module ag.grid {
         hide?: boolean;
         /** Tooltip for the column header */
         headerTooltip?: string;
+        /** Cell show tooltip with full value */
+        showCellTooltip?: boolean;
         /** Expression or function to get the cells value. */
         valueGetter?: string | Function;
         /** To provide custom rendering to the header. */
@@ -966,7 +968,7 @@ declare module ag.grid {
         private eventService;
         constructor(gridOptionsWrapper: GridOptionsWrapper, valueService: ValueService, parentScope: any, angularGrid: Grid, columnController: ColumnController, expressionService: ExpressionService, cellRendererMap: {
             [key: string]: any;
-        }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService);
+        }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService, baseHeight?: any, realHeight?: any, accumulatedExtraRows?: any);
         onRowSelected(selected: boolean): void;
         softRefresh(): void;
         getRenderedCellForColumn(column: Column): RenderedCell;
@@ -976,6 +978,7 @@ declare module ag.grid {
         isDataInList(rows: any[]): boolean;
         isNodeInList(nodes: RowNode[]): boolean;
         isGroup(): boolean;
+        getId(): any;
         private drawNormalRow();
         private bindVirtualElement(vElement);
         private createGroupRow();
@@ -1063,7 +1066,7 @@ declare module ag.grid {
         getFirstVirtualRenderedRow(): number;
         getLastVirtualRenderedRow(): number;
         private ensureRowsRendered();
-        private insertRow(node, rowIndex, mainRowWidth);
+        private insertRow(node, rowIndex, mainRowWidth, baseHeight, realHeight, accumulatedExtraRows);
         getRenderedNodes(): any[];
         getIndexOfRenderedNode(node: any): number;
         navigateToNextCell(key: any, rowIndex: number, column: Column): void;

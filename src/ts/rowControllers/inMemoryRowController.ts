@@ -64,9 +64,28 @@ module ag.grid {
                 getVirtualRow: function (index: any): RowNode {
                     return that.rowsAfterMap[index];
                 },
+                getVirtualRows: function (index: any): RowNode {
+                    return that.rowsAfterMap;
+                },
                 getVirtualRowCount: function (): number {
+                    var realRowsCount = 0;
+                    var fillinRowsCount = 0;
+                    var rows: RowNode[];
                     if (that.rowsAfterMap) {
-                        return that.rowsAfterMap.length;
+                        rows = that.rowsAfterMap;
+                        realRowsCount = rows.length;
+                        fillinRowsCount = rows.reduce(function (acc: any, cur: any) {
+                            var id: number;
+                            id = cur.data.index;
+                            // if (!cur.group) {
+                            if (!(id % 2)) {
+                                return acc + 2;
+                            }
+                            return acc;
+                        }, 0);
+                        // console.log(realRowsCount, fillinRowsCount);
+                        return realRowsCount + fillinRowsCount;
+
                     } else {
                         return 0;
                     }
@@ -560,6 +579,7 @@ module ag.grid {
             var rowsAfterMap = <any>[];
             this.addToMap(rowsAfterMap, this.rowsAfterSort);
             this.rowsAfterMap = rowsAfterMap;
+            // console.log(this.rowsAfterMap);
         }
 
         private addToMap(mappedData: any, originalNodes: any) {
