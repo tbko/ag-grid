@@ -35,6 +35,9 @@ declare module ag.grid {
     class Utils {
         private static isSafari;
         private static isIE;
+        private static canvas;
+        static getTextWidth(text: string, font: string): number;
+        static getWidthHeight(value: string, allowedWidth: number, font: string, maxLines: number): any;
         static iterateObject(object: any, callback: (key: string, value: any) => void): void;
         static cloneObject(object: any): any;
         static map<TItem, TResult>(array: TItem[], callback: (item: TItem) => TResult): TResult[];
@@ -218,6 +221,7 @@ declare module ag.grid {
         getRowHeight(): number;
         getOverlayLoadingTemplate(): string;
         getOverlayNoRowsTemplate(): string;
+        getFont(): string;
         getHeaderHeight(): number;
         setHeaderHeight(headerHeight: number): void;
         isGroupHeaders(): boolean;
@@ -913,7 +917,7 @@ declare module ag.grid {
             [key: string]: any;
         }, node: any, rowIndex: number, scope: any, columnController: ColumnController, valueService: ValueService, eventService: EventService);
         getColumn(): Column;
-        private getValue();
+        getValue(): any;
         getVGridCell(): ag.vdom.VHtmlElement;
         private getDataForRow();
         private setupComponents();
@@ -1200,6 +1204,20 @@ declare module ag.grid {
     }
 }
 declare module ag.grid {
+    class DragAndDropService {
+        private dragItem;
+        private mouseUpEventListener;
+        private logger;
+        init(loggerFactory: LoggerFactory): void;
+        destroy(): void;
+        private stopDragging();
+        private setDragCssClasses(eListItem, dragging);
+        addDragSource(eDragSource: any, dragSourceCallback: any): void;
+        private onMouseDownDragSource(eDragSource, dragSourceCallback);
+        addDropTarget(eDropTarget: any, dropTargetCallback: any): void;
+    }
+}
+declare module ag.grid {
     class HeaderRenderer {
         private gridOptionsWrapper;
         private columnController;
@@ -1211,7 +1229,17 @@ declare module ag.grid {
         private eHeaderContainer;
         private eRoot;
         private headerElements;
-        init(gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, gridPanel: GridPanel, angularGrid: Grid, filterManager: FilterManager, $scope: any, $compile: any): void;
+        private readOnly;
+        private dragAndDropService;
+        private uniqueId;
+        init(gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, gridPanel: GridPanel, angularGrid: Grid, filterManager: FilterManager, $scope: any, $compile: any, dragAndDropService: DragAndDropService): void;
+        getUniqueId(): any;
+        private addDragAndDropToListItem(eListItem, item);
+        private internalAcceptDrag(targetColumn, dragItem, eListItem);
+        private internalDrop(targetColumn, draggedColumn);
+        private internalNoDrop(eListItem);
+        private dragAfterThisItem(targetColumn, draggedColumn);
+        private setDropCssClasses(eListItem, state);
         private findAllElements(gridPanel);
         refreshHeader(): void;
         private insertHeadersWithGrouping();
@@ -1480,20 +1508,6 @@ declare module ag.grid {
     }
 }
 declare module ag.grid {
-    class DragAndDropService {
-        private dragItem;
-        private mouseUpEventListener;
-        private logger;
-        init(loggerFactory: LoggerFactory): void;
-        destroy(): void;
-        private stopDragging();
-        private setDragCssClasses(eListItem, dragging);
-        addDragSource(eDragSource: any, dragSourceCallback: any): void;
-        private onMouseDownDragSource(eDragSource, dragSourceCallback);
-        addDropTarget(eDropTarget: any, dropTargetCallback: any): void;
-    }
-}
-declare module ag.grid {
     class AgList {
         private eGui;
         private uniqueId;
@@ -1668,6 +1682,7 @@ declare module ag.grid {
         angularCompileHeaders?: boolean;
         suppressLoadingOverlay?: boolean;
         suppressNoRowsOverlay?: boolean;
+        font: string;
         localeText?: any;
         localeTextFunc?: Function;
         suppressScrollLag?: boolean;

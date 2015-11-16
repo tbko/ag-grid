@@ -10,6 +10,74 @@ module ag.grid {
         // http://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
         private static isSafari = Object.prototype.toString.call((<any>window).HTMLElement).indexOf('Constructor') > 0;
         private static isIE = /*@cc_on!@*/false || !!(<any>document).documentMode; // At least IE6
+        private static canvas: any;
+
+        static getTextWidth(text: string, font: string): number {
+            // get text visual width for the whole line
+            var context: any;
+            var metrics: any;
+            if (!this.canvas) {
+                this.canvas = document.createElement("canvas");
+            }
+            context = this.canvas.getContext("2d");
+            context.font = font;
+            metrics = context.measureText(text);
+            return parseInt(metrics.width);
+        }
+
+
+        static getWidthHeight(value: string, allowedWidth: number, font: string, maxLines:number): any {
+            // separate text into lines for content autoWrap
+            // according to given width in px and font metrics
+            value = value.toString()
+            var words = value.split(" ");
+            var lineWidth = 0;
+            var charCounter = 0;
+            var startCounter = 0;
+            var maxWidth = 0;
+            var divText = "";
+            var numLines = 1;
+            var outputLines:string[] = [];
+            var lineOut = '';
+
+            for (var i = 0; i < words.length; i++) {
+                var text = words[i];
+                var thisWidth = this.getTextWidth(text, font);
+
+                if (lineWidth + thisWidth > allowedWidth) {
+                    // end this line, begin a new one.
+                    if (lineWidth > maxWidth) maxWidth = lineWidth;
+                    var lineOut = value.substr(startCounter, charCounter);
+                    i--; // go back one word since this word needs to start on a new line
+                    lineWidth = thisWidth;
+                    startCounter += charCounter;
+                    
+                    outputLines[numLines - 1] = lineOut;
+
+                    if (numLines == maxLines) {
+                        outputLines[numLines - 1] = value.substr(startCounter - charCounter);
+                        break;
+                    }
+                    charCounter = 0;
+                    numLines++;
+                } else {
+                    lineWidth += thisWidth;
+                    charCounter += text.length + 1;
+                    if (i == words.length - 1) {
+                        outputLines[numLines - 1] = value.substr(startCounter);
+                    }
+                }
+            }
+            if (maxWidth === 0) maxWidth = allowedWidth;
+            if (outputLines.length === 0) outputLines.push(value);
+
+            return {
+                outputLines: outputLines,
+                numLines: numLines,
+                maxWidth: maxWidth
+            };
+
+        }
 
         static iterateObject(object: any, callback: (key:string, value: any) => void) {
             var keys = Object.keys(object);

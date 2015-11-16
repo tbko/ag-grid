@@ -99,6 +99,7 @@ module ag.grid {
         public getRowHeight() { return this.rowHeight; }
         public getOverlayLoadingTemplate() { return this.gridOptions.overlayLoadingTemplate; }
         public getOverlayNoRowsTemplate() { return this.gridOptions.overlayNoRowsTemplate; }
+        public getFont() { return this.gridOptions.font; }
 
         // properties
         public getHeaderHeight(): number {

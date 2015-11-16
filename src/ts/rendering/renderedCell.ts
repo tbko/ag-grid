@@ -83,7 +83,7 @@ module ag.grid {
             return this.column;
         }
 
-        private getValue(): any {
+        public getValue(): any {
             return this.valueService.getValue(this.column.colDef, this.data, this.node);
         }
 

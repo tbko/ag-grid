@@ -104,6 +104,71 @@ var ag;
         var Utils = (function () {
             function Utils() {
             }
+            Utils.getTextWidth = function (text, font) {
+                // get text visual width for the whole line
+                var context;
+                var metrics;
+                if (!this.canvas) {
+                    this.canvas = document.createElement("canvas");
+                }
+                context = this.canvas.getContext("2d");
+                context.font = font;
+                metrics = context.measureText(text);
+                return parseInt(metrics.width);
+            };
+            Utils.getWidthHeight = function (value, allowedWidth, font, maxLines) {
+                // separate text into lines for content autoWrap
+                // according to given width in px and font metrics
+                value = value.toString();
+                var words = value.split(" ");
+                var lineWidth = 0;
+                var charCounter = 0;
+                var startCounter = 0;
+                var maxWidth = 0;
+                var divText = "";
+                var numLines = 1;
+                var outputLines = [];
+                var lineOut = '';
+                if (text === "Elisa Key") {
+                    debugger;
+                }
+                for (var i = 0; i < words.length; i++) {
+                    var text = words[i];
+                    var thisWidth = this.getTextWidth(text, font);
+                    if (lineWidth + thisWidth > allowedWidth) {
+                        // end this line, begin a new one.
+                        if (lineWidth > maxWidth)
+                            maxWidth = lineWidth;
+                        var lineOut = value.substr(startCounter, charCounter);
+                        i--; // go back one word since this word needs to start on a new line
+                        lineWidth = thisWidth;
+                        startCounter += charCounter;
+                        outputLines[numLines - 1] = lineOut;
+                        if (numLines == maxLines) {
+                            outputLines[numLines - 1] = value.substr(startCounter - charCounter);
+                            break;
+                        }
+                        charCounter = 0;
+                        numLines++;
+                    }
+                    else {
+                        lineWidth += thisWidth;
+                        charCounter += text.length + 1;
+                        if (i == words.length - 1) {
+                            outputLines[numLines - 1] = value.substr(startCounter);
+                        }
+                    }
+                }
+                if (maxWidth === 0)
+                    maxWidth = allowedWidth;
+                if (outputLines.length === 0)
+                    outputLines.push(value);
+                return {
+                    outputLines: outputLines,
+                    numLines: numLines,
+                    maxWidth: maxWidth
+                };
+            };
             Utils.iterateObject = function (object, callback) {
                 var keys = Object.keys(object);
                 for (var i = 0; i < keys.length; i++) {
@@ -719,6 +784,7 @@ var ag;
             GridOptionsWrapper.prototype.getRowHeight = function () { return this.rowHeight; };
             GridOptionsWrapper.prototype.getOverlayLoadingTemplate = function () { return this.gridOptions.overlayLoadingTemplate; };
             GridOptionsWrapper.prototype.getOverlayNoRowsTemplate = function () { return this.gridOptions.overlayNoRowsTemplate; };
+            GridOptionsWrapper.prototype.getFont = function () { return this.gridOptions.font; };
             // properties
             GridOptionsWrapper.prototype.getHeaderHeight = function () {
                 if (typeof this.headerHeight === 'number') {
@@ -4467,13 +4533,14 @@ var ag;
                     }
                 }
                 // if showing scrolls, position on the container
+                // console.log(accumulatedExtraRows);
                 if (!this.gridOptionsWrapper.isForPrint()) {
                     this.vBodyRow.style.top = (baseHeight * (this.rowIndex + accumulatedExtraRows)) + "px";
                     if (this.pinning) {
                         this.vPinnedRow.style.top = (baseHeight * (this.rowIndex + accumulatedExtraRows)) + "px";
                     }
                 }
-                // console.log(this.vBodyRow.style.top);
+                // console.log(this.node.data.index);
                 this.vBodyRow.style.height = (realHeight) + "px";
                 if (this.pinning) {
                     this.vPinnedRow.style.height = (realHeight) + "px";
@@ -4553,6 +4620,8 @@ var ag;
                     var firstCol = i === 0;
                     var renderedCell = new grid.RenderedCell(firstCol, column, this.$compile, this.rowRenderer, this.gridOptionsWrapper, this.expressionService, this.selectionRendererFactory, this.selectionController, this.templateService, this.cellRendererMap, this.node, this.rowIndex, this.scope, this.columnController, this.valueService, this.eventService);
                     var vGridCell = renderedCell.getVGridCell();
+                    console.log(renderedCell.getValue());
+                    console.log(_.getWidthHeight(renderedCell.getValue(), column.actualWidth, this.gridOptionsWrapper.getFont(), 10));
                     if (column.pinned) {
                         this.vPinnedRow.appendChild(vGridCell);
                     }
@@ -5107,6 +5176,7 @@ var ag;
 /// <reference path="../constants.ts" />
 /// <reference path="renderedRow.ts" />
 /// <reference path="../cellRenderers/groupCellRendererFactory.ts" />
+/// <reference path="../entities/rowNode.ts" />
 var ag;
 (function (ag) {
     var grid;
@@ -5333,17 +5403,15 @@ var ag;
                     var topPixel = this.eBodyViewport.scrollTop;
                     var bottomPixel = topPixel + this.eBodyViewport.offsetHeight;
                     var baseHeight = this.gridOptionsWrapper.getRowHeight();
-                    var renderedRows = [];
                     var row;
                     var countRowsBefore = 0;
                     var delta = 0;
                     for (var k = 0; k < rowCount; k++) {
-                        row = this.renderedRows[k.toString()];
+                        row = this.rowModel.getVirtualRow(k);
                         if (!row) {
                             break;
                         }
-                        // if (row.isGroup()) {
-                        if (row.getRowNode().data.index % 2) {
+                        if (row.group || row.data.index % 2) {
                             delta = 1;
                         }
                         else {
@@ -5356,12 +5424,11 @@ var ag;
                     }
                     first = k;
                     for (; k < rowCount; k++) {
-                        row = this.renderedRows[k.toString()];
+                        row = this.rowModel.getVirtualRow(k);
                         if (!row) {
                             break;
                         }
-                        // if (row.isGroup()) {
-                        if (row.getRowNode().data.index % 2) {
+                        if (row.group || row.data.index % 2) {
                             countRowsBefore += 1;
                         }
                         else {
@@ -5372,18 +5439,8 @@ var ag;
                         }
                     }
                     last = k;
-                    // fillinRowsCount = renderedRows.reduce(function(acc: any, cur: any) {
-                    //     if (!cur.node.group) {
-                    //         return acc + 2;
-                    //     }
-                    //     return acc;
-                    // }, 0);
-                    // console.log(fillinRowsCount, Object.keys(this.renderedRows).length);
-                    // first = Math.floor(topPixel / this.gridOptionsWrapper.getRowHeight());
-                    // last = Math.floor(bottomPixel / this.gridOptionsWrapper.getRowHeight());
                     //add in buffer
                     var buffer = this.gridOptionsWrapper.getRowBuffer();
-                    // console.log(first, last, buffer);
                     first = first - buffer;
                     last = last + buffer;
                     // adjust, in case buffer extended actual size
@@ -5394,6 +5451,7 @@ var ag;
                         last = rowCount - 1;
                     }
                 }
+                // console.log(first, last);
                 this.firstVirtualRenderedRow = first;
                 this.lastVirtualRenderedRow = last;
                 this.ensureRowsRendered();
@@ -5410,37 +5468,49 @@ var ag;
                 var that = this;
                 // at the end, this array will contain the items we need to remove
                 var rowsToRemove = Object.keys(this.renderedRows);
+                var rowsBefore;
                 var accumulatedExtraRows = 0;
                 var baseHeight = this.gridOptionsWrapper.getRowHeight();
                 var heightMult = 3;
                 // add in new rows
                 for (var rowIndex = this.firstVirtualRenderedRow; rowIndex <= this.lastVirtualRenderedRow; rowIndex++) {
+                    var node = this.rowModel.getVirtualRow(rowIndex);
+                    var realHeight = 0;
+                    var showNode = 'xxx';
                     // see if item already there, and if yes, take it out of the 'to remove' array
                     if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
                         rowsToRemove.splice(rowsToRemove.indexOf(rowIndex.toString()), 1);
                         continue;
                     }
                     // check this row actually exists (in case overflow buffer window exceeds real data)
-                    var node = this.rowModel.getVirtualRow(rowIndex);
-                    var realHeight = 0;
                     if (node) {
-                        // if (!node.group) {
-                        if (!(node.data.index % 2)) {
+                        if (node.group) {
+                            realHeight = baseHeight;
+                        }
+                        else if (!(node.data.index % 2)) {
                             realHeight = baseHeight * heightMult;
                         }
                         else {
                             realHeight = baseHeight;
                         }
-                        console.log(node.data.index, rowIndex);
-                        that.insertRow(node, rowIndex, mainRowWidth, baseHeight, realHeight, accumulatedExtraRows);
-                        // if (!node.group) {
-                        if (!(node.data.index % 2)) {
-                            accumulatedExtraRows += heightMult - 1;
+                        accumulatedExtraRows = 0;
+                        rowsBefore = this.rowModel.getVirtualRowsUpto(rowIndex);
+                        for (var idx = 0; idx < rowsBefore.length; idx++) {
+                            var row = rowsBefore[idx];
+                            if (!row.group && !(row.data.index % 2)) {
+                                accumulatedExtraRows += heightMult - 1;
+                            }
                         }
+                        if (node.data) {
+                            showNode = node.data.index;
+                        }
+                        else if (node.group) {
+                            showNode = node.group;
+                        }
+                        that.insertRow(node, rowIndex, mainRowWidth, baseHeight, realHeight, accumulatedExtraRows);
                     }
                 }
                 // at this point, everything in our 'rowsToRemove' . . .
-                console.log(rowsToRemove);
                 this.removeVirtualRow(rowsToRemove);
                 // if we are doing angular compiling, then do digest the scope here
                 if (this.gridOptionsWrapper.isAngularCompileRows()) {
@@ -5459,7 +5529,6 @@ var ag;
                     return;
                 }
                 var renderedRow = new grid.RenderedRow(this.gridOptionsWrapper, this.valueService, this.$scope, this.angularGrid, this.columnModel, this.expressionService, this.cellRendererMap, this.selectionRendererFactory, this.$compile, this.templateService, this.selectionController, this, this.eBodyContainer, this.ePinnedColsContainer, node, rowIndex, this.eventService, baseHeight, realHeight, accumulatedExtraRows);
-                // console.log(renderedRow);
                 renderedRow.setMainRowWidth(mainRowWidth);
                 this.renderedRows[rowIndex] = renderedRow;
             };
@@ -6589,21 +6658,119 @@ var ag;
     })(grid = ag.grid || (ag.grid = {}));
 })(ag || (ag = {}));
 /// <reference path="../utils.ts" />
+var ag;
+(function (ag) {
+    var grid;
+    (function (grid) {
+        var _ = grid.Utils;
+        var DragAndDropService = (function () {
+            function DragAndDropService() {
+            }
+            DragAndDropService.prototype.init = function (loggerFactory) {
+                this.logger = loggerFactory.create('DragAndDropService');
+                // need to clean this up, add to 'finished' logic in grid
+                var that = this;
+                this.mouseUpEventListener = function listener() {
+                    that.stopDragging();
+                };
+                document.addEventListener('mouseup', this.mouseUpEventListener);
+                this.logger.log('initialised');
+            };
+            DragAndDropService.prototype.destroy = function () {
+                document.removeEventListener('mouseup', this.mouseUpEventListener);
+                this.logger.log('destroyed');
+            };
+            DragAndDropService.prototype.stopDragging = function () {
+                if (this.dragItem) {
+                    this.setDragCssClasses(this.dragItem.eDragSource, false);
+                    this.dragItem = null;
+                }
+            };
+            DragAndDropService.prototype.setDragCssClasses = function (eListItem, dragging) {
+                _.addOrRemoveCssClass(eListItem, 'ag-dragging', dragging);
+                _.addOrRemoveCssClass(eListItem, 'ag-not-dragging', !dragging);
+            };
+            DragAndDropService.prototype.addDragSource = function (eDragSource, dragSourceCallback) {
+                this.setDragCssClasses(eDragSource, false);
+                eDragSource.addEventListener('mousedown', this.onMouseDownDragSource.bind(this, eDragSource, dragSourceCallback));
+            };
+            DragAndDropService.prototype.onMouseDownDragSource = function (eDragSource, dragSourceCallback) {
+                if (this.dragItem) {
+                    this.stopDragging();
+                }
+                var data;
+                if (dragSourceCallback.getData) {
+                    data = dragSourceCallback.getData();
+                }
+                var containerId;
+                if (dragSourceCallback.getContainerId) {
+                    containerId = dragSourceCallback.getContainerId();
+                }
+                this.dragItem = {
+                    eDragSource: eDragSource,
+                    data: data,
+                    containerId: containerId
+                };
+                this.setDragCssClasses(this.dragItem.eDragSource, true);
+            };
+            DragAndDropService.prototype.addDropTarget = function (eDropTarget, dropTargetCallback) {
+                var mouseIn = false;
+                var acceptDrag = false;
+                var that = this;
+                eDropTarget.addEventListener('mouseover', function () {
+                    if (!mouseIn) {
+                        mouseIn = true;
+                        if (that.dragItem) {
+                            acceptDrag = dropTargetCallback.acceptDrag(that.dragItem);
+                        }
+                        else {
+                            acceptDrag = false;
+                        }
+                    }
+                });
+                eDropTarget.addEventListener('mouseout', function () {
+                    if (acceptDrag) {
+                        dropTargetCallback.noDrop();
+                    }
+                    mouseIn = false;
+                    acceptDrag = false;
+                });
+                eDropTarget.addEventListener('mouseup', function () {
+                    // dragItem should never be null, checking just in case
+                    if (acceptDrag && that.dragItem) {
+                        dropTargetCallback.drop(that.dragItem);
+                    }
+                });
+            };
+            return DragAndDropService;
+        })();
+        grid.DragAndDropService = DragAndDropService;
+    })(grid = ag.grid || (ag.grid = {}));
+})(ag || (ag = {}));
+/// <reference path="../utils.ts" />
 /// <reference path="../constants.ts" />
 /// <reference path="../svgFactory.ts" />
 /// <reference path="../headerRendering/renderedHeaderElement.ts" />
 /// <reference path="../headerRendering/renderedHeaderCell.ts" />
 /// <reference path="../headerRendering/renderedHeaderGroupCell.ts" />
+/// <reference path="../dragAndDrop/dragAndDropService" />
 var ag;
 (function (ag) {
     var grid;
     (function (grid) {
         var utils = grid.Utils;
+        var DropTargetLocation;
+        (function (DropTargetLocation) {
+            DropTargetLocation[DropTargetLocation["NOT_DROP_TARGET"] = 0] = "NOT_DROP_TARGET";
+            DropTargetLocation[DropTargetLocation["DROP_TARGET_ABOVE"] = 1] = "DROP_TARGET_ABOVE";
+            DropTargetLocation[DropTargetLocation["DROP_TARGET_BELOW"] = 2] = "DROP_TARGET_BELOW";
+        })(DropTargetLocation || (DropTargetLocation = {}));
+        ;
         var HeaderRenderer = (function () {
             function HeaderRenderer() {
                 this.headerElements = [];
             }
-            HeaderRenderer.prototype.init = function (gridOptionsWrapper, columnController, gridPanel, angularGrid, filterManager, $scope, $compile) {
+            HeaderRenderer.prototype.init = function (gridOptionsWrapper, columnController, gridPanel, angularGrid, filterManager, $scope, $compile, dragAndDropService) {
                 this.gridOptionsWrapper = gridOptionsWrapper;
                 this.columnController = columnController;
                 this.angularGrid = angularGrid;
@@ -6611,7 +6778,74 @@ var ag;
                 this.$scope = $scope;
                 this.$compile = $compile;
                 this.findAllElements(gridPanel);
+                this.readOnly = false;
+                this.dragAndDropService = dragAndDropService;
+                this.uniqueId = 'ColumnDrag-' + Math.random();
             };
+            // start drag-n-drop methods
+            HeaderRenderer.prototype.getUniqueId = function () {
+                return this.uniqueId;
+            };
+            HeaderRenderer.prototype.addDragAndDropToListItem = function (eListItem, item) {
+                var that = this;
+                this.dragAndDropService.addDragSource(eListItem, {
+                    getData: function () {
+                        return item;
+                    },
+                    getContainerId: function () {
+                        return that.uniqueId;
+                    }
+                });
+                this.dragAndDropService.addDropTarget(eListItem, {
+                    acceptDrag: function (dragItem) {
+                        return that.internalAcceptDrag(item, dragItem, eListItem);
+                    },
+                    drop: function (dragItem) {
+                        that.internalDrop(item, dragItem.data);
+                    },
+                    noDrop: function () {
+                        that.internalNoDrop(eListItem);
+                    }
+                });
+            };
+            HeaderRenderer.prototype.internalAcceptDrag = function (targetColumn, dragItem, eListItem) {
+                var result = dragItem.data !== targetColumn && dragItem.containerId === this.uniqueId;
+                if (result) {
+                    if (this.dragAfterThisItem(targetColumn, dragItem.data)) {
+                        this.setDropCssClasses(eListItem, DropTargetLocation.DROP_TARGET_ABOVE);
+                    }
+                    else {
+                        this.setDropCssClasses(eListItem, DropTargetLocation.DROP_TARGET_BELOW);
+                    }
+                }
+                return result;
+            };
+            HeaderRenderer.prototype.internalDrop = function (targetColumn, draggedColumn) {
+                // debugger;
+                var oldIndex = this.headerElements.indexOf(draggedColumn);
+                var newIndex = this.headerElements.indexOf(targetColumn);
+                // if (this.readOnly) {
+                //     this.fireItemMoved(oldIndex, newIndex);
+                // } else {
+                // this.headerElements.splice(oldIndex, 1);
+                // this.headerElements.splice(newIndex, 0, draggedColumn);
+                // this.refreshHeader();
+                // this.fireModelChanged();
+                this.columnController.moveColumn(oldIndex, newIndex);
+                // }
+            };
+            HeaderRenderer.prototype.internalNoDrop = function (eListItem) {
+                this.setDropCssClasses(eListItem, DropTargetLocation.NOT_DROP_TARGET);
+            };
+            HeaderRenderer.prototype.dragAfterThisItem = function (targetColumn, draggedColumn) {
+                return this.headerElements.indexOf(targetColumn) < this.headerElements.indexOf(draggedColumn);
+            };
+            HeaderRenderer.prototype.setDropCssClasses = function (eListItem, state) {
+                utils.addOrRemoveCssClass(eListItem, 'ag-not-drop-target', state === DropTargetLocation.NOT_DROP_TARGET);
+                utils.addOrRemoveCssClass(eListItem, 'ag-drop-target-above', state === DropTargetLocation.DROP_TARGET_ABOVE);
+                utils.addOrRemoveCssClass(eListItem, 'ag-drop-target-below', state === DropTargetLocation.DROP_TARGET_BELOW);
+            };
+            // end drag-n-drop methods
             HeaderRenderer.prototype.findAllElements = function (gridPanel) {
                 this.ePinnedHeader = gridPanel.getPinnedHeader();
                 this.eHeaderContainer = gridPanel.getHeaderContainer();
@@ -6649,6 +6883,7 @@ var ag;
                     _this.headerElements.push(renderedHeaderCell);
                     var eContainerToAddTo = column.pinned ? _this.ePinnedHeader : _this.eHeaderContainer;
                     eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
+                    _this.addDragAndDropToListItem(renderedHeaderCell.getGui(), renderedHeaderCell);
                 });
             };
             HeaderRenderer.prototype.updateSortIcons = function () {
@@ -6809,7 +7044,10 @@ var ag;
                     getVirtualRow: function (index) {
                         return that.rowsAfterMap[index];
                     },
-                    getVirtualRows: function (index) {
+                    getVirtualRowsUpto: function (index) {
+                        return that.rowsAfterMap.slice(0, index);
+                    },
+                    getVirtualRows: function () {
                         return that.rowsAfterMap;
                     },
                     getVirtualRowCount: function () {
@@ -6820,15 +7058,11 @@ var ag;
                             rows = that.rowsAfterMap;
                             realRowsCount = rows.length;
                             fillinRowsCount = rows.reduce(function (acc, cur) {
-                                var id;
-                                id = cur.data.index;
-                                // if (!cur.group) {
-                                if (!(id % 2)) {
+                                if (!cur.group && !(cur.data.index % 2)) {
                                     return acc + 2;
                                 }
                                 return acc;
                             }, 0);
-                            // console.log(realRowsCount, fillinRowsCount);
                             return realRowsCount + fillinRowsCount;
                         }
                         else {
@@ -7284,7 +7518,6 @@ var ag;
                 var rowsAfterMap = [];
                 this.addToMap(rowsAfterMap, this.rowsAfterSort);
                 this.rowsAfterMap = rowsAfterMap;
-                // console.log(this.rowsAfterMap);
             };
             InMemoryRowController.prototype.addToMap = function (mappedData, originalNodes) {
                 if (!originalNodes) {
@@ -8546,96 +8779,6 @@ var ag;
     })(grid = ag.grid || (ag.grid = {}));
 })(ag || (ag = {}));
 /// <reference path="../utils.ts" />
-var ag;
-(function (ag) {
-    var grid;
-    (function (grid) {
-        var _ = grid.Utils;
-        var DragAndDropService = (function () {
-            function DragAndDropService() {
-            }
-            DragAndDropService.prototype.init = function (loggerFactory) {
-                this.logger = loggerFactory.create('DragAndDropService');
-                // need to clean this up, add to 'finished' logic in grid
-                var that = this;
-                this.mouseUpEventListener = function listener() {
-                    that.stopDragging();
-                };
-                document.addEventListener('mouseup', this.mouseUpEventListener);
-                this.logger.log('initialised');
-            };
-            DragAndDropService.prototype.destroy = function () {
-                document.removeEventListener('mouseup', this.mouseUpEventListener);
-                this.logger.log('destroyed');
-            };
-            DragAndDropService.prototype.stopDragging = function () {
-                if (this.dragItem) {
-                    this.setDragCssClasses(this.dragItem.eDragSource, false);
-                    this.dragItem = null;
-                }
-            };
-            DragAndDropService.prototype.setDragCssClasses = function (eListItem, dragging) {
-                _.addOrRemoveCssClass(eListItem, 'ag-dragging', dragging);
-                _.addOrRemoveCssClass(eListItem, 'ag-not-dragging', !dragging);
-            };
-            DragAndDropService.prototype.addDragSource = function (eDragSource, dragSourceCallback) {
-                this.setDragCssClasses(eDragSource, false);
-                eDragSource.addEventListener('mousedown', this.onMouseDownDragSource.bind(this, eDragSource, dragSourceCallback));
-            };
-            DragAndDropService.prototype.onMouseDownDragSource = function (eDragSource, dragSourceCallback) {
-                if (this.dragItem) {
-                    this.stopDragging();
-                }
-                var data;
-                if (dragSourceCallback.getData) {
-                    data = dragSourceCallback.getData();
-                }
-                var containerId;
-                if (dragSourceCallback.getContainerId) {
-                    containerId = dragSourceCallback.getContainerId();
-                }
-                this.dragItem = {
-                    eDragSource: eDragSource,
-                    data: data,
-                    containerId: containerId
-                };
-                this.setDragCssClasses(this.dragItem.eDragSource, true);
-            };
-            DragAndDropService.prototype.addDropTarget = function (eDropTarget, dropTargetCallback) {
-                var mouseIn = false;
-                var acceptDrag = false;
-                var that = this;
-                eDropTarget.addEventListener('mouseover', function () {
-                    if (!mouseIn) {
-                        mouseIn = true;
-                        if (that.dragItem) {
-                            acceptDrag = dropTargetCallback.acceptDrag(that.dragItem);
-                        }
-                        else {
-                            acceptDrag = false;
-                        }
-                    }
-                });
-                eDropTarget.addEventListener('mouseout', function () {
-                    if (acceptDrag) {
-                        dropTargetCallback.noDrop();
-                    }
-                    mouseIn = false;
-                    acceptDrag = false;
-                });
-                eDropTarget.addEventListener('mouseup', function () {
-                    // dragItem should never be null, checking just in case
-                    if (acceptDrag && that.dragItem) {
-                        dropTargetCallback.drop(that.dragItem);
-                    }
-                });
-            };
-            return DragAndDropService;
-        })();
-        grid.DragAndDropService = DragAndDropService;
-    })(grid = ag.grid || (ag.grid = {}));
-})(ag || (ag = {}));
-/// <reference path="../utils.ts" />
 /// <reference path="../dragAndDrop/dragAndDropService" />
 /// <amd-dependency path="text!agList.html"/>
 var ag;
@@ -9819,7 +9962,7 @@ var ag;
                 selectionRendererFactory.init(this, selectionController);
                 columnController.init(this, selectionRendererFactory, gridOptionsWrapper, expressionService, valueService, masterSlaveService, eventService);
                 rowRenderer.init(columnController, gridOptionsWrapper, gridPanel, this, selectionRendererFactory, $compile, $scope, selectionController, expressionService, templateService, valueService, eventService);
-                headerRenderer.init(gridOptionsWrapper, columnController, gridPanel, this, filterManager, $scope, $compile);
+                headerRenderer.init(gridOptionsWrapper, columnController, gridPanel, this, filterManager, $scope, $compile, dragAndDropService);
                 inMemoryRowController.init(gridOptionsWrapper, columnController, this, filterManager, $scope, groupCreator, valueService, eventService);
                 virtualPageRowController.init(rowRenderer, gridOptionsWrapper, this);
                 valueService.init(gridOptionsWrapper, expressionService, columnController);

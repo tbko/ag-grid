@@ -4,10 +4,13 @@
 /// <reference path="../headerRendering/renderedHeaderElement.ts" />
 /// <reference path="../headerRendering/renderedHeaderCell.ts" />
 /// <reference path="../headerRendering/renderedHeaderGroupCell.ts" />
+/// <reference path="../dragAndDrop/dragAndDropService" />
 
 module ag.grid {
 
     var utils = Utils;
+
+    enum DropTargetLocation { NOT_DROP_TARGET, DROP_TARGET_ABOVE, DROP_TARGET_BELOW };
 
     export class HeaderRenderer {
 
@@ -23,8 +26,13 @@ module ag.grid {
 
         private headerElements: RenderedHeaderElement[] = [];
 
+        private readOnly: boolean;
+        private dragAndDropService: DragAndDropService;
+        private uniqueId: any;
+
         public init(gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, gridPanel: GridPanel,
-                    angularGrid: Grid, filterManager: FilterManager, $scope: any, $compile: any) {
+            angularGrid: Grid, filterManager: FilterManager, $scope: any, $compile: any, dragAndDropService: DragAndDropService) {
+
             this.gridOptionsWrapper = gridOptionsWrapper;
             this.columnController = columnController;
             this.angularGrid = angularGrid;
@@ -32,7 +40,86 @@ module ag.grid {
             this.$scope = $scope;
             this.$compile = $compile;
             this.findAllElements(gridPanel);
+
+            this.readOnly = false;
+            this.dragAndDropService = dragAndDropService;
+            this.uniqueId = 'ColumnDrag-' + Math.random();
         }
+
+        // start drag-n-drop methods
+
+        public getUniqueId() {
+            return this.uniqueId;
+        }
+
+        private addDragAndDropToListItem(eListItem: any, item: any) {
+            var that = this;
+            this.dragAndDropService.addDragSource(eListItem, {
+                getData: function() {
+                    return item;
+                },
+                getContainerId: function() {
+                    return that.uniqueId;
+                }
+            });
+            this.dragAndDropService.addDropTarget(eListItem, {
+                acceptDrag: function(dragItem: any) {
+                    return that.internalAcceptDrag(item, dragItem, eListItem);
+                },
+                drop: function(dragItem: any) {
+                    that.internalDrop(item, dragItem.data);
+                },
+                noDrop: function() {
+                    that.internalNoDrop(eListItem);
+                }
+            });
+        }
+
+        private internalAcceptDrag(targetColumn: any, dragItem: any, eListItem: any) {
+            var result = dragItem.data !== targetColumn && dragItem.containerId === this.uniqueId;
+            if (result) {
+                if (this.dragAfterThisItem(targetColumn, dragItem.data)) {
+                    this.setDropCssClasses(eListItem, DropTargetLocation.DROP_TARGET_ABOVE);
+                } else {
+                    this.setDropCssClasses(eListItem, DropTargetLocation.DROP_TARGET_BELOW);
+                }
+            }
+            return result;
+        }
+
+        private internalDrop(targetColumn: any, draggedColumn: any) {
+            // debugger;
+            var oldIndex = this.headerElements.indexOf(draggedColumn);
+            var newIndex = this.headerElements.indexOf(targetColumn);
+
+            // if (this.readOnly) {
+            //     this.fireItemMoved(oldIndex, newIndex);
+            // } else {
+                // this.headerElements.splice(oldIndex, 1);
+                // this.headerElements.splice(newIndex, 0, draggedColumn);
+
+                // this.refreshHeader();
+                // this.fireModelChanged();
+            this.columnController.moveColumn(oldIndex, newIndex);
+
+            // }
+        }
+
+        private internalNoDrop(eListItem: any) {
+            this.setDropCssClasses(eListItem, DropTargetLocation.NOT_DROP_TARGET);
+        }
+
+        private dragAfterThisItem(targetColumn: any, draggedColumn: any) {
+            return this.headerElements.indexOf(targetColumn) < this.headerElements.indexOf(draggedColumn);
+        }
+
+        private setDropCssClasses(eListItem: any, state: any) {
+            utils.addOrRemoveCssClass(eListItem, 'ag-not-drop-target', state === DropTargetLocation.NOT_DROP_TARGET);
+            utils.addOrRemoveCssClass(eListItem, 'ag-drop-target-above', state === DropTargetLocation.DROP_TARGET_ABOVE);
+            utils.addOrRemoveCssClass(eListItem, 'ag-drop-target-below', state === DropTargetLocation.DROP_TARGET_BELOW);
+        }
+
+        // end drag-n-drop methods
 
         private findAllElements(gridPanel: GridPanel) {
             this.ePinnedHeader = gridPanel.getPinnedHeader();
@@ -77,6 +164,7 @@ module ag.grid {
                 this.headerElements.push(renderedHeaderCell);
                 var eContainerToAddTo = column.pinned ? this.ePinnedHeader : this.eHeaderContainer;
                 eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
+                this.addDragAndDropToListItem(renderedHeaderCell.getGui(), renderedHeaderCell);
             });
         }
 

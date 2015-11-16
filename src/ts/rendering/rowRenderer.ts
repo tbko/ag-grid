@@ -2,6 +2,7 @@
 /// <reference path="../constants.ts" />
 /// <reference path="renderedRow.ts" />
 /// <reference path="../cellRenderers/groupCellRendererFactory.ts" />
+/// <reference path="../entities/rowNode.ts" />
 
 module ag.grid {
 
@@ -309,18 +310,17 @@ module ag.grid {
                 var topPixel = this.eBodyViewport.scrollTop;
                 var bottomPixel = topPixel + this.eBodyViewport.offsetHeight;
                 var baseHeight = this.gridOptionsWrapper.getRowHeight();
-                var renderedRows = <any>[];
-                var row: RenderedRow;
+                var row: RowNode;
                 var countRowsBefore = 0;
                 var delta = 0;
+                
                 for (var k = 0; k < rowCount; k++) {
-                    row = this.renderedRows[k.toString()]
+                    row = this.rowModel.getVirtualRow(k)
                     if (!row) {
                         break;
                     }
-                    // if (row.isGroup()) {
                     
-                    if (row.getRowNode().data.index % 2) {
+                    if (row.group || row.data.index % 2) {
                         delta = 1;
                     } else {
                         delta = 3;
@@ -332,12 +332,11 @@ module ag.grid {
                 }
                 first = k;
                 for (; k < rowCount; k++) {
-                    row = this.renderedRows[k.toString()]
+                    row = this.rowModel.getVirtualRow(k)
                     if (!row) {
                         break;
                     }
-                    // if (row.isGroup()) {
-                    if (row.getRowNode().data.index % 2) {
+                    if (row.group || row.data.index % 2) {
                         countRowsBefore += 1
                     } else {
                         countRowsBefore += 3
@@ -348,20 +347,8 @@ module ag.grid {
                 }
                 last = k;
 
-                // fillinRowsCount = renderedRows.reduce(function(acc: any, cur: any) {
-                //     if (!cur.node.group) {
-                //         return acc + 2;
-                //     }
-                //     return acc;
-                // }, 0);
-                // console.log(fillinRowsCount, Object.keys(this.renderedRows).length);
-
-                // first = Math.floor(topPixel / this.gridOptionsWrapper.getRowHeight());
-                // last = Math.floor(bottomPixel / this.gridOptionsWrapper.getRowHeight());
-
                 //add in buffer
                 var buffer = this.gridOptionsWrapper.getRowBuffer();
-                // console.log(first, last, buffer);
                 first = first - buffer;
                 last = last + buffer;
 
@@ -374,6 +361,7 @@ module ag.grid {
                 }
             }
 
+            // console.log(first, last);
             this.firstVirtualRenderedRow = first;
             this.lastVirtualRenderedRow = last;
 
@@ -398,40 +386,52 @@ module ag.grid {
             // at the end, this array will contain the items we need to remove
             var rowsToRemove = Object.keys(this.renderedRows);
 
+            var rowsBefore: RowNode[];
             var accumulatedExtraRows = 0;
             var baseHeight = this.gridOptionsWrapper.getRowHeight();
             var heightMult = 3;
 
             // add in new rows
             for (var rowIndex = this.firstVirtualRenderedRow; rowIndex <= this.lastVirtualRenderedRow; rowIndex++) {
+                var node = this.rowModel.getVirtualRow(rowIndex);
+                var realHeight = 0;
+                var showNode = 'xxx';
+
                 // see if item already there, and if yes, take it out of the 'to remove' array
                 if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
                     rowsToRemove.splice(rowsToRemove.indexOf(rowIndex.toString()), 1);
                     continue;
                 }
-                // check this row actually exists (in case overflow buffer window exceeds real data)
-                var node = this.rowModel.getVirtualRow(rowIndex);
-                var realHeight = 0;
 
+                // check this row actually exists (in case overflow buffer window exceeds real data)
                 if (node) {
-                    // if (!node.group) {
-                    if (!(node.data.index % 2)) {
+                    if (node.group) {
+                        realHeight = baseHeight;
+                    } else if (!(node.data.index % 2)) {
                         realHeight = baseHeight * heightMult;
                     } else {
                         realHeight = baseHeight;
                     }
-                    console.log(node.data.index, rowIndex);
-                    that.insertRow(node, rowIndex, mainRowWidth, baseHeight, realHeight, accumulatedExtraRows);
-                    // if (!node.group) {
-                    if (!(node.data.index % 2)) {
-                        accumulatedExtraRows += heightMult - 1;
+
+                    accumulatedExtraRows = 0;
+                    rowsBefore = this.rowModel.getVirtualRowsUpto(rowIndex);
+                    for (var idx = 0; idx < rowsBefore.length; idx++) {
+                        var row = rowsBefore[idx];
+                        if (!row.group && !(row.data.index % 2)) {
+                            accumulatedExtraRows += heightMult - 1;
+                        }
                     }
+                    if (node.data) {
+                        showNode = node.data.index;
+                    } else if (node.group) {
+                        showNode = node.group
+                    }
+                    that.insertRow(node, rowIndex, mainRowWidth, baseHeight, realHeight, accumulatedExtraRows);
                 }
             }
 
 
             // at this point, everything in our 'rowsToRemove' . . .
-            console.log(rowsToRemove);
             this.removeVirtualRow(rowsToRemove);
 
             // if we are doing angular compiling, then do digest the scope here
@@ -458,7 +458,6 @@ module ag.grid {
                 this.$compile, this.templateService, this.selectionController, this,
                 this.eBodyContainer, this.ePinnedColsContainer, node, rowIndex, this.eventService,
                 baseHeight, realHeight, accumulatedExtraRows);
-            // console.log(renderedRow);
             renderedRow.setMainRowWidth(mainRowWidth);
 
             this.renderedRows[rowIndex] = renderedRow;

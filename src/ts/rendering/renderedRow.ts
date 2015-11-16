@@ -120,13 +120,14 @@ module ag.grid {
             }
 
             // if showing scrolls, position on the container
+            // console.log(accumulatedExtraRows);
             if (!this.gridOptionsWrapper.isForPrint()) {
                 this.vBodyRow.style.top = (baseHeight * (this.rowIndex + accumulatedExtraRows)) + "px";
                 if (this.pinning) {
                     this.vPinnedRow.style.top = (baseHeight * (this.rowIndex + accumulatedExtraRows)) + "px";
                 }
             }
-            // console.log(this.vBodyRow.style.top);
+            // console.log(this.node.data.index);
             this.vBodyRow.style.height = (realHeight) + "px";
             if (this.pinning) {
                 this.vPinnedRow.style.height = (realHeight) + "px";
@@ -219,6 +220,7 @@ module ag.grid {
             for (var i = 0; i<columns.length; i++) {
                 var column = columns[i];
                 var firstCol = i === 0;
+                var multiLine: any;
 
                 var renderedCell = new RenderedCell(firstCol, column,
                     this.$compile, this.rowRenderer, this.gridOptionsWrapper, this.expressionService,
@@ -227,6 +229,8 @@ module ag.grid {
                     this.valueService, this.eventService);
 
                 var vGridCell = renderedCell.getVGridCell();
+
+                multiLine = _.getWidthHeight(renderedCell.getValue(), column.actualWidth, this.gridOptionsWrapper.getFont(), 10));
 
                 if (column.pinned) {
                     this.vPinnedRow.appendChild(vGridCell);

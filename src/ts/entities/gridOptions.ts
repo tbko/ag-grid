@@ -33,6 +33,7 @@ module ag.grid {
         angularCompileHeaders?: boolean;
         suppressLoadingOverlay?: boolean;
         suppressNoRowsOverlay?: boolean;
+        font: string;
 
         // just set once
         localeText?: any;
