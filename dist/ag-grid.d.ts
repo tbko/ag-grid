@@ -158,6 +158,7 @@ declare module ag.grid {
         private groupHeaders;
         private headerHeight;
         private rowHeight;
+        private rowHeightExtra;
         private floatingTopRowData;
         private floatingBottomRowData;
         init(gridOptions: GridOptions, eventService: EventService): void;
@@ -219,9 +220,15 @@ declare module ag.grid {
         getSlaveGrids(): GridOptions[];
         getGroupRowRenderer(): Function | Object;
         getRowHeight(): number;
+        getRowHeightExtra(): number;
         getOverlayLoadingTemplate(): string;
         getOverlayNoRowsTemplate(): string;
         getFont(): string;
+        getGroupShiftWidth(): number;
+        getGroupControlWidth(): number;
+        getWidthGap(): number;
+        getMaxRows(): number;
+        getMinRows(): number;
         getHeaderHeight(): number;
         setHeaderHeight(headerHeight: number): void;
         isGroupHeaders(): boolean;
@@ -524,6 +531,8 @@ declare module ag.grid {
 }
 declare module ag.grid {
     interface ColDef {
+        /** If apply wrap text into multiple string after other renderers */
+        wrapped?: boolean;
         /** If sorting by default, set it here. Set to 'asc' or 'desc' */
         sort?: string;
         /** If sorting more than one column by default, the milliseconds when this column was sorted, so we know what order to sort the columns in. */
@@ -735,6 +744,8 @@ declare module ag.grid {
         id?: number;
         /** The user provided data */
         data?: any;
+        /** Height of data row in number of lines */
+        gridHeight?: number;
         /** The parent node to this node, or empty if top level */
         parent?: RowNode;
         /** How many levels this node is from the top */
@@ -913,11 +924,13 @@ declare module ag.grid {
         private eventService;
         private value;
         private checkboxSelection;
+        private rowsNeeded;
         constructor(isFirstColumn: any, column: any, $compile: any, rowRenderer: RowRenderer, gridOptionsWrapper: GridOptionsWrapper, expressionService: ExpressionService, selectionRendererFactory: SelectionRendererFactory, selectionController: SelectionController, templateService: TemplateService, cellRendererMap: {
             [key: string]: any;
         }, node: any, rowIndex: number, scope: any, columnController: ColumnController, valueService: ValueService, eventService: EventService);
         getColumn(): Column;
-        getValue(): any;
+        private getValue();
+        getRowsNeeded(): number;
         getVGridCell(): ag.vdom.VHtmlElement;
         private getDataForRow();
         private setupComponents();
@@ -954,6 +967,7 @@ declare module ag.grid {
         private scope;
         private node;
         private rowIndex;
+        private maxRowsNeeded;
         private cellRendererMap;
         private gridOptionsWrapper;
         private parentScope;
@@ -972,7 +986,9 @@ declare module ag.grid {
         private eventService;
         constructor(gridOptionsWrapper: GridOptionsWrapper, valueService: ValueService, parentScope: any, angularGrid: Grid, columnController: ColumnController, expressionService: ExpressionService, cellRendererMap: {
             [key: string]: any;
-        }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService, baseHeight?: any, realHeight?: any, accumulatedExtraRows?: any);
+        }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService, rowsBefore?: number, readyToDraw?: boolean);
+        insertInDOM(): void;
+        getMaxRowsNeeded(): number;
         onRowSelected(selected: boolean): void;
         softRefresh(): void;
         getRenderedCellForColumn(column: Column): RenderedCell;
@@ -1017,6 +1033,9 @@ declare module ag.grid {
 }
 declare module ag.grid {
     function groupCellRendererFactory(gridOptionsWrapper: GridOptionsWrapper, selectionRendererFactory: SelectionRendererFactory, expressionService: ExpressionService): (params: any) => HTMLSpanElement;
+}
+declare module ag.grid {
+    function multilineCellRendererFactory(gridOptionsWrapper: GridOptionsWrapper): (params: any) => any;
 }
 declare module ag.grid {
     class RowRenderer {
@@ -1069,8 +1088,9 @@ declare module ag.grid {
         drawVirtualRows(): void;
         getFirstVirtualRenderedRow(): number;
         getLastVirtualRenderedRow(): number;
-        private ensureRowsRendered();
-        private insertRow(node, rowIndex, mainRowWidth, baseHeight, realHeight, accumulatedExtraRows);
+        countGridRows(): void;
+        private ensureRowsRendered(preparedRows?);
+        private insertRow(node, rowIndex, mainRowWidth, rowsBefore, realDraw?);
         getRenderedNodes(): any[];
         getIndexOfRenderedNode(node: any): number;
         navigateToNextCell(key: any, rowIndex: number, column: Column): void;
@@ -1665,6 +1685,7 @@ declare module ag.grid {
         suppressHorizontalScroll?: boolean;
         unSortIcon?: boolean;
         rowHeight?: number;
+        rowHeightExtra?: number;
         rowBuffer?: number;
         enableColResize?: boolean;
         enableCellExpressions?: boolean;
@@ -1683,6 +1704,11 @@ declare module ag.grid {
         suppressLoadingOverlay?: boolean;
         suppressNoRowsOverlay?: boolean;
         font: string;
+        groupShiftWidth: number;
+        groupControlWidth: number;
+        widthGap: number;
+        maxRows: number;
+        minRows: number;
         localeText?: any;
         localeTextFunc?: Function;
         suppressScrollLag?: boolean;

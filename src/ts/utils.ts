@@ -29,7 +29,12 @@ module ag.grid {
         static getWidthHeight(value: string, allowedWidth: number, font: string, maxLines:number): any {
             // separate text into lines for content autoWrap
             // according to given width in px and font metrics
-            value = value.toString()
+
+            if (!value) {
+                value = ''
+            } else {
+                value = value.toString()
+            }
             var words = value.split(" ");
             var lineWidth = 0;
             var charCounter = 0;
@@ -39,6 +44,8 @@ module ag.grid {
             var numLines = 1;
             var outputLines:string[] = [];
             var lineOut = '';
+            var curRow = '';
+            var spaceWidth = this.getTextWidth(' ', font);
 
             for (var i = 0; i < words.length; i++) {
                 var text = words[i];
@@ -48,23 +55,28 @@ module ag.grid {
                     // end this line, begin a new one.
                     if (lineWidth > maxWidth) maxWidth = lineWidth;
                     var lineOut = value.substr(startCounter, charCounter);
-                    i--; // go back one word since this word needs to start on a new line
-                    lineWidth = thisWidth;
-                    startCounter += charCounter;
-                    
-                    outputLines[numLines - 1] = lineOut;
 
-                    if (numLines == maxLines) {
-                        outputLines[numLines - 1] = value.substr(startCounter - charCounter);
+                    if (lineOut.length) {
+                        i--; // go back one word since this word needs to start on a new line
+                        lineWidth = thisWidth;
+                        startCounter += charCounter;
+                    
+                        outputLines.push(lineOut);
+                    }
+
+                    curRow = value.substr(startCounter - charCounter);
+                    if (outputLines.length === maxLines && curRow.length) {
+                        outputLines.pop();
+                        outputLines.push(curRow);
                         break;
                     }
                     charCounter = 0;
-                    numLines++;
                 } else {
-                    lineWidth += thisWidth;
+                    lineWidth += thisWidth + spaceWidth;
                     charCounter += text.length + 1;
-                    if (i == words.length - 1) {
-                        outputLines[numLines - 1] = value.substr(startCounter);
+                    curRow = value.substr(startCounter);
+                    if (i === (words.length - 1) && curRow.length)  {
+                        outputLines.push(curRow);
                     }
                 }
             }
@@ -73,7 +85,7 @@ module ag.grid {
 
             return {
                 outputLines: outputLines,
-                numLines: numLines,
+                numLines: outputLines.length,
                 maxWidth: maxWidth
             };
 

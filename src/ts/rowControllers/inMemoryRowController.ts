@@ -71,6 +71,13 @@ module ag.grid {
                     return that.rowsAfterMap;
                 },
                 getVirtualRowCount: function (): number {
+                    if (that.rowsAfterMap) {
+                        return that.rowsAfterMap.length;
+                    } else {
+                        return 0;
+                    }
+                },
+                getGridRowCount: function (): number {
                     var realRowsCount = 0;
                     var fillinRowsCount = 0;
                     var rows: RowNode[];
@@ -78,8 +85,11 @@ module ag.grid {
                         rows = that.rowsAfterMap;
                         realRowsCount = rows.length;
                         fillinRowsCount = rows.reduce(function (acc: any, cur: any) {
-                            if (!cur.group && !(cur.data.index % 2)) {
-                                return acc + 2;
+                            if (!cur.group) {
+                                // _.getWidthHeight(params.value, width, gridOptionsWrapper.getFont(), gridOptionsWrapper.getMaxRows());
+                                // rowEl = this.insertRow(row, idx, mainRowWidth, baseHeight, rowsBeforeCount, false);
+                                // rowsBeforeCount += rowEl.maxRowsNeeded;
+                                return acc + cur.gridHeight - 1;
                             }
                             return acc;
                         }, 0);

@@ -22,6 +22,7 @@ module ag.grid {
         private scope: any;
         private node: any;
         private rowIndex: number;
+        private maxRowsNeeded: number;
 
         private cellRendererMap: {[key: string]: any};
 
@@ -58,9 +59,8 @@ module ag.grid {
                     node: any,
                     rowIndex: number,
                     eventService: EventService,
-                    baseHeight?: any,
-                    realHeight?: any,
-                    accumulatedExtraRows?: any) {
+                    rowsBefore?: number,
+                    readyToDraw: boolean = true) {
             this.gridOptionsWrapper = gridOptionsWrapper;
             this.valueService = valueService;
             this.parentScope = parentScope;
@@ -81,11 +81,15 @@ module ag.grid {
             var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
             var rowIsHeaderThatSpans = node.group && groupHeaderTakesEntireRow;
 
+            var baseHeight:number = this.gridOptionsWrapper.getRowHeight();
+            var baseHeightExtra:number = this.gridOptionsWrapper.getRowHeightExtra();
+
             this.vBodyRow = this.createRowContainer();
             if (this.pinning) {
                 this.vPinnedRow = this.createRowContainer();
             }
 
+            this.maxRowsNeeded = 0;
             this.rowIndex = rowIndex;
             this.node = node;
             this.scope = this.createChildScopeOrNull(node.data);
@@ -122,16 +126,20 @@ module ag.grid {
             // if showing scrolls, position on the container
             // console.log(accumulatedExtraRows);
             if (!this.gridOptionsWrapper.isForPrint()) {
-                this.vBodyRow.style.top = (baseHeight * (this.rowIndex + accumulatedExtraRows)) + "px";
+                this.vBodyRow.style.top = (baseHeight * rowsBefore) + "px";
                 if (this.pinning) {
-                    this.vPinnedRow.style.top = (baseHeight * (this.rowIndex + accumulatedExtraRows)) + "px";
+                    this.vPinnedRow.style.top = (baseHeight * rowsBefore) + "px";
                 }
             }
             // console.log(this.node.data.index);
-            this.vBodyRow.style.height = (realHeight) + "px";
+            this.vBodyRow.style.height = (baseHeight * (this.maxRowsNeeded || 1)) + "px";
             if (this.pinning) {
-                this.vPinnedRow.style.height = (realHeight) + "px";
+                this.vPinnedRow.style.height = (baseHeight * (this.maxRowsNeeded || 1)) + "px";
             }
+            // this.vBodyRow.style.height = (realHeight) + "px";
+            // if (this.pinning) {
+            //     this.vPinnedRow.style.height = (realHeight) + "px";
+            // }
 
             // if group item, insert the first row
             if (rowIsHeaderThatSpans) {
@@ -149,11 +157,20 @@ module ag.grid {
                     this.$compile(this.vPinnedRow.getElement())(this.scope);
                 }
             }
+            if (readyToDraw) {
+                this.insertInDOM();
+            }
+        }
 
+        public insertInDOM() {
             this.eBodyContainer.appendChild(this.vBodyRow.getElement());
             if (this.pinning) {
                 this.ePinnedContainer.appendChild(this.vPinnedRow.getElement());
             }
+        }
+
+        public getMaxRowsNeeded(): number {
+            return this.maxRowsNeeded;
         }
 
         public onRowSelected(selected: boolean): void {
@@ -217,21 +234,30 @@ module ag.grid {
 
         private drawNormalRow() {
             var columns = this.columnController.getDisplayedColumns();
+            var maxRowsNeeded = 0;
             for (var i = 0; i<columns.length; i++) {
                 var column = columns[i];
                 var firstCol = i === 0;
                 var multiLine: any;
+
+                // var value = this.valueService.getValue(column.colDef, this.node.data, this.node);
+                // multiLine = _.getWidthHeight(
+                //     value,
+                //     column.actualWidth,
+                //     this.gridOptionsWrapper.getFont(),
+                //     10
+                // );
 
                 var renderedCell = new RenderedCell(firstCol, column,
                     this.$compile, this.rowRenderer, this.gridOptionsWrapper, this.expressionService,
                     this.selectionRendererFactory, this.selectionController, this.templateService,
                     this.cellRendererMap, this.node, this.rowIndex, this.scope, this.columnController,
                     this.valueService, this.eventService);
+                
+                maxRowsNeeded = Math.max(renderedCell.getRowsNeeded(), maxRowsNeeded);
 
                 var vGridCell = renderedCell.getVGridCell();
-
-                multiLine = _.getWidthHeight(renderedCell.getValue(), column.actualWidth, this.gridOptionsWrapper.getFont(), 10));
-
+                
                 if (column.pinned) {
                     this.vPinnedRow.appendChild(vGridCell);
                 } else {
@@ -240,6 +266,7 @@ module ag.grid {
 
                 this.renderedCells[column.index] = renderedCell;
             }
+            this.maxRowsNeeded = maxRowsNeeded;
         }
 
         private bindVirtualElement(vElement: ag.vdom.VHtmlElement): void {

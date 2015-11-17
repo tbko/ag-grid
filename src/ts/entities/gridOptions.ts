@@ -16,6 +16,7 @@ module ag.grid {
         suppressHorizontalScroll?: boolean;
         unSortIcon?: boolean;
         rowHeight?: number;
+        rowHeightExtra?: number;
         rowBuffer?: number;
         enableColResize?: boolean;
         enableCellExpressions?: boolean;
@@ -34,6 +35,11 @@ module ag.grid {
         suppressLoadingOverlay?: boolean;
         suppressNoRowsOverlay?: boolean;
         font: string;
+        groupShiftWidth: number;
+        groupControlWidth: number;
+        widthGap: number;
+        maxRows: number;
+        minRows: number;
 
         // just set once
         localeText?: any;

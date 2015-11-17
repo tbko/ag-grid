@@ -119,7 +119,12 @@ var ag;
             Utils.getWidthHeight = function (value, allowedWidth, font, maxLines) {
                 // separate text into lines for content autoWrap
                 // according to given width in px and font metrics
-                value = value.toString();
+                if (!value) {
+                    value = '';
+                }
+                else {
+                    value = value.toString();
+                }
                 var words = value.split(" ");
                 var lineWidth = 0;
                 var charCounter = 0;
@@ -129,9 +134,8 @@ var ag;
                 var numLines = 1;
                 var outputLines = [];
                 var lineOut = '';
-                if (text === "Elisa Key") {
-                    debugger;
-                }
+                var curRow = '';
+                var spaceWidth = this.getTextWidth(' ', font);
                 for (var i = 0; i < words.length; i++) {
                     var text = words[i];
                     var thisWidth = this.getTextWidth(text, font);
@@ -140,22 +144,26 @@ var ag;
                         if (lineWidth > maxWidth)
                             maxWidth = lineWidth;
                         var lineOut = value.substr(startCounter, charCounter);
-                        i--; // go back one word since this word needs to start on a new line
-                        lineWidth = thisWidth;
-                        startCounter += charCounter;
-                        outputLines[numLines - 1] = lineOut;
-                        if (numLines == maxLines) {
-                            outputLines[numLines - 1] = value.substr(startCounter - charCounter);
+                        if (lineOut.length) {
+                            i--; // go back one word since this word needs to start on a new line
+                            lineWidth = thisWidth;
+                            startCounter += charCounter;
+                            outputLines.push(lineOut);
+                        }
+                        curRow = value.substr(startCounter - charCounter);
+                        if (outputLines.length === maxLines && curRow.length) {
+                            outputLines.pop();
+                            outputLines.push(curRow);
                             break;
                         }
                         charCounter = 0;
-                        numLines++;
                     }
                     else {
-                        lineWidth += thisWidth;
+                        lineWidth += thisWidth + spaceWidth;
                         charCounter += text.length + 1;
-                        if (i == words.length - 1) {
-                            outputLines[numLines - 1] = value.substr(startCounter);
+                        curRow = value.substr(startCounter);
+                        if (i === (words.length - 1) && curRow.length) {
+                            outputLines.push(curRow);
                         }
                     }
                 }
@@ -165,7 +173,7 @@ var ag;
                     outputLines.push(value);
                 return {
                     outputLines: outputLines,
-                    numLines: numLines,
+                    numLines: outputLines.length,
                     maxWidth: maxWidth
                 };
             };
@@ -715,6 +723,7 @@ var ag;
                 this.headerHeight = gridOptions.headerHeight;
                 this.groupHeaders = gridOptions.groupHeaders;
                 this.rowHeight = gridOptions.rowHeight;
+                this.rowHeightExtra = gridOptions.rowHeightExtra;
                 this.floatingTopRowData = gridOptions.floatingTopRowData;
                 this.floatingBottomRowData = gridOptions.floatingBottomRowData;
                 eventService.addGlobalListener(this.globalEventHandler.bind(this));
@@ -782,9 +791,15 @@ var ag;
             GridOptionsWrapper.prototype.getSlaveGrids = function () { return this.gridOptions.slaveGrids; };
             GridOptionsWrapper.prototype.getGroupRowRenderer = function () { return this.gridOptions.groupRowRenderer; };
             GridOptionsWrapper.prototype.getRowHeight = function () { return this.rowHeight; };
+            GridOptionsWrapper.prototype.getRowHeightExtra = function () { return this.rowHeightExtra; };
             GridOptionsWrapper.prototype.getOverlayLoadingTemplate = function () { return this.gridOptions.overlayLoadingTemplate; };
             GridOptionsWrapper.prototype.getOverlayNoRowsTemplate = function () { return this.gridOptions.overlayNoRowsTemplate; };
             GridOptionsWrapper.prototype.getFont = function () { return this.gridOptions.font; };
+            GridOptionsWrapper.prototype.getGroupShiftWidth = function () { return this.gridOptions.groupShiftWidth; };
+            GridOptionsWrapper.prototype.getGroupControlWidth = function () { return this.gridOptions.groupControlWidth; };
+            GridOptionsWrapper.prototype.getWidthGap = function () { return this.gridOptions.widthGap; };
+            GridOptionsWrapper.prototype.getMaxRows = function () { return this.gridOptions.maxRows; };
+            GridOptionsWrapper.prototype.getMinRows = function () { return this.gridOptions.minRows; };
             // properties
             GridOptionsWrapper.prototype.getHeaderHeight = function () {
                 if (typeof this.headerHeight === 'number') {
@@ -3926,6 +3941,7 @@ var ag;
                 this.scope = scope;
                 this.data = this.getDataForRow();
                 this.value = this.getValue();
+                this.rowsNeeded = 0;
                 this.setupComponents();
             }
             RenderedCell.prototype.getColumn = function () {
@@ -3933,6 +3949,9 @@ var ag;
             };
             RenderedCell.prototype.getValue = function () {
                 return this.valueService.getValue(this.column.colDef, this.data, this.node);
+            };
+            RenderedCell.prototype.getRowsNeeded = function () {
+                return this.rowsNeeded;
             };
             RenderedCell.prototype.getVGridCell = function () {
                 return this.vGridCell;
@@ -4405,6 +4424,10 @@ var ag;
                         this.vParentOfValue.setInnerHtml(this.value.toString());
                     }
                 }
+                if (colDef.wrapped) {
+                    this.useCellRenderer({ renderer: 'multiline' });
+                    return;
+                }
             };
             RenderedCell.prototype.useCellRenderer = function (cellRenderer) {
                 var colDef = this.column.colDef;
@@ -4420,7 +4443,8 @@ var ag;
                     api: this.gridOptionsWrapper.getApi(),
                     context: this.gridOptionsWrapper.getContext(),
                     refreshCell: this.refreshCell.bind(this),
-                    eGridCell: this.vGridCell
+                    eGridCell: this.vGridCell,
+                    rowsNeeded: 0
                 };
                 // start duplicated code
                 var actualCellRenderer;
@@ -4438,6 +4462,7 @@ var ag;
                     throw 'Cell Renderer must be String or Function';
                 }
                 var resultFromRenderer = actualCellRenderer(rendererParams);
+                this.rowsNeeded = Math.max(rendererParams.rowsNeeded || 1, this.gridOptionsWrapper.getMinRows());
                 // end duplicated code
                 if (_.isNodeOrElement(resultFromRenderer)) {
                     // a dom node or element was returned, so add child
@@ -4480,7 +4505,8 @@ var ag;
     (function (grid) {
         var _ = grid.Utils;
         var RenderedRow = (function () {
-            function RenderedRow(gridOptionsWrapper, valueService, parentScope, angularGrid, columnController, expressionService, cellRendererMap, selectionRendererFactory, $compile, templateService, selectionController, rowRenderer, eBodyContainer, ePinnedContainer, node, rowIndex, eventService, baseHeight, realHeight, accumulatedExtraRows) {
+            function RenderedRow(gridOptionsWrapper, valueService, parentScope, angularGrid, columnController, expressionService, cellRendererMap, selectionRendererFactory, $compile, templateService, selectionController, rowRenderer, eBodyContainer, ePinnedContainer, node, rowIndex, eventService, rowsBefore, readyToDraw) {
+                if (readyToDraw === void 0) { readyToDraw = true; }
                 this.renderedCells = {};
                 this.gridOptionsWrapper = gridOptionsWrapper;
                 this.valueService = valueService;
@@ -4500,10 +4526,13 @@ var ag;
                 this.eventService = eventService;
                 var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
                 var rowIsHeaderThatSpans = node.group && groupHeaderTakesEntireRow;
+                var baseHeight = this.gridOptionsWrapper.getRowHeight();
+                var baseHeightExtra = this.gridOptionsWrapper.getRowHeightExtra();
                 this.vBodyRow = this.createRowContainer();
                 if (this.pinning) {
                     this.vPinnedRow = this.createRowContainer();
                 }
+                this.maxRowsNeeded = 0;
                 this.rowIndex = rowIndex;
                 this.node = node;
                 this.scope = this.createChildScopeOrNull(node.data);
@@ -4535,16 +4564,20 @@ var ag;
                 // if showing scrolls, position on the container
                 // console.log(accumulatedExtraRows);
                 if (!this.gridOptionsWrapper.isForPrint()) {
-                    this.vBodyRow.style.top = (baseHeight * (this.rowIndex + accumulatedExtraRows)) + "px";
+                    this.vBodyRow.style.top = (baseHeight * rowsBefore) + "px";
                     if (this.pinning) {
-                        this.vPinnedRow.style.top = (baseHeight * (this.rowIndex + accumulatedExtraRows)) + "px";
+                        this.vPinnedRow.style.top = (baseHeight * rowsBefore) + "px";
                     }
                 }
                 // console.log(this.node.data.index);
-                this.vBodyRow.style.height = (realHeight) + "px";
+                this.vBodyRow.style.height = (baseHeight * (this.maxRowsNeeded || 1)) + "px";
                 if (this.pinning) {
-                    this.vPinnedRow.style.height = (realHeight) + "px";
+                    this.vPinnedRow.style.height = (baseHeight * (this.maxRowsNeeded || 1)) + "px";
                 }
+                // this.vBodyRow.style.height = (realHeight) + "px";
+                // if (this.pinning) {
+                //     this.vPinnedRow.style.height = (realHeight) + "px";
+                // }
                 // if group item, insert the first row
                 if (rowIsHeaderThatSpans) {
                     this.createGroupRow();
@@ -4559,11 +4592,19 @@ var ag;
                         this.$compile(this.vPinnedRow.getElement())(this.scope);
                     }
                 }
+                if (readyToDraw) {
+                    this.insertInDOM();
+                }
+            }
+            RenderedRow.prototype.insertInDOM = function () {
                 this.eBodyContainer.appendChild(this.vBodyRow.getElement());
                 if (this.pinning) {
                     this.ePinnedContainer.appendChild(this.vPinnedRow.getElement());
                 }
-            }
+            };
+            RenderedRow.prototype.getMaxRowsNeeded = function () {
+                return this.maxRowsNeeded;
+            };
             RenderedRow.prototype.onRowSelected = function (selected) {
                 _.iterateObject(this.renderedCells, function (key, renderedCell) {
                     renderedCell.setSelected(selected);
@@ -4615,13 +4656,21 @@ var ag;
             };
             RenderedRow.prototype.drawNormalRow = function () {
                 var columns = this.columnController.getDisplayedColumns();
+                var maxRowsNeeded = 0;
                 for (var i = 0; i < columns.length; i++) {
                     var column = columns[i];
                     var firstCol = i === 0;
+                    var multiLine;
+                    // var value = this.valueService.getValue(column.colDef, this.node.data, this.node);
+                    // multiLine = _.getWidthHeight(
+                    //     value,
+                    //     column.actualWidth,
+                    //     this.gridOptionsWrapper.getFont(),
+                    //     10
+                    // );
                     var renderedCell = new grid.RenderedCell(firstCol, column, this.$compile, this.rowRenderer, this.gridOptionsWrapper, this.expressionService, this.selectionRendererFactory, this.selectionController, this.templateService, this.cellRendererMap, this.node, this.rowIndex, this.scope, this.columnController, this.valueService, this.eventService);
+                    maxRowsNeeded = Math.max(renderedCell.getRowsNeeded(), maxRowsNeeded);
                     var vGridCell = renderedCell.getVGridCell();
-                    console.log(renderedCell.getValue());
-                    console.log(_.getWidthHeight(renderedCell.getValue(), column.actualWidth, this.gridOptionsWrapper.getFont(), 10));
                     if (column.pinned) {
                         this.vPinnedRow.appendChild(vGridCell);
                     }
@@ -4630,6 +4679,7 @@ var ag;
                     }
                     this.renderedCells[column.index] = renderedCell;
                 }
+                this.maxRowsNeeded = maxRowsNeeded;
             };
             RenderedRow.prototype.bindVirtualElement = function (vElement) {
                 var html = vElement.toHtmlString();
@@ -5173,9 +5223,74 @@ var ag;
     })(grid = ag.grid || (ag.grid = {}));
 })(ag || (ag = {}));
 /// <reference path="../utils.ts" />
+var ag;
+(function (ag) {
+    var grid;
+    (function (grid) {
+        var _ = grid.Utils;
+        function multilineCellRendererFactory(gridOptionsWrapper) {
+            return function multilineCellRenderer(params) {
+                // wrap text content into multiple lines
+                if (params.node.group)
+                    return params.value;
+                var font = gridOptionsWrapper.getFont();
+                var out = "";
+                var width = params.column.actualWidth - gridOptionsWrapper.getWidthGap();
+                var shiftWidth = gridOptionsWrapper.getGroupShiftWidth();
+                var controlWidth = gridOptionsWrapper.getGroupControlWidth();
+                // consider group shifter width in cell one
+                if (shiftWidth && params.node && params.node.level) {
+                    width -= (shiftWidth * params.node.level);
+                }
+                if (params.column.index === 0 && controlWidth) {
+                    width -= controlWidth;
+                }
+                if (width < 10) {
+                    width = 9;
+                }
+                if (!(params.value === null || params.value === undefined)) {
+                    var lines = _.getWidthHeight(params.value, width, font, gridOptionsWrapper.getMaxRows());
+                    var outputLines = lines.outputLines;
+                    params.rowsNeeded = lines.numLines;
+                    for (var i = 0; i < outputLines.length - 1; i++) {
+                        out += '<div>' + outputLines[i] + '</div>\n';
+                    }
+                    out += '<div style="overflow: hidden; text-overflow: ellipsis; width: ' + width + 'px;">' + outputLines[outputLines.length - 1] + '</div>';
+                    if (params.column.index === 0 && width >= 10) {
+                        var shifter = getShifter(params.node.level || 0, true);
+                        out = '<div class="pi-table-cell_top pi-table-cell_fluid">' + out + '</div>';
+                        out = '<div class="pi-table">' + shifter + out + '</div>';
+                    }
+                }
+                return out;
+            };
+            function getShifter(steps, needControlWidth) {
+                if (needControlWidth === void 0) { needControlWidth = false; }
+                var controlWidth = gridOptionsWrapper.getGroupControlWidth();
+                var shifter = [];
+                var i = 0;
+                if (needControlWidth) {
+                    i = 1;
+                }
+                while (i < steps) {
+                    shifter.push("<span class='group-expand-shifter'></span>");
+                    i++;
+                }
+                // add extra shift considering group expand control width
+                if (needControlWidth && controlWidth) {
+                    shifter.push("<span class='group-expand-shifter group-expand-shifter-extra' style='width:" + controlWidth + "px;'></span>");
+                }
+                return '<div class="pi-table-cell_top pi-table-cell_fixed">' + shifter.join('') + '</div>';
+            }
+        }
+        grid.multilineCellRendererFactory = multilineCellRendererFactory;
+    })(grid = ag.grid || (ag.grid = {}));
+})(ag || (ag = {}));
+/// <reference path="../utils.ts" />
 /// <reference path="../constants.ts" />
 /// <reference path="renderedRow.ts" />
 /// <reference path="../cellRenderers/groupCellRendererFactory.ts" />
+/// <reference path="../cellRenderers/multilineCellRenderer.ts" />
 /// <reference path="../entities/rowNode.ts" />
 var ag;
 (function (ag) {
@@ -5203,6 +5318,7 @@ var ag;
                 this.eventService = eventService;
                 this.cellRendererMap = {
                     'group': grid.groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
+                    'multiline': grid.multilineCellRendererFactory(gridOptionsWrapper),
                     'default': function (params) {
                         return params.value;
                     }
@@ -5281,8 +5397,7 @@ var ag;
             };
             RowRenderer.prototype.refreshView = function (refreshFromIndex) {
                 if (!this.gridOptionsWrapper.isForPrint()) {
-                    var rowCount = this.rowModel.getVirtualRowCount();
-                    // console.log(rowCount);
+                    var rowCount = this.rowModel.getGridRowCount();
                     var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
                     this.eBodyContainer.style.height = containerHeight + "px";
                     this.ePinnedColsContainer.style.height = containerHeight + "px";
@@ -5348,6 +5463,7 @@ var ag;
                 var rowsToRemove = Object.keys(this.renderedRows);
                 this.removeVirtualRow(rowsToRemove, fromIndex);
                 // add in new rows
+                this.countGridRows();
                 this.drawVirtualRows();
             };
             // public - removes the group rows and then redraws them again
@@ -5394,7 +5510,9 @@ var ag;
                 var last;
                 var fillinRowsCount = 0;
                 var rowCount = this.rowModel.getVirtualRowCount();
-                // console.log(this.renderedRows, rowCount);
+                var renderer = this.cellRendererMap['multiline'];
+                var mainRowWidth = this.columnModel.getBodyContainerWidth();
+                var baseHeight = this.gridOptionsWrapper.getRowHeight();
                 if (this.gridOptionsWrapper.isForPrint()) {
                     first = 0;
                     last = rowCount;
@@ -5402,20 +5520,22 @@ var ag;
                 else {
                     var topPixel = this.eBodyViewport.scrollTop;
                     var bottomPixel = topPixel + this.eBodyViewport.offsetHeight;
-                    var baseHeight = this.gridOptionsWrapper.getRowHeight();
                     var row;
                     var countRowsBefore = 0;
                     var delta = 0;
+                    var preparedRows = {};
+                    var rowEl;
                     for (var k = 0; k < rowCount; k++) {
                         row = this.rowModel.getVirtualRow(k);
                         if (!row) {
                             break;
                         }
-                        if (row.group || row.data.index % 2) {
-                            delta = 1;
+                        // console.log(row);
+                        if (!row.group) {
+                            delta = row.gridHeight;
                         }
                         else {
-                            delta = 3;
+                            delta = 1;
                         }
                         if ((countRowsBefore + delta) * baseHeight > topPixel) {
                             break;
@@ -5428,11 +5548,11 @@ var ag;
                         if (!row) {
                             break;
                         }
-                        if (row.group || row.data.index % 2) {
-                            countRowsBefore += 1;
+                        if (!row.group) {
+                            countRowsBefore += row.gridHeight;
                         }
                         else {
-                            countRowsBefore += 3;
+                            countRowsBefore += 1;
                         }
                         if (countRowsBefore * baseHeight > bottomPixel) {
                             break;
@@ -5454,6 +5574,7 @@ var ag;
                 // console.log(first, last);
                 this.firstVirtualRenderedRow = first;
                 this.lastVirtualRenderedRow = last;
+                // this.ensureRowsRendered(preparedRows);
                 this.ensureRowsRendered();
             };
             RowRenderer.prototype.getFirstVirtualRenderedRow = function () {
@@ -5462,21 +5583,59 @@ var ag;
             RowRenderer.prototype.getLastVirtualRenderedRow = function () {
                 return this.lastVirtualRenderedRow;
             };
-            RowRenderer.prototype.ensureRowsRendered = function () {
+            RowRenderer.prototype.countGridRows = function () {
+                var mainRowWidth = this.columnModel.getBodyContainerWidth();
+                var baseHeight = this.gridOptionsWrapper.getRowHeight();
+                var rowCount = this.rowModel.getVirtualRowCount();
+                var row;
+                var rowEl;
+                for (var k = 0; k < rowCount; k++) {
+                    row = this.rowModel.getVirtualRow(k);
+                    if (!row.group) {
+                        rowEl = this.insertRow(row, k, mainRowWidth, 0, false);
+                        row.gridHeight = rowEl.maxRowsNeeded;
+                    }
+                    else {
+                        row.gridHeight = 1;
+                    }
+                }
+            };
+            RowRenderer.prototype.ensureRowsRendered = function (preparedRows) {
                 //var start = new Date().getTime();
+                if (preparedRows === void 0) { preparedRows = {}; }
                 var mainRowWidth = this.columnModel.getBodyContainerWidth();
                 var that = this;
                 // at the end, this array will contain the items we need to remove
                 var rowsToRemove = Object.keys(this.renderedRows);
                 var rowsBefore;
-                var accumulatedExtraRows = 0;
+                var rowsBeforeCount = 0;
                 var baseHeight = this.gridOptionsWrapper.getRowHeight();
-                var heightMult = 3;
+                var rowEl;
+                var delta = 0;
+                // var heightMult = 3;
                 // add in new rows
+                rowsBefore = this.rowModel.getVirtualRowsUpto(this.firstVirtualRenderedRow);
+                for (var idx = 0; idx < rowsBefore.length; idx++) {
+                    var row = rowsBefore[idx];
+                    if (!row.group) {
+                        rowsBeforeCount += row.gridHeight;
+                    }
+                    else {
+                        rowsBeforeCount += 1;
+                    }
+                }
                 for (var rowIndex = this.firstVirtualRenderedRow; rowIndex <= this.lastVirtualRenderedRow; rowIndex++) {
                     var node = this.rowModel.getVirtualRow(rowIndex);
-                    var realHeight = 0;
-                    var showNode = 'xxx';
+                    // count how many grid rows take lines above current
+                    if (node) {
+                        if (!node.group) {
+                            delta = node.gridHeight;
+                        }
+                        else {
+                            delta = 1;
+                        }
+                    }
+                    rowsBeforeCount += delta;
                     // see if item already there, and if yes, take it out of the 'to remove' array
                     if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
                         rowsToRemove.splice(rowsToRemove.indexOf(rowIndex.toString()), 1);
@@ -5484,30 +5643,7 @@ var ag;
                     }
                     // check this row actually exists (in case overflow buffer window exceeds real data)
                     if (node) {
-                        if (node.group) {
-                            realHeight = baseHeight;
-                        }
-                        else if (!(node.data.index % 2)) {
-                            realHeight = baseHeight * heightMult;
-                        }
-                        else {
-                            realHeight = baseHeight;
-                        }
-                        accumulatedExtraRows = 0;
-                        rowsBefore = this.rowModel.getVirtualRowsUpto(rowIndex);
-                        for (var idx = 0; idx < rowsBefore.length; idx++) {
-                            var row = rowsBefore[idx];
-                            if (!row.group && !(row.data.index % 2)) {
-                                accumulatedExtraRows += heightMult - 1;
-                            }
-                        }
-                        if (node.data) {
-                            showNode = node.data.index;
-                        }
-                        else if (node.group) {
-                            showNode = node.group;
-                        }
-                        that.insertRow(node, rowIndex, mainRowWidth, baseHeight, realHeight, accumulatedExtraRows);
+                        that.insertRow(node, rowIndex, mainRowWidth, rowsBeforeCount - delta);
                     }
                 }
                 // at this point, everything in our 'rowsToRemove' . . .
@@ -5522,15 +5658,19 @@ var ag;
                 //var end = new Date().getTime();
                 //console.log(end-start);
             };
-            RowRenderer.prototype.insertRow = function (node, rowIndex, mainRowWidth, baseHeight, realHeight, accumulatedExtraRows) {
+            RowRenderer.prototype.insertRow = function (node, rowIndex, mainRowWidth, rowsBefore, realDraw) {
+                if (realDraw === void 0) { realDraw = true; }
                 var columns = this.columnModel.getDisplayedColumns();
                 // if no cols, don't draw row
                 if (!columns || columns.length == 0) {
                     return;
                 }
-                var renderedRow = new grid.RenderedRow(this.gridOptionsWrapper, this.valueService, this.$scope, this.angularGrid, this.columnModel, this.expressionService, this.cellRendererMap, this.selectionRendererFactory, this.$compile, this.templateService, this.selectionController, this, this.eBodyContainer, this.ePinnedColsContainer, node, rowIndex, this.eventService, baseHeight, realHeight, accumulatedExtraRows);
-                renderedRow.setMainRowWidth(mainRowWidth);
-                this.renderedRows[rowIndex] = renderedRow;
+                var renderedRow = new grid.RenderedRow(this.gridOptionsWrapper, this.valueService, this.$scope, this.angularGrid, this.columnModel, this.expressionService, this.cellRendererMap, this.selectionRendererFactory, this.$compile, this.templateService, this.selectionController, this, this.eBodyContainer, this.ePinnedColsContainer, node, rowIndex, this.eventService, rowsBefore, realDraw);
+                if (realDraw) {
+                    renderedRow.setMainRowWidth(mainRowWidth);
+                    this.renderedRows[rowIndex] = renderedRow;
+                }
+                return renderedRow;
             };
             RowRenderer.prototype.getRenderedNodes = function () {
                 var renderedRows = this.renderedRows;
@@ -7051,6 +7191,14 @@ var ag;
                         return that.rowsAfterMap;
                     },
                     getVirtualRowCount: function () {
+                        if (that.rowsAfterMap) {
+                            return that.rowsAfterMap.length;
+                        }
+                        else {
+                            return 0;
+                        }
+                    },
+                    getGridRowCount: function () {
                         var realRowsCount = 0;
                         var fillinRowsCount = 0;
                         var rows;
@@ -7058,8 +7206,11 @@ var ag;
                             rows = that.rowsAfterMap;
                             realRowsCount = rows.length;
                             fillinRowsCount = rows.reduce(function (acc, cur) {
-                                if (!cur.group && !(cur.data.index % 2)) {
-                                    return acc + 2;
+                                if (!cur.group) {
+                                    // _.getWidthHeight(params.value, width, gridOptionsWrapper.getFont(), gridOptionsWrapper.getMaxRows());
+                                    // rowEl = this.insertRow(row, idx, mainRowWidth, baseHeight, rowsBeforeCount, false);
+                                    // rowsBeforeCount += rowEl.maxRowsNeeded;
+                                    return acc + cur.gridHeight - 1;
                                 }
                                 return acc;
                             }, 0);
@@ -10034,6 +10185,7 @@ var ag;
                 eventService.addEventListener(grid.Events.EVENT_COLUMN_VISIBLE, this.onColumnChanged.bind(this));
             };
             Grid.prototype.onColumnChanged = function (event) {
+                this.rowRenderer.countGridRows();
                 if (event.isPivotChanged()) {
                     this.inMemoryRowController.onPivotChanged();
                 }
@@ -10049,6 +10201,7 @@ var ag;
                 this.gridPanel.showPinnedColContainersIfNeeded();
             };
             Grid.prototype.refreshPivot = function () {
+                this.columnController.onColumnsChanged();
                 this.inMemoryRowController.onPivotChanged();
                 this.refreshHeaderAndBody();
             };

@@ -46,6 +46,7 @@ module ag.grid {
 
         private value: any;
         private checkboxSelection: boolean;
+        private rowsNeeded: number;
 
         constructor(isFirstColumn: any, column: any, $compile: any, rowRenderer: RowRenderer,
                     gridOptionsWrapper: GridOptionsWrapper, expressionService: ExpressionService,
@@ -75,6 +76,7 @@ module ag.grid {
             this.scope = scope;
             this.data = this.getDataForRow();
             this.value = this.getValue();
+            this.rowsNeeded = 0;
 
             this.setupComponents();
         }
@@ -83,8 +85,12 @@ module ag.grid {
             return this.column;
         }
 
-        public getValue(): any {
+        private getValue(): any {
             return this.valueService.getValue(this.column.colDef, this.data, this.node);
+        }
+
+        public getRowsNeeded(): number {
+            return this.rowsNeeded;
         }
 
         public getVGridCell(): ag.vdom.VHtmlElement {
@@ -613,6 +619,11 @@ module ag.grid {
                     this.vParentOfValue.setInnerHtml(this.value.toString());
                 }
             }
+
+            if (colDef.wrapped) {
+                this.useCellRenderer({renderer: 'multiline'});
+                return;
+            }
         }
 
         private useCellRenderer(cellRenderer: Function | {}) {
@@ -630,7 +641,8 @@ module ag.grid {
                 api: this.gridOptionsWrapper.getApi(),
                 context: this.gridOptionsWrapper.getContext(),
                 refreshCell: this.refreshCell.bind(this),
-                eGridCell: this.vGridCell
+                eGridCell: this.vGridCell,
+                rowsNeeded: 0
             };
             // start duplicated code
             var actualCellRenderer: Function;
@@ -645,7 +657,8 @@ module ag.grid {
             } else {
                 throw 'Cell Renderer must be String or Function';
             }
-            var resultFromRenderer = actualCellRenderer(rendererParams);
+            var resultFromRenderer: any = actualCellRenderer(rendererParams);
+            this.rowsNeeded = Math.max(rendererParams.rowsNeeded || 1, this.gridOptionsWrapper.getMinRows());
             // end duplicated code
             if (_.isNodeOrElement(resultFromRenderer)) {
                 // a dom node or element was returned, so add child

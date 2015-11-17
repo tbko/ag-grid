@@ -274,6 +274,7 @@ module ag.grid {
         }
 
         private onColumnChanged(event: ColumnChangeEvent): void {
+            this.rowRenderer.countGridRows();
             if (event.isPivotChanged()) {
                 this.inMemoryRowController.onPivotChanged();
             }
@@ -291,6 +292,7 @@ module ag.grid {
         }
 
         public refreshPivot(): void {
+            this.columnController.onColumnsChanged()
             this.inMemoryRowController.onPivotChanged();
             this.refreshHeaderAndBody();
         }

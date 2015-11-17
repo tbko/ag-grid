@@ -16,6 +16,7 @@ module ag.grid {
         private groupHeaders: boolean;
         private headerHeight: number;
         private rowHeight: number;
+        private rowHeightExtra: number;
         private floatingTopRowData: any[];
         private floatingBottomRowData: any[];
 
@@ -25,6 +26,7 @@ module ag.grid {
             this.headerHeight = gridOptions.headerHeight;
             this.groupHeaders = gridOptions.groupHeaders;
             this.rowHeight = gridOptions.rowHeight;
+            this.rowHeightExtra = gridOptions.rowHeightExtra;
             this.floatingTopRowData = gridOptions.floatingTopRowData;
             this.floatingBottomRowData = gridOptions.floatingBottomRowData;
 
@@ -97,9 +99,15 @@ module ag.grid {
         public getSlaveGrids(): GridOptions[] { return this.gridOptions.slaveGrids; }
         public getGroupRowRenderer() { return this.gridOptions.groupRowRenderer; }
         public getRowHeight() { return this.rowHeight; }
+        public getRowHeightExtra() { return this.rowHeightExtra; }
         public getOverlayLoadingTemplate() { return this.gridOptions.overlayLoadingTemplate; }
         public getOverlayNoRowsTemplate() { return this.gridOptions.overlayNoRowsTemplate; }
         public getFont() { return this.gridOptions.font; }
+        public getGroupShiftWidth() { return this.gridOptions.groupShiftWidth; }
+        public getGroupControlWidth() { return this.gridOptions.groupControlWidth; }
+        public getWidthGap() { return this.gridOptions.widthGap; }
+        public getMaxRows() { return this.gridOptions.maxRows; }
+        public getMinRows() { return this.gridOptions.minRows; }
 
         // properties
         public getHeaderHeight(): number {

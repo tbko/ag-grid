@@ -1,6 +1,10 @@
 module ag.grid {
 
     export interface ColDef {
+
+        /** If apply wrap text into multiple string after other renderers */
+        wrapped?: boolean;
+
         /** If sorting by default, set it here. Set to 'asc' or 'desc' */
         sort?: string;
 

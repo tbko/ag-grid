@@ -6,6 +6,8 @@ module ag.grid {
         id?: number;
         /** The user provided data */
         data?: any;
+        /** Height of data row in number of lines */
+        gridHeight?: number;
         /** The parent node to this node, or empty if top level */
         parent?: RowNode;
         /** How many levels this node is from the top */
