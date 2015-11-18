@@ -1038,6 +1038,9 @@ declare module ag.grid {
     function multilineCellRendererFactory(gridOptionsWrapper: GridOptionsWrapper): (params: any) => any;
 }
 declare module ag.grid {
+    function groupHeaderFactory(gridOptionsWrapper: GridOptionsWrapper, selectionRendererFactory: SelectionRendererFactory, expressionService: ExpressionService): (params: any) => string;
+}
+declare module ag.grid {
     class RowRenderer {
         private columnModel;
         private gridOptionsWrapper;
@@ -1190,6 +1193,35 @@ declare module ag.grid {
         onDragStart(): void;
         onDragging(dragChange: number, finished: boolean): void;
         onIndividualColumnResized(column: Column): void;
+        private addHeaderClassesFromCollDef();
+    }
+}
+declare module ag.grid {
+    class RenderedHeaderCheckerCell extends RenderedHeaderElement {
+        private static DEFAULT_SORTING_ORDER;
+        private eHeaderCell;
+        private eSortAsc;
+        private eSortDesc;
+        private eSortNone;
+        private eFilterIcon;
+        private column;
+        private gridOptionsWrapper;
+        private parentScope;
+        private childScope;
+        private filterManager;
+        private columnController;
+        private $compile;
+        private angularGrid;
+        private parentGroup;
+        private startWidth;
+        constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement);
+        private setupComponents();
+        getGui(): HTMLElement;
+        destroy(): void;
+        private createScope();
+        private addAttributes();
+        private addClasses();
+        private useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);
         private addHeaderClassesFromCollDef();
     }
 }
@@ -1919,6 +1951,7 @@ declare module ag.grid {
         private decideStartingOverlay();
         private addWindowResizeListener();
         getRowModel(): any;
+        getId(): string;
         private periodicallyDoLayout();
         private setupComponents($scope, $compile, eUserProvidedDiv, globalEventListener);
         private onColumnChanged(event);

@@ -3,6 +3,7 @@
 /// <reference path="../svgFactory.ts" />
 /// <reference path="../headerRendering/renderedHeaderElement.ts" />
 /// <reference path="../headerRendering/renderedHeaderCell.ts" />
+/// <reference path="../headerRendering/renderedHeaderCheckerCell.ts" />
 /// <reference path="../headerRendering/renderedHeaderGroupCell.ts" />
 /// <reference path="../dragAndDrop/dragAndDropService" />
 
@@ -158,13 +159,19 @@ module ag.grid {
         private insertHeadersWithoutGrouping() {
             this.columnController.getDisplayedColumns().forEach( (column: Column) => {
                 // only include the first x cols
-                var renderedHeaderCell = new RenderedHeaderCell(column, null, this.gridOptionsWrapper,
+                var headerCellRenderer: any = RenderedHeaderCell;
+                if (column.colDef.checkboxSelection) {
+                    headerCellRenderer = RenderedHeaderCheckerCell;
+                }
+                var renderedHeaderCell = new headerCellRenderer(column, null, this.gridOptionsWrapper,
                     this.$scope, this.filterManager, this.columnController, this.$compile,
                     this.angularGrid, this.eRoot);
                 this.headerElements.push(renderedHeaderCell);
                 var eContainerToAddTo = column.pinned ? this.ePinnedHeader : this.eHeaderContainer;
                 eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
-                this.addDragAndDropToListItem(renderedHeaderCell.getGui(), renderedHeaderCell);
+                if (!column.colDef.checkboxSelection) {
+                    this.addDragAndDropToListItem(renderedHeaderCell.getGui(), renderedHeaderCell);
+                }
             });
         }
 

@@ -135,6 +135,10 @@ module ag.grid {
             return this.rowModel;
         }
 
+        public getId(): string {
+            return this.eUserProvidedDiv.id
+        }
+
         private periodicallyDoLayout() {
             if (!this.finished) {
                 var that = this;

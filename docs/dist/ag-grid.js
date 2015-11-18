@@ -5286,11 +5286,218 @@ var ag;
         grid.multilineCellRendererFactory = multilineCellRendererFactory;
     })(grid = ag.grid || (ag.grid = {}));
 })(ag || (ag = {}));
+/// <reference path="../svgFactory.ts" />
+/// <reference path="../utils.ts" />
+/// <reference path="../constants.ts" />
+// # groupRowRenderer: (params) =>
+// #   # group line template
+// #   stateStyle = if params.node.expanded then 'group-expand-arrow-down' else 'group-expand-arrow-right'
+// #   "<div><div class='pi-table'>#{@getShifter params.node.level}<div class='pi-table-cell_top pi-table-cell_fluid'><span class='group-expand-control #{stateStyle}' row=#{params.rowIndex}></span> <span class='group-name'>#{params.node.key}</span></span></div></div><div>"
+// shifter = []
+// i = if needControlWidth then 1 else 0
+// while i < steps
+//       shifter.push("<span class='group-expand-shifter'></span>")
+// i++
+// # add extra shift considering group expand control width
+// if needControlWidth and @groupControlWidth
+// shifter.push("<span class='group-expand-control' style='width:#{@groupControlWidth}px;'></span>")
+// shifter = shifter.join(separator = '')
+// '<div class="pi-table-cell_top pi-table-cell_fixed">' + shifter + '</div>'
+var ag;
+(function (ag) {
+    var grid;
+    (function (grid) {
+        var svgFactory = grid.SvgFactory.getInstance();
+        var utils = grid.Utils;
+        var constants = grid.Constants;
+        function groupHeaderFactory(gridOptionsWrapper, selectionRendererFactory, expressionService) {
+            return function oldGroupCellRenderer(params) {
+                // console.log('div/', {
+                //     class: ['a', 'b']
+                // });
+                return '<div></div>';
+            };
+            function oldGroupCellRenderer(params) {
+                var eGroupCell = document.createElement('div');
+                utils.addCssClass(eGroupCell, 'ag-group-header');
+                utils.addCssClass(eGroupCell, 'pi-table');
+                var node = params.node;
+                var cellExpandable = node.group && !node.footer;
+                if (cellExpandable) {
+                    addExpandAndContract(eGroupCell, params);
+                }
+                var checkboxNeeded = params.colDef && params.colDef.cellRenderer && params.colDef.cellRenderer.checkbox && !node.footer;
+                if (checkboxNeeded) {
+                    var eCheckbox = selectionRendererFactory.createSelectionCheckbox(node, params.rowIndex);
+                    eGroupCell.appendChild(eCheckbox);
+                }
+                if (params.colDef && params.colDef.cellRenderer && params.colDef.cellRenderer.innerRenderer) {
+                    createFromInnerRenderer(eGroupCell, params, params.colDef.cellRenderer.innerRenderer);
+                }
+                else if (node.footer) {
+                    createFooterCell(eGroupCell, params);
+                }
+                else if (node.group) {
+                    createGroupCell(eGroupCell, params);
+                }
+                else {
+                    createLeafCell(eGroupCell, params);
+                }
+                // only do this if an indent - as this overwrites the padding that
+                // the theme set, which will make things look 'not aligned' for the
+                // first group level.
+                var suppressPadding = params.colDef && params.colDef.cellRenderer
+                    && params.colDef.cellRenderer.suppressPadding;
+                if (!suppressPadding && (node.footer || node.level > 0)) {
+                    var paddingFactor;
+                    if (params.colDef && params.colDef.cellRenderer && params.colDef.cellRenderer.padding >= 0) {
+                        paddingFactor = params.colDef.cellRenderer.padding;
+                    }
+                    else {
+                        paddingFactor = 10;
+                    }
+                    var paddingPx = node.level * paddingFactor;
+                    if (node.footer) {
+                        paddingPx += 10;
+                    }
+                    else if (!node.group) {
+                        paddingPx += 5;
+                    }
+                    eGroupCell.style.paddingLeft = paddingPx + 'px';
+                }
+                return eGroupCell;
+            }
+            function addExpandAndContract(eGroupCell, params) {
+                var eExpandIcon = createGroupExpandIcon(true);
+                var eContractIcon = createGroupExpandIcon(false);
+                eGroupCell.appendChild(eExpandIcon);
+                eGroupCell.appendChild(eContractIcon);
+                eExpandIcon.addEventListener('click', expandOrContract);
+                eContractIcon.addEventListener('click', expandOrContract);
+                eGroupCell.addEventListener('dblclick', expandOrContract);
+                showAndHideExpandAndContract(eExpandIcon, eContractIcon, params.node.expanded);
+                // if parent cell was passed, then we can listen for when focus is on the cell,
+                // and then expand / contract as the user hits enter or space-bar
+                if (params.eGridCell) {
+                    params.eGridCell.addEventListener('keydown', function (event) {
+                        if (utils.isKeyPressed(event, constants.KEY_ENTER)) {
+                            expandOrContract();
+                            event.preventDefault();
+                        }
+                    });
+                }
+                function expandOrContract() {
+                    expandGroup(eExpandIcon, eContractIcon, params);
+                }
+            }
+            function showAndHideExpandAndContract(eExpandIcon, eContractIcon, expanded) {
+                utils.setVisible(eExpandIcon, !expanded);
+                utils.setVisible(eContractIcon, expanded);
+            }
+            function createFromInnerRenderer(eGroupCell, params, renderer) {
+                utils.useRenderer(eGroupCell, renderer, params);
+            }
+            function getRefreshFromIndex(params) {
+                if (gridOptionsWrapper.isGroupIncludeFooter()) {
+                    return params.rowIndex;
+                }
+                else {
+                    return params.rowIndex + 1;
+                }
+            }
+            function expandGroup(eExpandIcon, eContractIcon, params) {
+                params.node.expanded = !params.node.expanded;
+                var refreshIndex = getRefreshFromIndex(params);
+                params.api.onGroupExpandedOrCollapsed(refreshIndex);
+                showAndHideExpandAndContract(eExpandIcon, eContractIcon, params.node.expanded);
+            }
+            function createGroupExpandIcon(expanded) {
+                var eIcon;
+                if (expanded) {
+                    eIcon = utils.createIcon('groupContracted', gridOptionsWrapper, null, svgFactory.createArrowRightSvg);
+                }
+                else {
+                    eIcon = utils.createIcon('groupExpanded', gridOptionsWrapper, null, svgFactory.createArrowDownSvg);
+                }
+                utils.addCssClass(eIcon, 'ag-group-expand');
+                return eIcon;
+            }
+            // creates cell with 'Total {{key}}' for a group
+            function createFooterCell(eGroupCell, params) {
+                var footerValue;
+                var groupName = getGroupName(params);
+                if (params.colDef && params.colDef.cellRenderer && params.colDef.cellRenderer.footerValueGetter) {
+                    var footerValueGetter = params.colDef.cellRenderer.footerValueGetter;
+                    // params is same as we were given, except we set the value as the item to display
+                    var paramsClone = utils.cloneObject(params);
+                    paramsClone.value = groupName;
+                    if (typeof footerValueGetter === 'function') {
+                        footerValue = footerValueGetter(paramsClone);
+                    }
+                    else if (typeof footerValueGetter === 'string') {
+                        footerValue = expressionService.evaluate(footerValueGetter, paramsClone);
+                    }
+                    else {
+                        console.warn('ag-Grid: footerValueGetter should be either a function or a string (expression)');
+                    }
+                }
+                else {
+                    footerValue = 'Total ' + groupName;
+                }
+                var eText = document.createTextNode(footerValue);
+                eGroupCell.appendChild(eText);
+            }
+            function getGroupName(params) {
+                var cellRenderer = params.colDef.cellRenderer;
+                if (cellRenderer && cellRenderer.keyMap
+                    && typeof cellRenderer.keyMap === 'object' && params.colDef.cellRenderer !== null) {
+                    var valueFromMap = cellRenderer.keyMap[params.node.key];
+                    if (valueFromMap) {
+                        return valueFromMap;
+                    }
+                    else {
+                        return params.node.key;
+                    }
+                }
+                else {
+                    return params.node.key;
+                }
+            }
+            // creates cell with '{{key}} ({{childCount}})' for a group
+            function createGroupCell(eGroupCell, params) {
+                var groupName = getGroupName(params);
+                var colDefOfGroupedCol = params.api.getColumnDef(params.node.field);
+                if (colDefOfGroupedCol && typeof colDefOfGroupedCol.cellRenderer === 'function') {
+                    params.value = groupName;
+                    utils.useRenderer(eGroupCell, colDefOfGroupedCol.cellRenderer, params);
+                }
+                else {
+                    eGroupCell.appendChild(document.createTextNode(groupName));
+                }
+                // only include the child count if it's included, eg if user doing custom aggregation,
+                // then this could be left out, or set to -1, ie no child count
+                var suppressCount = params.colDef.cellRenderer && params.colDef.cellRenderer.suppressCount;
+                if (!suppressCount && params.node.allChildrenCount >= 0) {
+                    eGroupCell.appendChild(document.createTextNode(" (" + params.node.allChildrenCount + ")"));
+                }
+            }
+            // creates cell with '{{key}} ({{childCount}})' for a group
+            function createLeafCell(eParent, params) {
+                if (params.value) {
+                    var eText = document.createTextNode(' ' + params.value);
+                    eParent.appendChild(eText);
+                }
+            }
+        }
+        grid.groupHeaderFactory = groupHeaderFactory;
+    })(grid = ag.grid || (ag.grid = {}));
+})(ag || (ag = {}));
 /// <reference path="../utils.ts" />
 /// <reference path="../constants.ts" />
 /// <reference path="renderedRow.ts" />
 /// <reference path="../cellRenderers/groupCellRendererFactory.ts" />
 /// <reference path="../cellRenderers/multilineCellRenderer.ts" />
+/// <reference path="../cellRenderers/groupHeader.ts" />
 /// <reference path="../entities/rowNode.ts" />
 var ag;
 (function (ag) {
@@ -5318,6 +5525,7 @@ var ag;
                 this.eventService = eventService;
                 this.cellRendererMap = {
                     'group': grid.groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
+                    'groupHeader': grid.groupHeaderFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
                     'multiline': grid.multilineCellRendererFactory(gridOptionsWrapper),
                     'default': function (params) {
                         return params.value;
@@ -6307,6 +6515,7 @@ var ag;
                 });
             };
             RenderedHeaderElement.prototype.stopDragging = function (listenersToRemove, dragChange) {
+                console.log(dragChange);
                 this.eRoot.style.cursor = "";
                 var that = this;
                 _.iterateObject(listenersToRemove, function (key, listener) {
@@ -6633,6 +6842,308 @@ var ag;
     })(grid = ag.grid || (ag.grid = {}));
 })(ag || (ag = {}));
 /// <reference path='../utils.ts' />
+/// <reference path='../filter/filterManager.ts' />
+/// <reference path='../gridOptionsWrapper.ts' />
+/// <reference path='../columnController.ts' />
+/// <reference path='renderedHeaderElement.ts' />
+var ag;
+(function (ag) {
+    var grid;
+    (function (grid) {
+        var _ = grid.Utils;
+        var constants = grid.Constants;
+        var svgFactory = grid.SvgFactory.getInstance();
+        var RenderedHeaderCheckerCell = (function (_super) {
+            __extends(RenderedHeaderCheckerCell, _super);
+            function RenderedHeaderCheckerCell(column, parentGroup, gridOptionsWrapper, parentScope, filterManager, columnController, $compile, angularGrid, eRoot) {
+                _super.call(this, eRoot);
+                this.column = column;
+                this.parentGroup = parentGroup;
+                this.gridOptionsWrapper = gridOptionsWrapper;
+                this.parentScope = parentScope;
+                this.filterManager = filterManager;
+                this.columnController = columnController;
+                this.$compile = $compile;
+                this.angularGrid = angularGrid;
+                this.setupComponents();
+            }
+            RenderedHeaderCheckerCell.prototype.setupComponents = function () {
+                this.eHeaderCell = document.createElement("div");
+                this.createScope();
+                this.addClasses();
+                this.addAttributes();
+                this.addHeaderClassesFromCollDef();
+                // add tooltip if exists
+                if (this.column.colDef.headerTooltip) {
+                    this.eHeaderCell.title = this.column.colDef.headerTooltip;
+                }
+                var eCheckBoxInput = document.createElement("input");
+                eCheckBoxInput.id = this.angularGrid.getId() + '-checker-header';
+                eCheckBoxInput.name = this.angularGrid.getId() + '-checker-header';
+                eCheckBoxInput.type = 'checkbox';
+                var eCheckBoxIcon = document.createElement("span");
+                eCheckBoxIcon.className = 'input-icon';
+                var eCheckBoxSpan = document.createElement("span");
+                eCheckBoxSpan.className = 'checkbox-input';
+                eCheckBoxSpan.style.textAlign = 'left';
+                eCheckBoxSpan.appendChild(eCheckBoxInput);
+                eCheckBoxSpan.appendChild(eCheckBoxIcon);
+                var eCheckBoxLabel = document.createElement("label");
+                eCheckBoxLabel.appendChild(eCheckBoxSpan);
+                var eCheckBox = document.createElement("div");
+                eCheckBox.className = "pi-btn-checkbox";
+                eCheckBox.appendChild(eCheckBoxLabel);
+                // label div
+                var headerCellLabel = document.createElement("div");
+                headerCellLabel.className = "ag-header-cell-label group-checkbox";
+                headerCellLabel.setAttribute('role', 'gridcell');
+                headerCellLabel.appendChild(eCheckBox);
+                this.eHeaderCell.appendChild(headerCellLabel);
+                this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
+                // var eInnerText = document.createElement("span");
+                // eInnerText.className = 'ag-header-cell-text';
+                // <div class="pi-btn-checkbox" >
+                //     <label>
+                //         <span class="checkbox-input" >
+                //             <input name="{{id}}" type= "checkbox" />
+                //             <span class="input-icon" > </span>
+                //        < /span>
+                //     < /label>
+                // < /div>
+            };
+            RenderedHeaderCheckerCell.prototype.getGui = function () {
+                return this.eHeaderCell;
+            };
+            RenderedHeaderCheckerCell.prototype.destroy = function () {
+                if (this.childScope) {
+                    this.childScope.$destroy();
+                }
+            };
+            RenderedHeaderCheckerCell.prototype.createScope = function () {
+                if (this.gridOptionsWrapper.isAngularCompileHeaders()) {
+                    this.childScope = this.parentScope.$new();
+                    this.childScope.colDef = this.column.colDef;
+                    this.childScope.colIndex = this.column.index;
+                    this.childScope.colDefWrapper = this.column;
+                }
+            };
+            RenderedHeaderCheckerCell.prototype.addAttributes = function () {
+                this.eHeaderCell.setAttribute("col", (this.column.index !== undefined && this.column.index !== null) ? this.column.index.toString() : '');
+                this.eHeaderCell.setAttribute("colId", this.column.colId);
+            };
+            RenderedHeaderCheckerCell.prototype.addClasses = function () {
+                _.addCssClass(this.eHeaderCell, 'ag-header-cell');
+                if (this.gridOptionsWrapper.isGroupHeaders()) {
+                    _.addCssClass(this.eHeaderCell, 'ag-header-cell-grouped'); // this takes 50% height
+                }
+                else {
+                    _.addCssClass(this.eHeaderCell, 'ag-header-cell-not-grouped'); // this takes 100% height
+                }
+            };
+            // private addMenu(): void {
+            //     var showMenu = this.gridOptionsWrapper.isEnableFilter() && !this.column.colDef.suppressMenu;
+            //     if (!showMenu) {
+            //         return;
+            //     }
+            //     var eMenuButton = _.createIcon('menu', this.gridOptionsWrapper, this.column, svgFactory.createMenuSvg);
+            //     _.addCssClass(eMenuButton, 'ag-header-icon');
+            //     eMenuButton.setAttribute("class", "ag-header-cell-menu-button");
+            //     var that = this;
+            //     eMenuButton.onclick = function () {
+            //         that.filterManager.showFilter(that.column, this);
+            //     };
+            //     this.eHeaderCell.appendChild(eMenuButton);
+            //     if (!this.gridOptionsWrapper.isSuppressMenuHide()) {
+            //         eMenuButton.style.opacity = '0';
+            //         this.eHeaderCell.onmouseenter = function () {
+            //             eMenuButton.style.opacity = '1';
+            //         };
+            //         this.eHeaderCell.onmouseleave = function () {
+            //             eMenuButton.style.opacity = '0';
+            //         };
+            //     }
+            //     eMenuButton.style['transition'] = 'opacity 0.5s, border 0.2s';
+            //     var style: any = eMenuButton.style;
+            //     style['-webkit-transition'] = 'opacity 0.5s, border 0.2s';
+            // }
+            // private addSortIcons(headerCellLabel: HTMLElement): void {
+            //     var addSortIcons = this.gridOptionsWrapper.isEnableSorting() && !this.column.colDef.suppressSorting;
+            //     if (!addSortIcons) {
+            //         return;
+            //     }
+            //     this.eSortAsc = _.createIcon('sortAscending', this.gridOptionsWrapper, this.column, svgFactory.createArrowUpSvg);
+            //     this.eSortDesc = _.createIcon('sortDescending', this.gridOptionsWrapper, this.column, svgFactory.createArrowDownSvg);
+            //     _.addCssClass(this.eSortAsc, 'ag-header-icon ag-sort-ascending-icon');
+            //     _.addCssClass(this.eSortDesc, 'ag-header-icon ag-sort-descending-icon');
+            //     headerCellLabel.appendChild(this.eSortAsc);
+            //     headerCellLabel.appendChild(this.eSortDesc);
+            //     // 'no sort' icon
+            //     if (this.column.colDef.unSortIcon || this.gridOptionsWrapper.isUnSortIcon()) {
+            //         this.eSortNone = _.createIcon('sortUnSort', this.gridOptionsWrapper, this.column, svgFactory.createArrowUpDownSvg);
+            //         _.addCssClass(this.eSortNone, 'ag-header-icon ag-sort-none-icon');
+            //         headerCellLabel.appendChild(this.eSortNone);
+            //     }
+            //     this.eSortAsc.style.display = 'none';
+            //     this.eSortDesc.style.display = 'none';
+            //     this.addSortHandling(headerCellLabel);
+            // }
+            RenderedHeaderCheckerCell.prototype.useRenderer = function (headerNameValue, headerCellRenderer, headerCellLabel) {
+                // renderer provided, use it
+                var cellRendererParams = {
+                    colDef: this.column.colDef,
+                    $scope: this.childScope,
+                    context: this.gridOptionsWrapper.getContext(),
+                    value: headerNameValue,
+                    api: this.gridOptionsWrapper.getApi(),
+                    eHeaderCell: this.eHeaderCell
+                };
+                var cellRendererResult = headerCellRenderer(cellRendererParams);
+                var childToAppend;
+                if (_.isNodeOrElement(cellRendererResult)) {
+                    // a dom node or element was returned, so add child
+                    childToAppend = cellRendererResult;
+                }
+                else {
+                    // otherwise assume it was html, so just insert
+                    var eTextSpan = document.createElement("span");
+                    eTextSpan.innerHTML = cellRendererResult;
+                    childToAppend = eTextSpan;
+                }
+                // angular compile header if option is turned on
+                if (this.gridOptionsWrapper.isAngularCompileHeaders()) {
+                    var childToAppendCompiled = this.$compile(childToAppend)(this.childScope)[0];
+                    headerCellLabel.appendChild(childToAppendCompiled);
+                }
+                else {
+                    headerCellLabel.appendChild(childToAppend);
+                }
+            };
+            // public refreshFilterIcon(): void {
+            //     var filterPresent = this.filterManager.isFilterPresentForCol(this.column.colId);
+            //     if (filterPresent) {
+            //         _.addCssClass(this.eHeaderCell, 'ag-header-cell-filtered');
+            //         this.eFilterIcon.style.display = 'inline';
+            //     } else {
+            //         _.removeCssClass(this.eHeaderCell, 'ag-header-cell-filtered');
+            //         this.eFilterIcon.style.display = 'none';
+            //     }
+            // }
+            // public refreshSortIcon(): void {
+            //     // update visibility of icons
+            //     var sortAscending = this.column.sort === constants.ASC;
+            //     var sortDescending = this.column.sort === constants.DESC;
+            //     var unSort = this.column.sort !== constants.DESC && this.column.sort !== constants.ASC;
+            //     if (this.eSortAsc) {
+            //         _.setVisible(this.eSortAsc, sortAscending);
+            //     }
+            //     if (this.eSortDesc) {
+            //         _.setVisible(this.eSortDesc, sortDescending);
+            //     }
+            //     if (this.eSortNone) {
+            //         _.setVisible(this.eSortNone, unSort);
+            //     }
+            // }
+            // private getNextSortDirection(): string {
+            //     var sortingOrder: string[];
+            //     if (this.column.colDef.sortingOrder) {
+            //         sortingOrder = this.column.colDef.sortingOrder;
+            //     } else if (this.gridOptionsWrapper.getSortingOrder()) {
+            //         sortingOrder = this.gridOptionsWrapper.getSortingOrder();
+            //     } else {
+            //         sortingOrder = RenderedHeaderCheckerCell.DEFAULT_SORTING_ORDER;
+            //     }
+            //     if ( !Array.isArray(sortingOrder) || sortingOrder.length <= 0) {
+            //         console.warn('ag-grid: sortingOrder must be an array with at least one element, currently it\'s ' + sortingOrder);
+            //         return;
+            //     }
+            //     var currentIndex = sortingOrder.indexOf(this.column.sort);
+            //     var notInArray = currentIndex < 0;
+            //     var lastItemInArray = currentIndex == sortingOrder.length - 1;
+            //     var result: string;
+            //     if (notInArray || lastItemInArray) {
+            //         result = sortingOrder[0];
+            //     } else {
+            //         result = sortingOrder[currentIndex + 1];
+            //     }
+            //     // verify the sort type exists, as the user could provide the sortOrder, need to make sure it's valid
+            //     if (RenderedHeaderCheckerCell.DEFAULT_SORTING_ORDER.indexOf(result) < 0) {
+            //         console.warn('ag-grid: invalid sort type ' + result);
+            //         return null;
+            //     }
+            //     return result;
+            // }
+            // private addSortHandling(headerCellLabel: HTMLElement) {
+            //     var that = this;
+            //     headerCellLabel.addEventListener("click", function (event: any) {
+            //         // update sort on current col
+            //         that.column.sort = that.getNextSortDirection();
+            //         // sortedAt used for knowing order of cols when multi-col sort
+            //         if (that.column.sort) {
+            //             that.column.sortedAt = new Date().valueOf();
+            //         } else {
+            //             that.column.sortedAt = null;
+            //         }
+            //         var doingMultiSort = !that.gridOptionsWrapper.isSuppressMultiSort() && event.shiftKey;
+            //         // clear sort on all columns except this one, and update the icons
+            //         if (!doingMultiSort) {
+            //             that.columnController.getAllColumns().forEach(function (columnToClear: any) {
+            //                 // Do not clear if either holding shift, or if column in question was clicked
+            //                 if (!(columnToClear === that.column)) {
+            //                     columnToClear.sort = null;
+            //                 }
+            //             });
+            //         }
+            //         that.angularGrid.onSortingChanged();
+            //     });
+            // }
+            // public onDragStart(): void {
+            //     this.startWidth = this.column.actualWidth;
+            // }
+            // public onDragging(dragChange: number, finished: boolean): void {
+            //     var newWidth = this.startWidth + dragChange;
+            //     this.columnController.setColumnWidth(this.column, newWidth, finished);
+            // }
+            // public onIndividualColumnResized(column: Column) {
+            //     if (this.column !== column) {
+            //         return;
+            //     }
+            //     var newWidthPx = column.actualWidth + "px";
+            //     this.eHeaderCell.style.width = newWidthPx;
+            // }
+            RenderedHeaderCheckerCell.prototype.addHeaderClassesFromCollDef = function () {
+                var _this = this;
+                if (this.column.colDef.headerClass) {
+                    var classToUse;
+                    if (typeof this.column.colDef.headerClass === 'function') {
+                        var params = {
+                            colDef: this.column.colDef,
+                            $scope: this.childScope,
+                            context: this.gridOptionsWrapper.getContext(),
+                            api: this.gridOptionsWrapper.getApi()
+                        };
+                        var headerClassFunc = this.column.colDef.headerClass;
+                        classToUse = headerClassFunc(params);
+                    }
+                    else {
+                        classToUse = this.column.colDef.headerClass;
+                    }
+                    if (typeof classToUse === 'string') {
+                        _.addCssClass(this.eHeaderCell, classToUse);
+                    }
+                    else if (Array.isArray(classToUse)) {
+                        classToUse.forEach(function (cssClassItem) {
+                            _.addCssClass(_this.eHeaderCell, cssClassItem);
+                        });
+                    }
+                }
+            };
+            RenderedHeaderCheckerCell.DEFAULT_SORTING_ORDER = [constants.ASC, constants.DESC, null];
+            return RenderedHeaderCheckerCell;
+        })(grid.RenderedHeaderElement);
+        grid.RenderedHeaderCheckerCell = RenderedHeaderCheckerCell;
+    })(grid = ag.grid || (ag.grid = {}));
+})(ag || (ag = {}));
+/// <reference path='../utils.ts' />
 /// <reference path='renderedHeaderCell.ts' />
 /// <reference path='renderedHeaderElement.ts' />
 var ag;
@@ -6892,6 +7403,7 @@ var ag;
 /// <reference path="../svgFactory.ts" />
 /// <reference path="../headerRendering/renderedHeaderElement.ts" />
 /// <reference path="../headerRendering/renderedHeaderCell.ts" />
+/// <reference path="../headerRendering/renderedHeaderCheckerCell.ts" />
 /// <reference path="../headerRendering/renderedHeaderGroupCell.ts" />
 /// <reference path="../dragAndDrop/dragAndDropService" />
 var ag;
@@ -7019,11 +7531,17 @@ var ag;
                 var _this = this;
                 this.columnController.getDisplayedColumns().forEach(function (column) {
                     // only include the first x cols
-                    var renderedHeaderCell = new grid.RenderedHeaderCell(column, null, _this.gridOptionsWrapper, _this.$scope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.eRoot);
+                    var headerCellRenderer = grid.RenderedHeaderCell;
+                    if (column.colDef.checkboxSelection) {
+                        headerCellRenderer = grid.RenderedHeaderCheckerCell;
+                    }
+                    var renderedHeaderCell = new headerCellRenderer(column, null, _this.gridOptionsWrapper, _this.$scope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.eRoot);
                     _this.headerElements.push(renderedHeaderCell);
                     var eContainerToAddTo = column.pinned ? _this.ePinnedHeader : _this.eHeaderContainer;
                     eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
-                    _this.addDragAndDropToListItem(renderedHeaderCell.getGui(), renderedHeaderCell);
+                    if (!column.colDef.checkboxSelection) {
+                        _this.addDragAndDropToListItem(renderedHeaderCell.getGui(), renderedHeaderCell);
+                    }
                 });
             };
             HeaderRenderer.prototype.updateSortIcons = function () {
@@ -10066,6 +10584,9 @@ var ag;
             };
             Grid.prototype.getRowModel = function () {
                 return this.rowModel;
+            };
+            Grid.prototype.getId = function () {
+                return this.eUserProvidedDiv.id;
             };
             Grid.prototype.periodicallyDoLayout = function () {
                 if (!this.finished) {

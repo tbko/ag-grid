@@ -54,6 +54,7 @@ module ag.grid {
         }
 
         public stopDragging(listenersToRemove: any, dragChange: number) {
+            console.log(dragChange);
             this.eRoot.style.cursor = "";
             var that = this;
             _.iterateObject(listenersToRemove, function (key: any, listener: any) {

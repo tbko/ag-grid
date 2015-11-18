@@ -3,6 +3,7 @@
 /// <reference path="renderedRow.ts" />
 /// <reference path="../cellRenderers/groupCellRendererFactory.ts" />
 /// <reference path="../cellRenderers/multilineCellRenderer.ts" />
+/// <reference path="../cellRenderers/groupHeader.ts" />
 /// <reference path="../entities/rowNode.ts" />
 
 module ag.grid {
@@ -65,6 +66,7 @@ module ag.grid {
 
             this.cellRendererMap = {
                 'group': groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
+                'groupHeader': groupHeaderFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
                 'multiline': multilineCellRendererFactory(gridOptionsWrapper),
                 'default': function(params: any) {
                     return params.value;
