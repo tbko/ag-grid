@@ -110,12 +110,14 @@ function tsReleaseTask() {
         tsResult.js
             .pipe(rename('ag-grid.js'))
             .pipe(header(headerTemplate, { pkg : pkg }))
-            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid'))
+            .pipe(gulp.dest('./dist'))
+            // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid'))
             .pipe(gulp.dest('./docs/dist'))
             .pipe(buffer())
             .pipe(uglify())
             .pipe(rename('ag-grid.min.js'))
-            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid'))
+            .pipe(gulp.dest('./dist'))
+            // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid'))
             .pipe(gulp.dest('./docs/dist'))
     ]);
 }
