@@ -70,6 +70,9 @@ module ag.grid {
                 getVirtualRows: function (): RowNode[] {
                     return that.rowsAfterMap;
                 },
+                getAllRows: function (): RowNode[] {
+                    return that.allRows;
+                },
                 getVirtualRowCount: function (): number {
                     if (that.rowsAfterMap) {
                         return that.rowsAfterMap.length;

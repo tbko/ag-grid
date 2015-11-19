@@ -181,7 +181,7 @@ module ag.grid {
 
             dragAndDropService.init(loggerFactory);
             eventService.init(loggerFactory);
-            gridPanel.init(gridOptionsWrapper, columnController, rowRenderer, masterSlaveService);
+            gridPanel.init(gridOptionsWrapper, columnController, rowRenderer, masterSlaveService, eventService);
             templateService.init($scope);
             expressionService.init(loggerFactory);
             selectionController.init(this, gridPanel, gridOptionsWrapper, $scope, rowRenderer, eventService);
@@ -426,6 +426,10 @@ module ag.grid {
             this.eventService.dispatchEvent(Events.EVENT_AFTER_FILTER_CHANGED);
         }
 
+        public onSelectAll() {
+            this.headerRenderer.toggleSelectAll();
+        }
+
         public onRowClicked(multiSelectKeyPressed: boolean, rowIndex: number, node: RowNode) {
 
             // we do not allow selecting groups by clicking (as the click here expands the group)
@@ -470,6 +474,10 @@ module ag.grid {
 
         public showNoRowsOverlay(): void {
             this.gridPanel.showNoRowsOverlay();
+        }
+
+        public showToolOverlay(): void {
+            this.gridPanel.showToolOverlay();
         }
 
         public hideOverlay(): void {

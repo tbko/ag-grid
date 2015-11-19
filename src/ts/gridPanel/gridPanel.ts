@@ -1,5 +1,6 @@
 /// <reference path="../utils.ts" />
 /// <reference path="../layout/borderLayout.ts" />
+/// <reference path="../eventService.ts" />
 
 module ag.grid {
 
@@ -51,12 +52,14 @@ module ag.grid {
 
     var defaultLoadingOverlayTemplate = '<span class="ag-overlay-loading-center">[LOADING...]</span>';
     var defaultNoRowsOverlayTemplate = '<span class="ag-overlay-no-rows-center">[NO_ROWS_TO_SHOW]</span>';
+    var defaultToolOverlayTemplate = '<span style="pointer-events:all; opacity: 1.0;" class="ag-overlay-no-rows-center"><a class="k-grid-Delete" title= "Удалить" href= "#" > <span class="i-delete" > </span></a></span>';
 
     var _ = Utils;
 
     export class GridPanel {
 
         private masterSlaveService: MasterSlaveService;
+        private eventService: EventService;
         private gridOptionsWrapper: GridOptionsWrapper;
         private columnModel: ColumnController;
         private rowRenderer: RowRenderer;
@@ -88,8 +91,9 @@ module ag.grid {
         private ePinnedFloatingBottom: HTMLElement;
         private eFloatingBottomContainer: HTMLElement;
 
-        public init(gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService) {
+        public init(gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService) {
             this.gridOptionsWrapper = gridOptionsWrapper;
+            this.eventService = eventService;
             // makes code below more readable if we pull 'forPrint' out
             this.forPrint = this.gridOptionsWrapper.isForPrint();
             this.setupComponents();
@@ -106,6 +110,7 @@ module ag.grid {
         }
 
         private setupComponents() {
+            var that = this;
 
             if (this.forPrint) {
                 this.eRoot = <HTMLElement> _.loadTemplate(gridForPrintHtml);
@@ -120,15 +125,32 @@ module ag.grid {
             this.layout = new BorderLayout({
                 overlays: {
                     loading: _.loadTemplate(this.createLoadingOverlayTemplate()),
-                    noRows: _.loadTemplate(this.createNoRowsOverlayTemplate())
+                    noRows: _.loadTemplate(this.createNoRowsOverlayTemplate()),
+                    tool: _.loadTemplate(this.createToolOverlayTemplate())
                 },
                 center: this.eRoot,
                 dontFill: this.forPrint,
-                name: 'eGridPanel'
+                name: 'eGridPanel',
+                deleteListener: function() {
+                    var selected = that.gridOptionsWrapper.getApi().getSelectedNodes();
+                    var multitoolParams = {
+                        name: 'delete',
+                        items: selected
+                    }
+                    that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                }
             });
 
             this.layout.addSizeChangeListener(this.onBodyHeightChange.bind(this));
-
+            this.eventService.addEventListener('selectionChanged', function(pamparams: any) {
+                console.log(pamparams.selectedRows.length);
+                console.log(that.gridOptionsWrapper.getApi().getModel().getAllRows().length);
+                if (pamparams.selectedRows.length > 1) {
+                    that.showToolOverlay()
+                } else {
+                    that.hideOverlay();
+                }
+            })
             this.addScrollListener();
 
             if (this.gridOptionsWrapper.isSuppressHorizontalScroll()) {
@@ -193,6 +215,17 @@ module ag.grid {
             var templateLocalised = templateNotLocalised.replace('[NO_ROWS_TO_SHOW]', localeTextFunc('noRowsToShow', 'No Rows To Show'));
 
             return templateLocalised;
+        }
+
+        private createToolOverlayTemplate(): string {
+
+            var template = this.createOverlayTemplate(
+                'tool',
+                defaultToolOverlayTemplate,
+                null
+            );
+
+            return template;
         }
 
         public ensureIndexVisible(index: any) {
@@ -291,6 +324,10 @@ module ag.grid {
             if (!this.gridOptionsWrapper.isSuppressNoRowsOverlay()) {
                 this.layout.showOverlay('noRows');
             }
+        }
+
+        public showToolOverlay(): void {
+            this.layout.showOverlay('tool');
         }
 
         public hideOverlay(): void {

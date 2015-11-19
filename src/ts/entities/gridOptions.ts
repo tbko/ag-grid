@@ -94,6 +94,7 @@ module ag.grid {
         getBusinessKeyForNode?(node: RowNode): string;
 
         // events
+        onMultitoolClicked?(params: any): void;
         onReady?(api: any): void;
         onModelUpdated?(): void;
         onCellClicked?(params: any): void;

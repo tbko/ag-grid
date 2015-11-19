@@ -32,7 +32,7 @@ module ag.grid {
         private parentGroup: RenderedHeaderGroupCell;
 
         private startWidth: number;
-        private checkEl: HTMLElement;
+        private checkEl: any;
 
         constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper,
                     parentScope: any, filterManager: FilterManager, columnController: ColumnController,
@@ -51,16 +51,27 @@ module ag.grid {
         }
 
         public toggle(deliberateState?: boolean): boolean {
+            var api = this.gridOptionsWrapper.getApi();
             var turnOn = deliberateState;
             if (turnOn === undefined) {
-                turnOn = !this.checkEl.getAttribute('checked');
+                turnOn = !this.checkerState();
             }
             if (turnOn) {
                 this.checkEl.setAttribute('checked', 'true');
+                this.checkEl.checked = true;
+                api.selectAll();
             } else {
                 this.checkEl.removeAttribute('checked');
+                this.checkEl.checked = false;
+                api.deselectAll();
             }
             return turnOn;
+        }
+
+        public checkerState(): boolean {
+            return (
+                this.checkEl.getAttribute('checked')
+            );
         }
 
         private setupComponents(): HTMLElement {
@@ -78,18 +89,15 @@ module ag.grid {
                 this.eHeaderCell.title = this.column.colDef.headerTooltip;
             }
 
-
-
             var eCheckBoxInput = document.createElement("input");
             eCheckBoxInput.id = this.angularGrid.getId() + '-checker-header';
             eCheckBoxInput.name = this.angularGrid.getId() + '-checker-header';
             eCheckBoxInput.type = 'checkbox';
-            eCheckBoxInput.onclick = function() {
-                var checkState = !!~[].indexOf.call(eCheckBoxInput.ownerDocument.querySelectorAll(':checked'), eCheckBoxInput);
-                that.toggle(checkState);
-            };
+            eCheckBoxInput.addEventListener('click', function(e: any) {
+                e.stopPropagation();
+                that.toggle();
+            });
             
-            // _.addCssClass(eCheckBoxInput, ':checked');
             var eCheckBoxIcon = document.createElement("span");
             eCheckBoxIcon.className = 'input-icon';
             var eCheckBoxSpan = document.createElement("span");
@@ -109,8 +117,13 @@ module ag.grid {
             headerCellLabel.className = "ag-header-cell-label group-checkbox";
             headerCellLabel.setAttribute('role', 'gridcell');
             headerCellLabel.appendChild(eCheckBox);
+
+
             this.eHeaderCell.appendChild(headerCellLabel);
             this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
+            this.eHeaderCell.addEventListener('click', function(e) {
+                that.toggle();
+            });
 
             return eCheckBoxInput;
 

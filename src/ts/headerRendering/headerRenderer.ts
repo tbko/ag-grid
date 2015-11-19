@@ -156,6 +156,14 @@ module ag.grid {
             });
         }
 
+        public toggleSelectAll() {
+            this.headerElements.forEach( (headerElement: any) => {
+                if (headerElement.column.colDef.checkboxSelection) {
+                    headerElement.toggle();
+                }
+            });
+        }
+
         private insertHeadersWithoutGrouping() {
             this.columnController.getDisplayedColumns().forEach( (column: Column) => {
                 // only include the first x cols

@@ -298,6 +298,7 @@ declare module ag.grid {
         static EVENT_ROW_CLICKED: string;
         static EVENT_ROW_DOUBLE_CLICKED: string;
         static EVENT_READY: string;
+        static EVENT_MULTITOOL_CLICK: string;
     }
 }
 declare module ag.grid {
@@ -1217,6 +1218,7 @@ declare module ag.grid {
         private checkEl;
         constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement);
         toggle(deliberateState?: boolean): boolean;
+        checkerState(): boolean;
         private setupComponents();
         getGui(): HTMLElement;
         destroy(): void;
@@ -1297,6 +1299,7 @@ declare module ag.grid {
         private findAllElements(gridPanel);
         refreshHeader(): void;
         private insertHeadersWithGrouping();
+        toggleSelectAll(): void;
         private insertHeadersWithoutGrouping();
         updateSortIcons(): void;
         updateFilterIcons(): void;
@@ -1457,6 +1460,7 @@ declare module ag.grid {
         private eWestWrapper;
         private eCenterWrapper;
         private eOverlayWrapper;
+        private eToolOverlayWrapper;
         private eCenterRow;
         private eNorthChildLayout;
         private eSouthChildLayout;
@@ -1472,6 +1476,7 @@ declare module ag.grid {
         private centerHeightLastTime;
         private sizeChangeListeners;
         private overlays;
+        private deleteListener;
         constructor(params: any);
         addSizeChangeListener(listener: Function): void;
         fireSizeChanged(): void;
@@ -1495,6 +1500,7 @@ declare module ag.grid {
 declare module ag.grid {
     class GridPanel {
         private masterSlaveService;
+        private eventService;
         private gridOptionsWrapper;
         private columnModel;
         private rowRenderer;
@@ -1520,7 +1526,7 @@ declare module ag.grid {
         private eFloatingBottom;
         private ePinnedFloatingBottom;
         private eFloatingBottomContainer;
-        init(gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService): void;
+        init(gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService): void;
         getLayout(): BorderLayout;
         private setupComponents();
         getPinnedFloatingTop(): HTMLElement;
@@ -1530,10 +1536,12 @@ declare module ag.grid {
         private createOverlayTemplate(name, defaultTemplate, userProvidedTemplate);
         private createLoadingOverlayTemplate();
         private createNoRowsOverlayTemplate();
+        private createToolOverlayTemplate();
         ensureIndexVisible(index: any): void;
         ensureColIndexVisible(index: any): void;
         showLoadingOverlay(): void;
         showNoRowsOverlay(): void;
+        showToolOverlay(): void;
         hideOverlay(): void;
         getWidthForSizeColsToFit(): number;
         setRowModel(rowModel: any): void;
@@ -1785,6 +1793,7 @@ declare module ag.grid {
         headerCellRenderer?: any;
         groupAggFunction?(nodes: any[]): any;
         getBusinessKeyForNode?(node: RowNode): string;
+        onMultitoolClicked?(params: any): void;
         onReady?(api: any): void;
         onModelUpdated?(): void;
         onCellClicked?(params: any): void;
@@ -1863,6 +1872,7 @@ declare module ag.grid {
         sizeColumnsToFit(): void;
         showLoadingOverlay(): void;
         showNoRowsOverlay(): void;
+        showToolOverlay(): void;
         hideOverlay(): void;
         showLoading(show: any): void;
         isNodeSelected(node: any): boolean;
@@ -1969,9 +1979,11 @@ declare module ag.grid {
         onQuickFilterChanged(newFilter: any): void;
         onFilterModified(): void;
         onFilterChanged(): void;
+        onSelectAll(): void;
         onRowClicked(multiSelectKeyPressed: boolean, rowIndex: number, node: RowNode): void;
         showLoadingOverlay(): void;
         showNoRowsOverlay(): void;
+        showToolOverlay(): void;
         hideOverlay(): void;
         private setupColumns();
         updateModelAndRefresh(step: any, refreshFromIndex?: any): void;

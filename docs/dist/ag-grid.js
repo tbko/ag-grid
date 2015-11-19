@@ -992,6 +992,7 @@ var ag;
             Events.EVENT_ROW_CLICKED = 'rowClicked';
             Events.EVENT_ROW_DOUBLE_CLICKED = 'rowDoubleClicked';
             Events.EVENT_READY = 'ready';
+            Events.EVENT_MULTITOOL_CLICK = 'multitoolClicked';
             return Events;
         })();
         grid.Events = Events;
@@ -6868,17 +6869,25 @@ var ag;
                 this.checkEl = this.setupComponents();
             }
             RenderedHeaderCheckerCell.prototype.toggle = function (deliberateState) {
+                var api = this.gridOptionsWrapper.getApi();
                 var turnOn = deliberateState;
                 if (turnOn === undefined) {
-                    turnOn = !this.checkEl.getAttribute('checked');
+                    turnOn = !this.checkerState();
                 }
                 if (turnOn) {
                     this.checkEl.setAttribute('checked', 'true');
+                    this.checkEl.checked = true;
+                    api.selectAll();
                 }
                 else {
                     this.checkEl.removeAttribute('checked');
+                    this.checkEl.checked = false;
+                    api.deselectAll();
                 }
                 return turnOn;
+            };
+            RenderedHeaderCheckerCell.prototype.checkerState = function () {
+                return (this.checkEl.getAttribute('checked'));
             };
             RenderedHeaderCheckerCell.prototype.setupComponents = function () {
                 var that = this;
@@ -6895,11 +6904,10 @@ var ag;
                 eCheckBoxInput.id = this.angularGrid.getId() + '-checker-header';
                 eCheckBoxInput.name = this.angularGrid.getId() + '-checker-header';
                 eCheckBoxInput.type = 'checkbox';
-                eCheckBoxInput.onclick = function () {
-                    var checkState = !!~[].indexOf.call(eCheckBoxInput.ownerDocument.querySelectorAll(':checked'), eCheckBoxInput);
-                    that.toggle(checkState);
-                };
-                // _.addCssClass(eCheckBoxInput, ':checked');
+                eCheckBoxInput.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    that.toggle();
+                });
                 var eCheckBoxIcon = document.createElement("span");
                 eCheckBoxIcon.className = 'input-icon';
                 var eCheckBoxSpan = document.createElement("span");
@@ -6919,6 +6927,9 @@ var ag;
                 headerCellLabel.appendChild(eCheckBox);
                 this.eHeaderCell.appendChild(headerCellLabel);
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
+                this.eHeaderCell.addEventListener('click', function (e) {
+                    that.toggle();
+                });
                 return eCheckBoxInput;
                 // var eInnerText = document.createElement("span");
                 // eInnerText.className = 'ag-header-cell-text';
@@ -7547,6 +7558,13 @@ var ag;
                     eContainerToAddTo.appendChild(renderedHeaderGroup.getGui());
                 });
             };
+            HeaderRenderer.prototype.toggleSelectAll = function () {
+                this.headerElements.forEach(function (headerElement) {
+                    if (headerElement.column.colDef.checkboxSelection) {
+                        headerElement.toggle();
+                    }
+                });
+            };
             HeaderRenderer.prototype.insertHeadersWithoutGrouping = function () {
                 var _this = this;
                 this.columnController.getDisplayedColumns().forEach(function (column) {
@@ -7727,6 +7745,9 @@ var ag;
                     },
                     getVirtualRows: function () {
                         return that.rowsAfterMap;
+                    },
+                    getAllRows: function () {
+                        return that.allRows;
                     },
                     getVirtualRowCount: function () {
                         if (that.rowsAfterMap) {
@@ -8801,6 +8822,7 @@ var ag;
                 this.sizeChangeListeners = [];
                 this.isLayoutPanel = true;
                 this.fullHeight = !params.north && !params.south;
+                this.deleteListener = params.deleteListener;
                 var template;
                 if (!params.dontFill) {
                     if (this.fullHeight) {
@@ -8809,7 +8831,9 @@ var ag;
                                 '<div id="west" style="height: 100%; float: left;"></div>' +
                                 '<div id="east" style="height: 100%; float: right;"></div>' +
                                 '<div id="center" style="height: 100%;"></div>' +
-                                '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
+                                '<div id="overlay" class="ag-overlay"></div>' +
+                                // '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
+                                // '<div id="tool-overlay" style= "position: absolute; height: 10%; width: 34%; bottom: 7px; left: 33%; background-color: #444; opacity:0.6;" ></div>' +
                                 '</div>';
                     }
                     else {
@@ -8822,7 +8846,9 @@ var ag;
                                 '<div id="center" style="height: 100%;"></div>' +
                                 '</div>' +
                                 '<div id="south"></div>' +
-                                '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
+                                '<div id="overlay" class="ag-overlay"></div>' +
+                                // '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
+                                // '<div id="tool-overlay" style= "position: absolute; height: 10%; width: 34%; bottom: 7px; left: 33%; background-color: #444; opacity:0.6;" ></div>' +
                                 '</div>';
                     }
                     this.layoutActive = true;
@@ -8869,6 +8895,7 @@ var ag;
                 this.eWestWrapper = this.eGui.querySelector('#west');
                 this.eCenterWrapper = this.eGui.querySelector('#center');
                 this.eOverlayWrapper = this.eGui.querySelector('#overlay');
+                // this.eToolOverlayWrapper = this.eGui.querySelector('#tool-overlay');
                 this.eCenterRow = this.eGui.querySelector('#centerRow');
                 this.eNorthChildLayout = this.setupPanel(params.north, this.eNorthWrapper);
                 this.eSouthChildLayout = this.setupPanel(params.south, this.eSouthWrapper);
@@ -9012,10 +9039,18 @@ var ag;
             };
             BorderLayout.prototype.showOverlay = function (key) {
                 var overlay = this.overlays ? this.overlays[key] : null;
+                var elClick;
                 if (overlay) {
                     _.removeAllChildren(this.eOverlayWrapper);
+                    if (key === 'tool') {
+                        this.eOverlayWrapper.classList.remove('ag-overlay');
+                        this.eOverlayWrapper.classList.add('ag-overlay-tool');
+                    }
                     this.eOverlayWrapper.style.display = '';
                     this.eOverlayWrapper.appendChild(overlay);
+                    // this.eOverlayWrapper.getElementsByClassName('k-grid-Delete').onclick = this.deleteListener;
+                    elClick = this.eOverlayWrapper.getElementsByClassName('k-grid-Delete')[0];
+                    elClick.addEventListener('click', this.deleteListener);
                 }
                 else {
                     console.log('ag-Grid: unknown overlay');
@@ -9035,6 +9070,7 @@ var ag;
 })(ag || (ag = {}));
 /// <reference path="../utils.ts" />
 /// <reference path="../layout/borderLayout.ts" />
+/// <reference path="../eventService.ts" />
 var ag;
 (function (ag) {
     var grid;
@@ -9048,13 +9084,15 @@ var ag;
             '</div>';
         var defaultLoadingOverlayTemplate = '<span class="ag-overlay-loading-center">[LOADING...]</span>';
         var defaultNoRowsOverlayTemplate = '<span class="ag-overlay-no-rows-center">[NO_ROWS_TO_SHOW]</span>';
+        var defaultToolOverlayTemplate = '<span style="pointer-events:all; opacity: 1.0;" class="ag-overlay-no-rows-center"><a class="k-grid-Delete" title= "Удалить" href= "#" > <span class="i-delete" > </span></a></span>';
         var _ = grid.Utils;
         var GridPanel = (function () {
             function GridPanel() {
                 this.scrollLagCounter = 0;
             }
-            GridPanel.prototype.init = function (gridOptionsWrapper, columnModel, rowRenderer, masterSlaveService) {
+            GridPanel.prototype.init = function (gridOptionsWrapper, columnModel, rowRenderer, masterSlaveService, eventService) {
                 this.gridOptionsWrapper = gridOptionsWrapper;
+                this.eventService = eventService;
                 // makes code below more readable if we pull 'forPrint' out
                 this.forPrint = this.gridOptionsWrapper.isForPrint();
                 this.setupComponents();
@@ -9068,6 +9106,7 @@ var ag;
                 return this.layout;
             };
             GridPanel.prototype.setupComponents = function () {
+                var that = this;
                 if (this.forPrint) {
                     this.eRoot = _.loadTemplate(gridForPrintHtml);
                     _.addCssClass(this.eRoot, 'ag-root ag-no-scrolls');
@@ -9080,13 +9119,32 @@ var ag;
                 this.layout = new grid.BorderLayout({
                     overlays: {
                         loading: _.loadTemplate(this.createLoadingOverlayTemplate()),
-                        noRows: _.loadTemplate(this.createNoRowsOverlayTemplate())
+                        noRows: _.loadTemplate(this.createNoRowsOverlayTemplate()),
+                        tool: _.loadTemplate(this.createToolOverlayTemplate())
                     },
                     center: this.eRoot,
                     dontFill: this.forPrint,
-                    name: 'eGridPanel'
+                    name: 'eGridPanel',
+                    deleteListener: function () {
+                        var selected = that.gridOptionsWrapper.getApi().getSelectedNodes();
+                        var multitoolParams = {
+                            name: 'delete',
+                            items: selected
+                        };
+                        that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                    }
                 });
                 this.layout.addSizeChangeListener(this.onBodyHeightChange.bind(this));
+                this.eventService.addEventListener('selectionChanged', function (pamparams) {
+                    console.log(pamparams.selectedRows.length);
+                    console.log(that.gridOptionsWrapper.getApi().getModel().getAllRows().length);
+                    if (pamparams.selectedRows.length > 1) {
+                        that.showToolOverlay();
+                    }
+                    else {
+                        that.hideOverlay();
+                    }
+                });
                 this.addScrollListener();
                 if (this.gridOptionsWrapper.isSuppressHorizontalScroll()) {
                     this.eBodyViewport.style.overflowX = 'hidden';
@@ -9128,6 +9186,10 @@ var ag;
                 var localeTextFunc = this.gridOptionsWrapper.getLocaleTextFunc();
                 var templateLocalised = templateNotLocalised.replace('[NO_ROWS_TO_SHOW]', localeTextFunc('noRowsToShow', 'No Rows To Show'));
                 return templateLocalised;
+            };
+            GridPanel.prototype.createToolOverlayTemplate = function () {
+                var template = this.createOverlayTemplate('tool', defaultToolOverlayTemplate, null);
+                return template;
             };
             GridPanel.prototype.ensureIndexVisible = function (index) {
                 var lastRow = this.rowModel.getVirtualRowCount();
@@ -9211,6 +9273,9 @@ var ag;
                 if (!this.gridOptionsWrapper.isSuppressNoRowsOverlay()) {
                     this.layout.showOverlay('noRows');
                 }
+            };
+            GridPanel.prototype.showToolOverlay = function () {
+                this.layout.showOverlay('tool');
             };
             GridPanel.prototype.hideOverlay = function () {
                 this.layout.hideOverlay();
@@ -10263,6 +10328,7 @@ var ag;
                 this.selectionController.deselectNode(node);
             };
             GridApi.prototype.selectAll = function () {
+                // this.grid.onSelectAll();
                 this.selectionController.selectAll();
                 this.rowRenderer.refreshView();
             };
@@ -10287,6 +10353,9 @@ var ag;
             };
             GridApi.prototype.showNoRowsOverlay = function () {
                 this.grid.showNoRowsOverlay();
+            };
+            GridApi.prototype.showToolOverlay = function () {
+                this.grid.showToolOverlay();
             };
             GridApi.prototype.hideOverlay = function () {
                 this.grid.hideOverlay();
@@ -10646,7 +10715,7 @@ var ag;
                 this.logger.log('initialising');
                 dragAndDropService.init(loggerFactory);
                 eventService.init(loggerFactory);
-                gridPanel.init(gridOptionsWrapper, columnController, rowRenderer, masterSlaveService);
+                gridPanel.init(gridOptionsWrapper, columnController, rowRenderer, masterSlaveService, eventService);
                 templateService.init($scope);
                 expressionService.init(loggerFactory);
                 selectionController.init(this, gridPanel, gridOptionsWrapper, $scope, rowRenderer, eventService);
@@ -10857,6 +10926,9 @@ var ag;
                 }
                 this.eventService.dispatchEvent(grid.Events.EVENT_AFTER_FILTER_CHANGED);
             };
+            Grid.prototype.onSelectAll = function () {
+                this.headerRenderer.toggleSelectAll();
+            };
             Grid.prototype.onRowClicked = function (multiSelectKeyPressed, rowIndex, node) {
                 // we do not allow selecting groups by clicking (as the click here expands the group)
                 // so return if it's a group row
@@ -10893,6 +10965,9 @@ var ag;
             };
             Grid.prototype.showNoRowsOverlay = function () {
                 this.gridPanel.showNoRowsOverlay();
+            };
+            Grid.prototype.showToolOverlay = function () {
+                this.gridPanel.showToolOverlay();
             };
             Grid.prototype.hideOverlay = function () {
                 this.gridPanel.hideOverlay();

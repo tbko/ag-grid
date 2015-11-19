@@ -171,6 +171,7 @@ module ag.grid {
         }
 
         public selectAll() {
+            // this.grid.onSelectAll();
             this.selectionController.selectAll();
             this.rowRenderer.refreshView();
         }
@@ -200,6 +201,10 @@ module ag.grid {
 
         public showNoRowsOverlay(): void {
             this.grid.showNoRowsOverlay();
+        }
+
+        public showToolOverlay(): void {
+            this.grid.showToolOverlay();
         }
 
         public hideOverlay(): void {

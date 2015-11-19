@@ -12,6 +12,7 @@ module ag.grid {
         private eWestWrapper: any;
         private eCenterWrapper: any;
         private eOverlayWrapper: any;
+        private eToolOverlayWrapper: any;
         private eCenterRow: any;
 
         private eNorthChildLayout: any;
@@ -31,12 +32,14 @@ module ag.grid {
 
         private sizeChangeListeners = <any>[];
         private overlays: any;
+        private deleteListener: any;
 
         constructor(params: any) {
 
             this.isLayoutPanel = true;
 
             this.fullHeight = !params.north && !params.south;
+            this.deleteListener = params.deleteListener;
 
             var template: any;
             if (!params.dontFill) {
@@ -46,7 +49,9 @@ module ag.grid {
                         '<div id="west" style="height: 100%; float: left;"></div>' +
                         '<div id="east" style="height: 100%; float: right;"></div>' +
                         '<div id="center" style="height: 100%;"></div>' +
-                        '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
+                        '<div id="overlay" class="ag-overlay"></div>' +
+                        // '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
+                        // '<div id="tool-overlay" style= "position: absolute; height: 10%; width: 34%; bottom: 7px; left: 33%; background-color: #444; opacity:0.6;" ></div>' +
                         '</div>';
                 } else {
                     template =
@@ -58,7 +63,9 @@ module ag.grid {
                         '<div id="center" style="height: 100%;"></div>' +
                         '</div>' +
                         '<div id="south"></div>' +
-                        '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
+                        '<div id="overlay" class="ag-overlay"></div>' +
+                        // '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
+                        // '<div id="tool-overlay" style= "position: absolute; height: 10%; width: 34%; bottom: 7px; left: 33%; background-color: #444; opacity:0.6;" ></div>' +
                         '</div>';
                 }
                 this.layoutActive = true;
@@ -111,6 +118,7 @@ module ag.grid {
             this.eWestWrapper = this.eGui.querySelector('#west');
             this.eCenterWrapper = this.eGui.querySelector('#center');
             this.eOverlayWrapper = this.eGui.querySelector('#overlay');
+            // this.eToolOverlayWrapper = this.eGui.querySelector('#tool-overlay');
             this.eCenterRow = this.eGui.querySelector('#centerRow');
 
             this.eNorthChildLayout = this.setupPanel(params.north, this.eNorthWrapper);
@@ -275,10 +283,18 @@ module ag.grid {
 
         public showOverlay(key: string) {
             var overlay = this.overlays ? this.overlays[key] : null;
+            var elClick: any;
             if (overlay) {
                 _.removeAllChildren(this.eOverlayWrapper);
+                if (key === 'tool') {
+                    this.eOverlayWrapper.classList.remove('ag-overlay');
+                    this.eOverlayWrapper.classList.add('ag-overlay-tool');
+                }
                 this.eOverlayWrapper.style.display = '';
                 this.eOverlayWrapper.appendChild(overlay);
+                // this.eOverlayWrapper.getElementsByClassName('k-grid-Delete').onclick = this.deleteListener;
+                elClick = this.eOverlayWrapper.getElementsByClassName('k-grid-Delete')[0];
+                elClick.addEventListener('click', this.deleteListener);
             } else {
                 console.log('ag-Grid: unknown overlay');
                 this.hideOverlay();
