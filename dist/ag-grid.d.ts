@@ -1214,7 +1214,9 @@ declare module ag.grid {
         private angularGrid;
         private parentGroup;
         private startWidth;
+        private checkEl;
         constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement);
+        toggle(deliberateState?: boolean): boolean;
         private setupComponents();
         getGui(): HTMLElement;
         destroy(): void;

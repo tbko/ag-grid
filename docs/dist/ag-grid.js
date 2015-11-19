@@ -6865,9 +6865,23 @@ var ag;
                 this.columnController = columnController;
                 this.$compile = $compile;
                 this.angularGrid = angularGrid;
-                this.setupComponents();
+                this.checkEl = this.setupComponents();
             }
+            RenderedHeaderCheckerCell.prototype.toggle = function (deliberateState) {
+                var turnOn = deliberateState;
+                if (turnOn === undefined) {
+                    turnOn = !this.checkEl.getAttribute('checked');
+                }
+                if (turnOn) {
+                    this.checkEl.setAttribute('checked', 'true');
+                }
+                else {
+                    this.checkEl.removeAttribute('checked');
+                }
+                return turnOn;
+            };
             RenderedHeaderCheckerCell.prototype.setupComponents = function () {
+                var that = this;
                 this.eHeaderCell = document.createElement("div");
                 this.createScope();
                 this.addClasses();
@@ -6881,6 +6895,11 @@ var ag;
                 eCheckBoxInput.id = this.angularGrid.getId() + '-checker-header';
                 eCheckBoxInput.name = this.angularGrid.getId() + '-checker-header';
                 eCheckBoxInput.type = 'checkbox';
+                eCheckBoxInput.onclick = function () {
+                    var checkState = !!~[].indexOf.call(eCheckBoxInput.ownerDocument.querySelectorAll(':checked'), eCheckBoxInput);
+                    that.toggle(checkState);
+                };
+                // _.addCssClass(eCheckBoxInput, ':checked');
                 var eCheckBoxIcon = document.createElement("span");
                 eCheckBoxIcon.className = 'input-icon';
                 var eCheckBoxSpan = document.createElement("span");
@@ -6900,6 +6919,7 @@ var ag;
                 headerCellLabel.appendChild(eCheckBox);
                 this.eHeaderCell.appendChild(headerCellLabel);
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
+                return eCheckBoxInput;
                 // var eInnerText = document.createElement("span");
                 // eInnerText.className = 'ag-header-cell-text';
                 // <div class="pi-btn-checkbox" >
