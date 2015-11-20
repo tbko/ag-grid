@@ -6,6 +6,7 @@
 /// <reference path="../headerRendering/renderedHeaderCheckerCell.ts" />
 /// <reference path="../headerRendering/renderedHeaderGroupCell.ts" />
 /// <reference path="../dragAndDrop/dragAndDropService" />
+/// <reference path="../widgets/agPopupService.ts" />
 
 module ag.grid {
 
@@ -29,10 +30,11 @@ module ag.grid {
 
         private readOnly: boolean;
         private dragAndDropService: DragAndDropService;
+        private popupService: PopupService;
         private uniqueId: any;
 
         public init(gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, gridPanel: GridPanel,
-            angularGrid: Grid, filterManager: FilterManager, $scope: any, $compile: any, dragAndDropService: DragAndDropService) {
+            angularGrid: Grid, filterManager: FilterManager, $scope: any, $compile: any, dragAndDropService: DragAndDropService, popUpService: PopupService) {
 
             this.gridOptionsWrapper = gridOptionsWrapper;
             this.columnController = columnController;
@@ -44,6 +46,7 @@ module ag.grid {
 
             this.readOnly = false;
             this.dragAndDropService = dragAndDropService;
+            this.popupService = popUpService;
             this.uniqueId = 'ColumnDrag-' + Math.random();
         }
 
@@ -156,10 +159,11 @@ module ag.grid {
             });
         }
 
-        public toggleSelectAll() {
+        public toggleSelectAll(pamparams: any) {
+            // toggle header state for all checker columns
             this.headerElements.forEach( (headerElement: any) => {
                 if (headerElement.column.colDef.checkboxSelection) {
-                    headerElement.toggle();
+                    headerElement.toggle(pamparams.allSelected, pamparams.someSelected);
                 }
             });
         }
@@ -173,12 +177,24 @@ module ag.grid {
                 }
                 var renderedHeaderCell = new headerCellRenderer(column, null, this.gridOptionsWrapper,
                     this.$scope, this.filterManager, this.columnController, this.$compile,
-                    this.angularGrid, this.eRoot);
+                    this.angularGrid, this.eRoot, this.popupService);
                 this.headerElements.push(renderedHeaderCell);
                 var eContainerToAddTo = column.pinned ? this.ePinnedHeader : this.eHeaderContainer;
                 eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
                 if (!column.colDef.checkboxSelection) {
-                    this.addDragAndDropToListItem(renderedHeaderCell.getGui(), renderedHeaderCell);
+                    var elHeader = renderedHeaderCell.getGui();
+                    var elDrag = elHeader.getElementsByClassName('pi-ag-header-cell-drag-handler')[0];
+                    if (!elDrag) {
+                        elDrag = elHeader;
+                    } else {
+                        elDrag.onclick = function(e: Event) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                        };
+                    }
+
+                    // debugger
+                    this.addDragAndDropToListItem(elDrag, renderedHeaderCell);
                 }
             });
         }

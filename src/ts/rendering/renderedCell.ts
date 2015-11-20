@@ -40,6 +40,7 @@ module ag.grid {
         private templateService: TemplateService;
         private cellRendererMap: {[key: string]: Function};
         private eCheckbox: HTMLInputElement;
+        private eCheckboxOutter: HTMLElement;
         private columnController: ColumnController;
         private valueService: ValueService;
         private eventService: EventService;
@@ -519,17 +520,7 @@ module ag.grid {
 
         public createSelectionCheckbox() {
 
-            this.eCheckbox = document.createElement('input');
-            this.eCheckbox.type = "checkbox";
-            this.eCheckbox.name = "name";
-            this.eCheckbox.className = 'ag-selection-checkbox';
-
-            this.eCheckbox.addEventListener('click', function (event) {
-                event.stopPropagation();
-            });
-
-            var that = this;
-            this.checkboxOnChangeListener = function() {
+            function checkListener() {
                 var newValue = that.eCheckbox.checked;
                 if (newValue) {
                     that.selectionController.selectIndex(that.rowIndex, true);
@@ -537,7 +528,47 @@ module ag.grid {
                     that.selectionController.deselectIndex(that.rowIndex);
                 }
             };
-            this.eCheckbox.onchange = this.checkboxOnChangeListener;
+            // checker ekement with listeners
+            var checkbox = document.createElement('input');
+            checkbox.type = "checkbox";
+            checkbox.name = "name";
+            checkbox.className = 'ag-selection-checkbox';
+
+            checkbox.addEventListener('click', function (event) {
+                event.stopPropagation();
+            });
+
+            var that = this;
+            this.checkboxOnChangeListener = checkListener;
+            checkbox.onchange = this.checkboxOnChangeListener;
+            // icon for checker
+            var eCheckBoxIcon = document.createElement("span");
+            eCheckBoxIcon.className = 'input-icon';
+
+            //container and label for checker with icon
+            var eCheckBoxSpan = document.createElement("span");
+            eCheckBoxSpan.className = 'checkbox-input';
+            eCheckBoxSpan.appendChild(checkbox);
+            eCheckBoxSpan.appendChild(eCheckBoxIcon);
+            var eCheckBoxLabel = document.createElement("label");
+            eCheckBoxLabel.appendChild(eCheckBoxSpan);
+
+            // main check cell container
+            var eCheckBox = document.createElement("div");
+            eCheckBox.className = "pi-btn-checkbox";
+            eCheckBox.appendChild(eCheckBoxLabel);
+            // label div
+            var headerCellLabel = document.createElement("div");
+            headerCellLabel.onclick = function() {
+                that.eCheckbox.checked = !that.eCheckbox.checked
+                checkListener();
+            }
+            headerCellLabel.className = "ag-header-cell-label group-checkbox";
+            // headerCellLabel.setAttribute('role', 'gridcell');
+            headerCellLabel.appendChild(eCheckBox);
+
+            this.eCheckbox = checkbox;
+            this.eCheckboxOutter = headerCellLabel;
         }
 
         public setSelected(state: boolean) {
@@ -563,7 +594,7 @@ module ag.grid {
                 this.vGridCell.appendChild(this.vCellWrapper);
 
                 this.createSelectionCheckbox();
-                this.vCellWrapper.appendChild(new ag.vdom.VWrapperElement(this.eCheckbox));
+                this.vCellWrapper.appendChild(new ag.vdom.VWrapperElement(this.eCheckboxOutter));
 
                 // eventually we call eSpanWithValue.innerHTML = xxx, so cannot include the checkbox (above) in this span
                 this.vSpanWithValue = new ag.vdom.VHtmlElement('span');

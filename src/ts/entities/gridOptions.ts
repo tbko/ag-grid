@@ -95,6 +95,7 @@ module ag.grid {
 
         // events
         onMultitoolClicked?(params: any): void;
+        onSelectionStateChanged?(params: any): void;
         onReady?(api: any): void;
         onModelUpdated?(): void;
         onCellClicked?(params: any): void;

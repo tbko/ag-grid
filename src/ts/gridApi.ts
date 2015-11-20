@@ -171,7 +171,6 @@ module ag.grid {
         }
 
         public selectAll() {
-            // this.grid.onSelectAll();
             this.selectionController.selectAll();
             this.rowRenderer.refreshView();
         }

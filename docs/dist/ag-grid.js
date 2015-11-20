@@ -993,6 +993,7 @@ var ag;
             Events.EVENT_ROW_DOUBLE_CLICKED = 'rowDoubleClicked';
             Events.EVENT_READY = 'ready';
             Events.EVENT_MULTITOOL_CLICK = 'multitoolClicked';
+            Events.EVENT_SELECTION_STATE_CHANGED = 'selectionStateChanged';
             return Events;
         })();
         grid.Events = Events;
@@ -3087,7 +3088,7 @@ var ag;
             //adds an element to a div, but also listens to background checking for clicks,
             //so that when the background is clicked, the child is removed again, giving
             //a model look to popups.
-            PopupService.prototype.addAsModalPopup = function (eChild, closeOnEsc) {
+            PopupService.prototype.addAsModalPopup = function (eChild, closeOnEsc, exitListener) {
                 var eBody = document.body;
                 if (!eBody) {
                     console.warn('ag-grid: could not find the body of the document, document.body is empty');
@@ -3123,6 +3124,7 @@ var ag;
                     eBody.removeEventListener('keydown', hidePopupOnEsc);
                     eBody.removeEventListener('click', hidePopup);
                     eChild.removeEventListener('click', consumeClick);
+                    exitListener();
                 }
                 function consumeClick(event) {
                     eventFromChild = event;
@@ -4333,15 +4335,7 @@ var ag;
                 return key === grid.Constants.KEY_ENTER || key === grid.Constants.KEY_BACKSPACE || key === grid.Constants.KEY_DELETE;
             };
             RenderedCell.prototype.createSelectionCheckbox = function () {
-                this.eCheckbox = document.createElement('input');
-                this.eCheckbox.type = "checkbox";
-                this.eCheckbox.name = "name";
-                this.eCheckbox.className = 'ag-selection-checkbox';
-                this.eCheckbox.addEventListener('click', function (event) {
-                    event.stopPropagation();
-                });
-                var that = this;
-                this.checkboxOnChangeListener = function () {
+                function checkListener() {
                     var newValue = that.eCheckbox.checked;
                     if (newValue) {
                         that.selectionController.selectIndex(that.rowIndex, true);
@@ -4349,8 +4343,44 @@ var ag;
                     else {
                         that.selectionController.deselectIndex(that.rowIndex);
                     }
+                }
+                ;
+                // checker ekement with listeners
+                var checkbox = document.createElement('input');
+                checkbox.type = "checkbox";
+                checkbox.name = "name";
+                checkbox.className = 'ag-selection-checkbox';
+                checkbox.addEventListener('click', function (event) {
+                    event.stopPropagation();
+                });
+                var that = this;
+                this.checkboxOnChangeListener = checkListener;
+                checkbox.onchange = this.checkboxOnChangeListener;
+                // icon for checker
+                var eCheckBoxIcon = document.createElement("span");
+                eCheckBoxIcon.className = 'input-icon';
+                //container and label for checker with icon
+                var eCheckBoxSpan = document.createElement("span");
+                eCheckBoxSpan.className = 'checkbox-input';
+                eCheckBoxSpan.appendChild(checkbox);
+                eCheckBoxSpan.appendChild(eCheckBoxIcon);
+                var eCheckBoxLabel = document.createElement("label");
+                eCheckBoxLabel.appendChild(eCheckBoxSpan);
+                // main check cell container
+                var eCheckBox = document.createElement("div");
+                eCheckBox.className = "pi-btn-checkbox";
+                eCheckBox.appendChild(eCheckBoxLabel);
+                // label div
+                var headerCellLabel = document.createElement("div");
+                headerCellLabel.onclick = function () {
+                    that.eCheckbox.checked = !that.eCheckbox.checked;
+                    checkListener();
                 };
-                this.eCheckbox.onchange = this.checkboxOnChangeListener;
+                headerCellLabel.className = "ag-header-cell-label group-checkbox";
+                // headerCellLabel.setAttribute('role', 'gridcell');
+                headerCellLabel.appendChild(eCheckBox);
+                this.eCheckbox = checkbox;
+                this.eCheckboxOutter = headerCellLabel;
             };
             RenderedCell.prototype.setSelected = function (state) {
                 if (!this.eCheckbox) {
@@ -4374,7 +4404,7 @@ var ag;
                     this.vCellWrapper.addClass('ag-cell-wrapper');
                     this.vGridCell.appendChild(this.vCellWrapper);
                     this.createSelectionCheckbox();
-                    this.vCellWrapper.appendChild(new ag.vdom.VWrapperElement(this.eCheckbox));
+                    this.vCellWrapper.appendChild(new ag.vdom.VWrapperElement(this.eCheckboxOutter));
                     // eventually we call eSpanWithValue.innerHTML = xxx, so cannot include the checkbox (above) in this span
                     this.vSpanWithValue = new ag.vdom.VHtmlElement('span');
                     this.vSpanWithValue.addClass('ag-cell-value');
@@ -5613,6 +5643,7 @@ var ag;
                 }
                 this.refreshAllVirtualRows(refreshFromIndex);
                 this.refreshAllFloatingRows();
+                this.selectionController.refreshSelection();
             };
             RowRenderer.prototype.softRefreshView = function () {
                 _.iterateObject(this.renderedRows, function (key, renderedRow) {
@@ -6342,6 +6373,13 @@ var ag;
                 var node = this.rowModel.getVirtualRow(index);
                 this.selectNode(node, tryMulti, suppressEvents);
             };
+            SelectionController.prototype.refreshSelection = function () {
+                var event = {
+                    selectedNodesById: this.selectedNodesById,
+                    selectedRows: this.selectedRows
+                };
+                this.eventService.dispatchEvent(grid.Events.EVENT_SELECTION_CHANGED, event);
+            };
             // updates the selectedRows with the selectedNodes and calls selectionChanged listener
             SelectionController.prototype.syncSelectedRowsAndCallListener = function (suppressEvents) {
                 // update selected rows
@@ -6534,6 +6572,7 @@ var ag;
 /// <reference path='../gridOptionsWrapper.ts' />
 /// <reference path='../columnController.ts' />
 /// <reference path='renderedHeaderElement.ts' />
+/// <reference path="../widgets/agPopupService.ts" />
 var ag;
 (function (ag) {
     var grid;
@@ -6543,7 +6582,7 @@ var ag;
         var svgFactory = grid.SvgFactory.getInstance();
         var RenderedHeaderCell = (function (_super) {
             __extends(RenderedHeaderCell, _super);
-            function RenderedHeaderCell(column, parentGroup, gridOptionsWrapper, parentScope, filterManager, columnController, $compile, angularGrid, eRoot) {
+            function RenderedHeaderCell(column, parentGroup, gridOptionsWrapper, parentScope, filterManager, columnController, $compile, angularGrid, eRoot, popupService) {
                 _super.call(this, eRoot);
                 this.column = column;
                 this.parentGroup = parentGroup;
@@ -6553,6 +6592,7 @@ var ag;
                 this.columnController = columnController;
                 this.$compile = $compile;
                 this.angularGrid = angularGrid;
+                this.popupService = popupService;
                 this.setupComponents();
             }
             RenderedHeaderCell.prototype.getGui = function () {
@@ -6585,30 +6625,61 @@ var ag;
                 }
             };
             RenderedHeaderCell.prototype.addMenu = function () {
-                var showMenu = this.gridOptionsWrapper.isEnableFilter() && !this.column.colDef.suppressMenu;
-                if (!showMenu) {
-                    return;
-                }
-                var eMenuButton = _.createIcon('menu', this.gridOptionsWrapper, this.column, svgFactory.createMenuSvg);
-                _.addCssClass(eMenuButton, 'ag-header-icon');
-                eMenuButton.setAttribute("class", "ag-header-cell-menu-button");
                 var that = this;
+                var eMenuButton = document.createElement('div');
+                var eMenuGui;
+                eMenuButton.classList.add('pi-ag-header-cell-menu-button');
+                eMenuButton.classList.add('pi-icon');
+                eMenuButton.classList.add('i-kp');
                 eMenuButton.onclick = function () {
-                    that.filterManager.showFilter(that.column, this);
+                    eMenuGui = document.createElement('div');
+                    eMenuGui.classList.add('ag-filter');
+                    var eItemList = document.createElement('ul');
+                    var eItem1 = document.createElement('li');
+                    eItem1.innerHTML = 'gopgop';
+                    var eItem2 = document.createElement('li');
+                    eItem2.innerHTML = 'toptop';
+                    eItemList.appendChild(eItem1);
+                    eItemList.appendChild(eItem2);
+                    eMenuGui.appendChild(eItemList);
+                    var hidePopup = that.popupService.addAsModalPopup(eMenuGui, true, function () { eMenuButton.style.opacity = '0'; });
+                    that.popupService.positionPopup(this, eMenuGui, true);
+                    eMenuButton.style.opacity = '1';
+                };
+                eMenuButton.style.opacity = '0';
+                this.eHeaderCell.onmouseenter = function () {
+                    eMenuButton.style.opacity = '1';
+                };
+                this.eHeaderCell.onmouseleave = function () {
+                    if (!eMenuGui || !_.isVisible(eMenuGui))
+                        eMenuButton.style.opacity = '0';
                 };
                 this.eHeaderCell.appendChild(eMenuButton);
-                if (!this.gridOptionsWrapper.isSuppressMenuHide()) {
-                    eMenuButton.style.opacity = '0';
-                    this.eHeaderCell.onmouseenter = function () {
-                        eMenuButton.style.opacity = '1';
-                    };
-                    this.eHeaderCell.onmouseleave = function () {
-                        eMenuButton.style.opacity = '0';
-                    };
-                }
-                eMenuButton.style['transition'] = 'opacity 0.5s, border 0.2s';
-                var style = eMenuButton.style;
-                style['-webkit-transition'] = 'opacity 0.5s, border 0.2s';
+                return;
+                // var showMenu = this.gridOptionsWrapper.isEnableFilter() && !this.column.colDef.suppressMenu;
+                // if (!showMenu) {
+                //     return;
+                // }
+                // var eMenuButton = _.createIcon('menu', this.gridOptionsWrapper, this.column, svgFactory.createMenuSvg);
+                // _.addCssClass(eMenuButton, 'ag-header-icon');
+                // eMenuButton.setAttribute("class", "ag-header-cell-menu-button");
+                // var that = this;
+                // eMenuButton.onclick = function () {
+                //     that.filterManager.showFilter(that.column, this);
+                // };
+                // this.eHeaderCell.appendChild(eMenuButton);
+                // if (!this.gridOptionsWrapper.isSuppressMenuHide()) {
+                //     eMenuButton.style.opacity = '0';
+                //     this.eHeaderCell.onmouseenter = function () {
+                //         eMenuButton.style.opacity = '1';
+                //     };
+                //     this.eHeaderCell.onmouseleave = function () {
+                //         eMenuButton.style.opacity = '0';
+                //     };
+                // }
+                // eMenuButton.style['transition'] = 'opacity 0.5s, border 0.2s';
+                // var style: any = eMenuButton.style;
+                // style['-webkit-transition'] = 'opacity 0.5s, border 0.2s';
             };
             RenderedHeaderCell.prototype.addSortIcons = function (headerCellLabel) {
                 var addSortIcons = this.gridOptionsWrapper.isEnableSorting() && !this.column.colDef.suppressSorting;
@@ -6654,9 +6725,9 @@ var ag;
                 // add in sort icons
                 this.addSortIcons(headerCellLabel);
                 // add in filter icon
-                this.eFilterIcon = _.createIcon('filter', this.gridOptionsWrapper, this.column, svgFactory.createFilterSvg);
-                _.addCssClass(this.eFilterIcon, 'ag-header-icon');
-                headerCellLabel.appendChild(this.eFilterIcon);
+                // this.eFilterIcon = _.createIcon('filter', this.gridOptionsWrapper, this.column, svgFactory.createFilterSvg);
+                // _.addCssClass(this.eFilterIcon, 'ag-header-icon');
+                // headerCellLabel.appendChild(this.eFilterIcon);
                 // render the cell, use a renderer if one is provided
                 var headerCellRenderer;
                 if (this.column.colDef.headerCellRenderer) {
@@ -6678,7 +6749,7 @@ var ag;
                 }
                 this.eHeaderCell.appendChild(headerCellLabel);
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
-                this.refreshFilterIcon();
+                // this.refreshFilterIcon();
                 this.refreshSortIcon();
             };
             RenderedHeaderCell.prototype.useRenderer = function (headerNameValue, headerCellRenderer, headerCellLabel) {
@@ -6713,6 +6784,7 @@ var ag;
                 }
             };
             RenderedHeaderCell.prototype.refreshFilterIcon = function () {
+                return;
                 var filterPresent = this.filterManager.isFilterPresentForCol(this.column.colId);
                 if (filterPresent) {
                     _.addCssClass(this.eHeaderCell, 'ag-header-cell-filtered');
@@ -6728,6 +6800,15 @@ var ag;
                 var sortAscending = this.column.sort === constants.ASC;
                 var sortDescending = this.column.sort === constants.DESC;
                 var unSort = this.column.sort !== constants.DESC && this.column.sort !== constants.ASC;
+                if (sortAscending)
+                    _.querySelectorAll_replaceCssClass(this.getGui(), '.pi-ag-header-cell-sort-icon', 'pi-ag-header-cell-sort-icon-up', 'pi-ag-header-cell-sort-icon-down');
+                if (sortDescending)
+                    _.querySelectorAll_replaceCssClass(this.getGui(), '.pi-ag-header-cell-sort-icon', 'pi-ag-header-cell-sort-icon-down', 'pi-ag-header-cell-sort-icon-up');
+                if (unSort) {
+                    _.querySelectorAll_removeCssClass(this.getGui(), '.pi-ag-header-cell-sort-icon', 'pi-ag-header-cell-sort-icon-down');
+                    _.querySelectorAll_removeCssClass(this.getGui(), '.pi-ag-header-cell-sort-icon', 'pi-ag-header-cell-sort-icon-up');
+                }
+                return;
                 if (this.eSortAsc) {
                     _.setVisible(this.eSortAsc, sortAscending);
                 }
@@ -6868,23 +6949,39 @@ var ag;
                 this.angularGrid = angularGrid;
                 this.checkEl = this.setupComponents();
             }
-            RenderedHeaderCheckerCell.prototype.toggle = function (deliberateState) {
-                var api = this.gridOptionsWrapper.getApi();
-                var turnOn = deliberateState;
+            RenderedHeaderCheckerCell.prototype.toggle = function (isOnState, isSomeState) {
+                // debugger
+                var turnOn = isOnState;
+                if (isSomeState) {
+                    this.checkEl.removeAttribute('checked');
+                    this.checkEl.checked = false;
+                    this.checkEl.indeterminate = true;
+                    return;
+                }
                 if (turnOn === undefined) {
                     turnOn = !this.checkerState();
                 }
                 if (turnOn) {
                     this.checkEl.setAttribute('checked', 'true');
+                    this.checkEl.indeterminate = false;
                     this.checkEl.checked = true;
-                    api.selectAll();
                 }
                 else {
                     this.checkEl.removeAttribute('checked');
+                    this.checkEl.indeterminate = false;
                     this.checkEl.checked = false;
-                    api.deselectAll();
                 }
                 return turnOn;
+            };
+            RenderedHeaderCheckerCell.prototype.changeSelection = function () {
+                var api = this.gridOptionsWrapper.getApi();
+                var desiredState = !this.checkerState();
+                if (desiredState) {
+                    api.selectAll();
+                }
+                else {
+                    api.deselectAll();
+                }
             };
             RenderedHeaderCheckerCell.prototype.checkerState = function () {
                 return (this.checkEl.getAttribute('checked'));
@@ -6900,18 +6997,22 @@ var ag;
                 if (this.column.colDef.headerTooltip) {
                     this.eHeaderCell.title = this.column.colDef.headerTooltip;
                 }
+                // checker element to indicate and to toggle "select all" state
                 var eCheckBoxInput = document.createElement("input");
                 eCheckBoxInput.id = this.angularGrid.getId() + '-checker-header';
                 eCheckBoxInput.name = this.angularGrid.getId() + '-checker-header';
                 eCheckBoxInput.type = 'checkbox';
                 eCheckBoxInput.addEventListener('click', function (e) {
+                    // change select all on checker click
                     e.stopPropagation();
-                    that.toggle();
+                    that.changeSelection();
                 });
+                // checker element Xmas decorations template
                 var eCheckBoxIcon = document.createElement("span");
                 eCheckBoxIcon.className = 'input-icon';
                 var eCheckBoxSpan = document.createElement("span");
                 eCheckBoxSpan.className = 'checkbox-input';
+                // !!!!!!!TODO: shift style to css
                 eCheckBoxSpan.style.textAlign = 'left';
                 eCheckBoxSpan.appendChild(eCheckBoxInput);
                 eCheckBoxSpan.appendChild(eCheckBoxIcon);
@@ -6923,24 +7024,16 @@ var ag;
                 // label div
                 var headerCellLabel = document.createElement("div");
                 headerCellLabel.className = "ag-header-cell-label group-checkbox";
-                headerCellLabel.setAttribute('role', 'gridcell');
+                // headerCellLabel.setAttribute('role', 'gridcell');
                 headerCellLabel.appendChild(eCheckBox);
+                // append header template into header cell element
                 this.eHeaderCell.appendChild(headerCellLabel);
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
                 this.eHeaderCell.addEventListener('click', function (e) {
-                    that.toggle();
+                    // change select all on click in header area
+                    that.changeSelection();
                 });
                 return eCheckBoxInput;
-                // var eInnerText = document.createElement("span");
-                // eInnerText.className = 'ag-header-cell-text';
-                // <div class="pi-btn-checkbox" >
-                //     <label>
-                //         <span class="checkbox-input" >
-                //             <input name="{{id}}" type= "checkbox" />
-                //             <span class="input-icon" > </span>
-                //        < /span>
-                //     < /label>
-                // < /div>
             };
             RenderedHeaderCheckerCell.prototype.getGui = function () {
                 return this.eHeaderCell;
@@ -7437,6 +7530,7 @@ var ag;
 /// <reference path="../headerRendering/renderedHeaderCheckerCell.ts" />
 /// <reference path="../headerRendering/renderedHeaderGroupCell.ts" />
 /// <reference path="../dragAndDrop/dragAndDropService" />
+/// <reference path="../widgets/agPopupService.ts" />
 var ag;
 (function (ag) {
     var grid;
@@ -7453,7 +7547,7 @@ var ag;
             function HeaderRenderer() {
                 this.headerElements = [];
             }
-            HeaderRenderer.prototype.init = function (gridOptionsWrapper, columnController, gridPanel, angularGrid, filterManager, $scope, $compile, dragAndDropService) {
+            HeaderRenderer.prototype.init = function (gridOptionsWrapper, columnController, gridPanel, angularGrid, filterManager, $scope, $compile, dragAndDropService, popUpService) {
                 this.gridOptionsWrapper = gridOptionsWrapper;
                 this.columnController = columnController;
                 this.angularGrid = angularGrid;
@@ -7463,6 +7557,7 @@ var ag;
                 this.findAllElements(gridPanel);
                 this.readOnly = false;
                 this.dragAndDropService = dragAndDropService;
+                this.popupService = popUpService;
                 this.uniqueId = 'ColumnDrag-' + Math.random();
             };
             // start drag-n-drop methods
@@ -7558,10 +7653,11 @@ var ag;
                     eContainerToAddTo.appendChild(renderedHeaderGroup.getGui());
                 });
             };
-            HeaderRenderer.prototype.toggleSelectAll = function () {
+            HeaderRenderer.prototype.toggleSelectAll = function (pamparams) {
+                // toggle header state for all checker columns
                 this.headerElements.forEach(function (headerElement) {
                     if (headerElement.column.colDef.checkboxSelection) {
-                        headerElement.toggle();
+                        headerElement.toggle(pamparams.allSelected, pamparams.someSelected);
                     }
                 });
             };
@@ -7573,12 +7669,24 @@ var ag;
                     if (column.colDef.checkboxSelection) {
                         headerCellRenderer = grid.RenderedHeaderCheckerCell;
                     }
-                    var renderedHeaderCell = new headerCellRenderer(column, null, _this.gridOptionsWrapper, _this.$scope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.eRoot);
+                    var renderedHeaderCell = new headerCellRenderer(column, null, _this.gridOptionsWrapper, _this.$scope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.eRoot, _this.popupService);
                     _this.headerElements.push(renderedHeaderCell);
                     var eContainerToAddTo = column.pinned ? _this.ePinnedHeader : _this.eHeaderContainer;
                     eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
                     if (!column.colDef.checkboxSelection) {
-                        _this.addDragAndDropToListItem(renderedHeaderCell.getGui(), renderedHeaderCell);
+                        var elHeader = renderedHeaderCell.getGui();
+                        var elDrag = elHeader.getElementsByClassName('pi-ag-header-cell-drag-handler')[0];
+                        if (!elDrag) {
+                            elDrag = elHeader;
+                        }
+                        else {
+                            elDrag.onclick = function (e) {
+                                e.preventDefault();
+                                e.stopPropagation();
+                            };
+                        }
+                        // debugger
+                        _this.addDragAndDropToListItem(elDrag, renderedHeaderCell);
                     }
                 });
             };
@@ -8880,6 +8988,9 @@ var ag;
                 this.overlays = params.overlays;
                 this.setupOverlays();
             }
+            BorderLayout.prototype.getOverlays = function () {
+                return this.overlays;
+            };
             BorderLayout.prototype.addSizeChangeListener = function (listener) {
                 this.sizeChangeListeners.push(listener);
             };
@@ -9084,7 +9195,7 @@ var ag;
             '</div>';
         var defaultLoadingOverlayTemplate = '<span class="ag-overlay-loading-center">[LOADING...]</span>';
         var defaultNoRowsOverlayTemplate = '<span class="ag-overlay-no-rows-center">[NO_ROWS_TO_SHOW]</span>';
-        var defaultToolOverlayTemplate = '<span style="pointer-events:all; opacity: 1.0;" class="ag-overlay-no-rows-center"><a class="k-grid-Delete" title= "Удалить" href= "#" > <span class="i-delete" > </span></a></span>';
+        var defaultToolOverlayTemplate = '[COUNTER_PLACEHOLDER]<span style="pointer-events:all; opacity: 1.0;" class="ag-overlay-no-rows-center"><a class="k-grid-Delete" title= "Удалить" href= "#" > <span class="i-delete" > </span></a></span>';
         var _ = grid.Utils;
         var GridPanel = (function () {
             function GridPanel() {
@@ -9125,7 +9236,8 @@ var ag;
                     center: this.eRoot,
                     dontFill: this.forPrint,
                     name: 'eGridPanel',
-                    deleteListener: function () {
+                    deleteListener: function (ev) {
+                        ev.preventDefault();
                         var selected = that.gridOptionsWrapper.getApi().getSelectedNodes();
                         var multitoolParams = {
                             name: 'delete',
@@ -9135,11 +9247,28 @@ var ag;
                     }
                 });
                 this.layout.addSizeChangeListener(this.onBodyHeightChange.bind(this));
+                // notify on all|some selected to toggle "select all" checker in header
+                // show multirow tools on multiple rows selected
                 this.eventService.addEventListener('selectionChanged', function (pamparams) {
-                    console.log(pamparams.selectedRows.length);
-                    console.log(that.gridOptionsWrapper.getApi().getModel().getAllRows().length);
-                    if (pamparams.selectedRows.length > 1) {
-                        that.showToolOverlay();
+                    var selectionParams = {
+                        countSelected: 0,
+                        allSelected: false,
+                        someSelected: false
+                    };
+                    var selectedLength = pamparams.selectedRows.length;
+                    if (selectedLength === that.gridOptionsWrapper.getApi().getModel().getAllRows().length) {
+                        // all are selected
+                        selectionParams.allSelected = true;
+                    }
+                    else {
+                        if (selectedLength > 0) {
+                            selectionParams.someSelected = true;
+                        }
+                    }
+                    selectionParams.countSelected = selectedLength;
+                    that.eventService.dispatchEvent(grid.Events.EVENT_SELECTION_STATE_CHANGED, selectionParams);
+                    if (selectedLength > 1) {
+                        that.showToolOverlay(selectedLength);
                     }
                     else {
                         that.hideOverlay();
@@ -9187,8 +9316,12 @@ var ag;
                 var templateLocalised = templateNotLocalised.replace('[NO_ROWS_TO_SHOW]', localeTextFunc('noRowsToShow', 'No Rows To Show'));
                 return templateLocalised;
             };
-            GridPanel.prototype.createToolOverlayTemplate = function () {
-                var template = this.createOverlayTemplate('tool', defaultToolOverlayTemplate, null);
+            GridPanel.prototype.createToolOverlayTemplate = function (counterText) {
+                var tmpl = defaultToolOverlayTemplate;
+                if (!counterText)
+                    counterText = '';
+                tmpl = tmpl.replace('[COUNTER_PLACEHOLDER]', counterText);
+                var template = this.createOverlayTemplate('tool', tmpl, null);
                 return template;
             };
             GridPanel.prototype.ensureIndexVisible = function (index) {
@@ -9274,7 +9407,11 @@ var ag;
                     this.layout.showOverlay('noRows');
                 }
             };
-            GridPanel.prototype.showToolOverlay = function () {
+            GridPanel.prototype.showToolOverlay = function (counter) {
+                // rerender template with new counter values
+                if (counter) {
+                    this.layout.getOverlays().tool = _.loadTemplate(this.createToolOverlayTemplate('Выбрано: ' + counter));
+                }
                 this.layout.showOverlay('tool');
             };
             GridPanel.prototype.hideOverlay = function () {
@@ -10328,7 +10465,6 @@ var ag;
                 this.selectionController.deselectNode(node);
             };
             GridApi.prototype.selectAll = function () {
-                // this.grid.onSelectAll();
                 this.selectionController.selectAll();
                 this.rowRenderer.refreshView();
             };
@@ -10723,7 +10859,7 @@ var ag;
                 selectionRendererFactory.init(this, selectionController);
                 columnController.init(this, selectionRendererFactory, gridOptionsWrapper, expressionService, valueService, masterSlaveService, eventService);
                 rowRenderer.init(columnController, gridOptionsWrapper, gridPanel, this, selectionRendererFactory, $compile, $scope, selectionController, expressionService, templateService, valueService, eventService);
-                headerRenderer.init(gridOptionsWrapper, columnController, gridPanel, this, filterManager, $scope, $compile, dragAndDropService);
+                headerRenderer.init(gridOptionsWrapper, columnController, gridPanel, this, filterManager, $scope, $compile, dragAndDropService, popupService);
                 inMemoryRowController.init(gridOptionsWrapper, columnController, this, filterManager, $scope, groupCreator, valueService, eventService);
                 virtualPageRowController.init(rowRenderer, gridOptionsWrapper, this);
                 valueService.init(gridOptionsWrapper, expressionService, columnController);
@@ -10785,6 +10921,10 @@ var ag;
                 this.showToolPanel(gridOptionsWrapper.isShowToolPanel());
                 eUserProvidedDiv.appendChild(this.eRootPanel.getGui());
                 this.logger.log('grid DOM added');
+                this.eventService.addEventListener('selectionStateChanged', function (pamparams) {
+                    // relay "selection change" message to header
+                    headerRenderer.toggleSelectAll(pamparams);
+                });
                 eventService.addEventListener(grid.Events.EVENT_COLUMN_EVERYTHING_CHANGED, this.onColumnChanged.bind(this));
                 eventService.addEventListener(grid.Events.EVENT_COLUMN_GROUP_OPENED, this.onColumnChanged.bind(this));
                 eventService.addEventListener(grid.Events.EVENT_COLUMN_MOVED, this.onColumnChanged.bind(this));
@@ -10925,9 +11065,6 @@ var ag;
                     this.updateModelAndRefresh(grid.Constants.STEP_FILTER);
                 }
                 this.eventService.dispatchEvent(grid.Events.EVENT_AFTER_FILTER_CHANGED);
-            };
-            Grid.prototype.onSelectAll = function () {
-                this.headerRenderer.toggleSelectAll();
             };
             Grid.prototype.onRowClicked = function (multiSelectKeyPressed, rowIndex, node) {
                 // we do not allow selecting groups by clicking (as the click here expands the group)

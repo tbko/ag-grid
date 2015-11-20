@@ -101,6 +101,10 @@ module ag.grid {
             this.setupOverlays();
         }
 
+        public getOverlays() {
+            return this.overlays;
+        }
+
         public addSizeChangeListener(listener: Function): void {
             this.sizeChangeListeners.push(listener);
         }

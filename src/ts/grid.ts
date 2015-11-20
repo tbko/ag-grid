@@ -193,7 +193,7 @@ module ag.grid {
             rowRenderer.init(columnController, gridOptionsWrapper, gridPanel, this, selectionRendererFactory, $compile,
                 $scope, selectionController, expressionService, templateService, valueService, eventService);
             headerRenderer.init(gridOptionsWrapper, columnController, gridPanel, this, filterManager,
-                $scope, $compile, dragAndDropService);
+                $scope, $compile, dragAndDropService, popupService);
             inMemoryRowController.init(gridOptionsWrapper, columnController, this, filterManager, $scope,
                 groupCreator, valueService, eventService);
             virtualPageRowController.init(rowRenderer, gridOptionsWrapper, this);
@@ -267,6 +267,11 @@ module ag.grid {
             eUserProvidedDiv.appendChild(this.eRootPanel.getGui());
             this.logger.log('grid DOM added');
 
+            this.eventService.addEventListener('selectionStateChanged', function(pamparams: any) {
+                // relay "selection change" message to header
+                headerRenderer.toggleSelectAll(pamparams);
+            });
+
             eventService.addEventListener(Events.EVENT_COLUMN_EVERYTHING_CHANGED, this.onColumnChanged.bind(this));
             eventService.addEventListener(Events.EVENT_COLUMN_GROUP_OPENED, this.onColumnChanged.bind(this));
             eventService.addEventListener(Events.EVENT_COLUMN_MOVED, this.onColumnChanged.bind(this));
@@ -296,7 +301,7 @@ module ag.grid {
         }
 
         public refreshPivot(): void {
-            this.columnController.onColumnsChanged()
+            this.columnController.onColumnsChanged();
             this.inMemoryRowController.onPivotChanged();
             this.refreshHeaderAndBody();
         }
@@ -424,10 +429,6 @@ module ag.grid {
                 this.updateModelAndRefresh(Constants.STEP_FILTER);
             }
             this.eventService.dispatchEvent(Events.EVENT_AFTER_FILTER_CHANGED);
-        }
-
-        public onSelectAll() {
-            this.headerRenderer.toggleSelectAll();
         }
 
         public onRowClicked(multiSelectKeyPressed: boolean, rowIndex: number, node: RowNode) {

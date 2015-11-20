@@ -185,6 +185,7 @@ module ag.grid {
 
             this.refreshAllVirtualRows(refreshFromIndex);
             this.refreshAllFloatingRows();
+            this.selectionController.refreshSelection();
         }
 
         public softRefreshView() {

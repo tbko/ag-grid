@@ -334,6 +334,14 @@ module ag.grid {
             this.selectNode(node, tryMulti, suppressEvents);
         }
 
+        public refreshSelection() {
+            var event = {
+                selectedNodesById: this.selectedNodesById,
+                selectedRows: this.selectedRows
+            };
+            this.eventService.dispatchEvent(Events.EVENT_SELECTION_CHANGED, event);
+        }
+
         // updates the selectedRows with the selectedNodes and calls selectionChanged listener
         private syncSelectedRowsAndCallListener(suppressEvents?: any) {
             // update selected rows

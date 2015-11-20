@@ -3,6 +3,7 @@
 /// <reference path='../gridOptionsWrapper.ts' />
 /// <reference path='../columnController.ts' />
 /// <reference path='renderedHeaderElement.ts' />
+/// <reference path="../widgets/agPopupService.ts" />
 
 module ag.grid {
 
@@ -29,12 +30,13 @@ module ag.grid {
         private $compile: any;
         private angularGrid: Grid;
         private parentGroup: RenderedHeaderGroupCell;
+        private popupService: PopupService;
 
         private startWidth: number;
 
         constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper,
                     parentScope: any, filterManager: FilterManager, columnController: ColumnController,
-                    $compile: any, angularGrid: Grid, eRoot: HTMLElement) {
+                    $compile: any, angularGrid: Grid, eRoot: HTMLElement, popupService?: PopupService ) {
             super(eRoot);
             this.column = column;
             this.parentGroup = parentGroup;
@@ -44,6 +46,7 @@ module ag.grid {
             this.columnController = columnController;
             this.$compile = $compile;
             this.angularGrid = angularGrid;
+            this.popupService = popupService;
 
             this.setupComponents();
         }
@@ -82,33 +85,66 @@ module ag.grid {
         }
 
         private addMenu(): void {
-            var showMenu = this.gridOptionsWrapper.isEnableFilter() && !this.column.colDef.suppressMenu;
-            if (!showMenu) {
-                return;
-            }
-
-            var eMenuButton = _.createIcon('menu', this.gridOptionsWrapper, this.column, svgFactory.createMenuSvg);
-            _.addCssClass(eMenuButton, 'ag-header-icon');
-
-            eMenuButton.setAttribute("class", "ag-header-cell-menu-button");
             var that = this;
+
+            var eMenuButton = document.createElement('div');
+            var eMenuGui: HTMLDivElement;
+            eMenuButton.classList.add('pi-ag-header-cell-menu-button')
+            eMenuButton.classList.add('pi-icon');
+            eMenuButton.classList.add('i-kp');
             eMenuButton.onclick = function () {
-                that.filterManager.showFilter(that.column, this);
+                eMenuGui = document.createElement('div');
+                eMenuGui.classList.add('ag-filter');
+                var eItemList = document.createElement('ul');
+                var eItem1 = document.createElement('li');
+                eItem1.innerHTML = 'gopgop';
+                var eItem2 = document.createElement('li');
+                eItem2.innerHTML = 'toptop';
+                eItemList.appendChild(eItem1);
+                eItemList.appendChild(eItem2);
+                eMenuGui.appendChild(eItemList);
+                var hidePopup = that.popupService.addAsModalPopup(eMenuGui, true, function() {eMenuButton.style.opacity = '0'});
+                that.popupService.positionPopup(this, eMenuGui, true);
+                eMenuButton.style.opacity = '1';
+            };
+            eMenuButton.style.opacity = '0';
+            this.eHeaderCell.onmouseenter = function () {
+                eMenuButton.style.opacity = '1';
+            };
+            this.eHeaderCell.onmouseleave = function () {
+                if (!eMenuGui || !_.isVisible(eMenuGui)) eMenuButton.style.opacity = '0';
             };
             this.eHeaderCell.appendChild(eMenuButton);
 
-            if (!this.gridOptionsWrapper.isSuppressMenuHide()) {
-                eMenuButton.style.opacity = '0';
-                this.eHeaderCell.onmouseenter = function () {
-                    eMenuButton.style.opacity = '1';
-                };
-                this.eHeaderCell.onmouseleave = function () {
-                    eMenuButton.style.opacity = '0';
-                };
-            }
-            eMenuButton.style['transition'] = 'opacity 0.5s, border 0.2s';
-            var style: any = eMenuButton.style;
-            style['-webkit-transition'] = 'opacity 0.5s, border 0.2s';
+            return;
+
+            // var showMenu = this.gridOptionsWrapper.isEnableFilter() && !this.column.colDef.suppressMenu;
+            // if (!showMenu) {
+            //     return;
+            // }
+
+            // var eMenuButton = _.createIcon('menu', this.gridOptionsWrapper, this.column, svgFactory.createMenuSvg);
+            // _.addCssClass(eMenuButton, 'ag-header-icon');
+
+            // eMenuButton.setAttribute("class", "ag-header-cell-menu-button");
+            // var that = this;
+            // eMenuButton.onclick = function () {
+            //     that.filterManager.showFilter(that.column, this);
+            // };
+            // this.eHeaderCell.appendChild(eMenuButton);
+
+            // if (!this.gridOptionsWrapper.isSuppressMenuHide()) {
+            //     eMenuButton.style.opacity = '0';
+            //     this.eHeaderCell.onmouseenter = function () {
+            //         eMenuButton.style.opacity = '1';
+            //     };
+            //     this.eHeaderCell.onmouseleave = function () {
+            //         eMenuButton.style.opacity = '0';
+            //     };
+            // }
+            // eMenuButton.style['transition'] = 'opacity 0.5s, border 0.2s';
+            // var style: any = eMenuButton.style;
+            // style['-webkit-transition'] = 'opacity 0.5s, border 0.2s';
         }
 
         private addSortIcons(headerCellLabel: HTMLElement): void {
@@ -167,9 +203,9 @@ module ag.grid {
 
 
             // add in filter icon
-            this.eFilterIcon = _.createIcon('filter', this.gridOptionsWrapper, this.column, svgFactory.createFilterSvg);
-            _.addCssClass(this.eFilterIcon, 'ag-header-icon');
-            headerCellLabel.appendChild(this.eFilterIcon);
+            // this.eFilterIcon = _.createIcon('filter', this.gridOptionsWrapper, this.column, svgFactory.createFilterSvg);
+            // _.addCssClass(this.eFilterIcon, 'ag-header-icon');
+            // headerCellLabel.appendChild(this.eFilterIcon);
 
             // render the cell, use a renderer if one is provided
             var headerCellRenderer: any;
@@ -194,7 +230,7 @@ module ag.grid {
             this.eHeaderCell.appendChild(headerCellLabel);
             this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
 
-            this.refreshFilterIcon();
+            // this.refreshFilterIcon();
             this.refreshSortIcon();
         }
 
@@ -230,6 +266,7 @@ module ag.grid {
         }
 
         public refreshFilterIcon(): void {
+            return;
             var filterPresent = this.filterManager.isFilterPresentForCol(this.column.colId);
             if (filterPresent) {
                 _.addCssClass(this.eHeaderCell, 'ag-header-cell-filtered');
@@ -245,6 +282,35 @@ module ag.grid {
             var sortAscending = this.column.sort === constants.ASC;
             var sortDescending = this.column.sort === constants.DESC;
             var unSort = this.column.sort !== constants.DESC && this.column.sort !== constants.ASC;
+
+            if (sortAscending) _.querySelectorAll_replaceCssClass(
+                this.getGui(),
+                '.pi-ag-header-cell-sort-icon',
+                'pi-ag-header-cell-sort-icon-up',
+                'pi-ag-header-cell-sort-icon-down'
+            );
+
+            if (sortDescending) _.querySelectorAll_replaceCssClass(
+                this.getGui(),
+                '.pi-ag-header-cell-sort-icon',
+                'pi-ag-header-cell-sort-icon-down',
+                'pi-ag-header-cell-sort-icon-up'
+            );
+
+            if (unSort) {
+                _.querySelectorAll_removeCssClass(
+                    this.getGui(),
+                    '.pi-ag-header-cell-sort-icon',
+                    'pi-ag-header-cell-sort-icon-down'
+                );                
+                _.querySelectorAll_removeCssClass(
+                    this.getGui(),
+                    '.pi-ag-header-cell-sort-icon',
+                    'pi-ag-header-cell-sort-icon-up'
+                );                
+            }
+
+            return;
 
             if (this.eSortAsc) {
                 _.setVisible(this.eSortAsc, sortAscending);

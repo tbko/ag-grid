@@ -299,6 +299,7 @@ declare module ag.grid {
         static EVENT_ROW_DOUBLE_CLICKED: string;
         static EVENT_READY: string;
         static EVENT_MULTITOOL_CLICK: string;
+        static EVENT_SELECTION_STATE_CHANGED: string;
     }
 }
 declare module ag.grid {
@@ -735,7 +736,7 @@ declare module ag.grid {
         private ePopupParent;
         init(ePopupParent: any): void;
         positionPopup(eventSource: any, ePopup: any, keepWithinBounds: boolean): void;
-        addAsModalPopup(eChild: any, closeOnEsc: boolean): (event: any) => void;
+        addAsModalPopup(eChild: any, closeOnEsc: boolean, exitListener?: Function): (event: any) => void;
     }
 }
 declare module ag.grid {
@@ -920,6 +921,7 @@ declare module ag.grid {
         private templateService;
         private cellRendererMap;
         private eCheckbox;
+        private eCheckboxOutter;
         private columnController;
         private valueService;
         private eventService;
@@ -1137,6 +1139,7 @@ declare module ag.grid {
         deselectIndex(rowIndex: any, suppressEvents?: boolean): void;
         deselectNode(node: any, suppressEvents?: boolean): void;
         selectIndex(index: any, tryMulti: boolean, suppressEvents?: boolean): void;
+        refreshSelection(): void;
         private syncSelectedRowsAndCallListener(suppressEvents?);
         private recursivelyCheckIfSelected(node);
         isNodeSelected(node: any): boolean;
@@ -1176,8 +1179,9 @@ declare module ag.grid {
         private $compile;
         private angularGrid;
         private parentGroup;
+        private popupService;
         private startWidth;
-        constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement);
+        constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement, popupService?: PopupService);
         getGui(): HTMLElement;
         destroy(): void;
         private createScope();
@@ -1217,7 +1221,8 @@ declare module ag.grid {
         private startWidth;
         private checkEl;
         constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement);
-        toggle(deliberateState?: boolean): boolean;
+        toggle(isOnState?: boolean, isSomeState?: boolean): boolean;
+        private changeSelection();
         checkerState(): boolean;
         private setupComponents();
         getGui(): HTMLElement;
@@ -1287,8 +1292,9 @@ declare module ag.grid {
         private headerElements;
         private readOnly;
         private dragAndDropService;
+        private popupService;
         private uniqueId;
-        init(gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, gridPanel: GridPanel, angularGrid: Grid, filterManager: FilterManager, $scope: any, $compile: any, dragAndDropService: DragAndDropService): void;
+        init(gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, gridPanel: GridPanel, angularGrid: Grid, filterManager: FilterManager, $scope: any, $compile: any, dragAndDropService: DragAndDropService, popUpService: PopupService): void;
         getUniqueId(): any;
         private addDragAndDropToListItem(eListItem, item);
         private internalAcceptDrag(targetColumn, dragItem, eListItem);
@@ -1299,7 +1305,7 @@ declare module ag.grid {
         private findAllElements(gridPanel);
         refreshHeader(): void;
         private insertHeadersWithGrouping();
-        toggleSelectAll(): void;
+        toggleSelectAll(pamparams: any): void;
         private insertHeadersWithoutGrouping();
         updateSortIcons(): void;
         updateFilterIcons(): void;
@@ -1478,6 +1484,7 @@ declare module ag.grid {
         private overlays;
         private deleteListener;
         constructor(params: any);
+        getOverlays(): any;
         addSizeChangeListener(listener: Function): void;
         fireSizeChanged(): void;
         private setupPanels(params);
@@ -1536,12 +1543,12 @@ declare module ag.grid {
         private createOverlayTemplate(name, defaultTemplate, userProvidedTemplate);
         private createLoadingOverlayTemplate();
         private createNoRowsOverlayTemplate();
-        private createToolOverlayTemplate();
+        private createToolOverlayTemplate(counterText?);
         ensureIndexVisible(index: any): void;
         ensureColIndexVisible(index: any): void;
         showLoadingOverlay(): void;
         showNoRowsOverlay(): void;
-        showToolOverlay(): void;
+        showToolOverlay(counter?: number): void;
         hideOverlay(): void;
         getWidthForSizeColsToFit(): number;
         setRowModel(rowModel: any): void;
@@ -1794,6 +1801,7 @@ declare module ag.grid {
         groupAggFunction?(nodes: any[]): any;
         getBusinessKeyForNode?(node: RowNode): string;
         onMultitoolClicked?(params: any): void;
+        onSelectionStateChanged?(params: any): void;
         onReady?(api: any): void;
         onModelUpdated?(): void;
         onCellClicked?(params: any): void;
@@ -1979,7 +1987,6 @@ declare module ag.grid {
         onQuickFilterChanged(newFilter: any): void;
         onFilterModified(): void;
         onFilterChanged(): void;
-        onSelectAll(): void;
         onRowClicked(multiSelectKeyPressed: boolean, rowIndex: number, node: RowNode): void;
         showLoadingOverlay(): void;
         showNoRowsOverlay(): void;

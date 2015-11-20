@@ -45,6 +45,7 @@ module ag.grid {
         public static EVENT_ROW_DOUBLE_CLICKED = 'rowDoubleClicked';
         public static EVENT_READY = 'ready';
         public static EVENT_MULTITOOL_CLICK = 'multitoolClicked';
+        public static EVENT_SELECTION_STATE_CHANGED = 'selectionStateChanged';
     }
 
 }

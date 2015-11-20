@@ -52,7 +52,7 @@ module ag.grid {
 
     var defaultLoadingOverlayTemplate = '<span class="ag-overlay-loading-center">[LOADING...]</span>';
     var defaultNoRowsOverlayTemplate = '<span class="ag-overlay-no-rows-center">[NO_ROWS_TO_SHOW]</span>';
-    var defaultToolOverlayTemplate = '<span style="pointer-events:all; opacity: 1.0;" class="ag-overlay-no-rows-center"><a class="k-grid-Delete" title= "Удалить" href= "#" > <span class="i-delete" > </span></a></span>';
+    var defaultToolOverlayTemplate = '[COUNTER_PLACEHOLDER]<span style="pointer-events:all; opacity: 1.0;" class="ag-overlay-no-rows-center"><a class="k-grid-Delete" title= "Удалить" href= "#" > <span class="i-delete" > </span></a></span>';
 
     var _ = Utils;
 
@@ -131,7 +131,8 @@ module ag.grid {
                 center: this.eRoot,
                 dontFill: this.forPrint,
                 name: 'eGridPanel',
-                deleteListener: function() {
+                deleteListener: function(ev: Event) {
+                    ev.preventDefault();
                     var selected = that.gridOptionsWrapper.getApi().getSelectedNodes();
                     var multitoolParams = {
                         name: 'delete',
@@ -142,15 +143,34 @@ module ag.grid {
             });
 
             this.layout.addSizeChangeListener(this.onBodyHeightChange.bind(this));
+
+            // notify on all|some selected to toggle "select all" checker in header
+            // show multirow tools on multiple rows selected
             this.eventService.addEventListener('selectionChanged', function(pamparams: any) {
-                console.log(pamparams.selectedRows.length);
-                console.log(that.gridOptionsWrapper.getApi().getModel().getAllRows().length);
-                if (pamparams.selectedRows.length > 1) {
-                    that.showToolOverlay()
+                var selectionParams = {
+                    countSelected: 0,
+                    allSelected: false,
+                    someSelected: false
+                };
+                var selectedLength = pamparams.selectedRows.length
+                if ( selectedLength === that.gridOptionsWrapper.getApi().getModel().getAllRows().length) {
+                    // all are selected
+                    selectionParams.allSelected = true;
+                } else {
+                    if (selectedLength > 0) {
+                        selectionParams.someSelected = true;
+                    }
+                }
+                selectionParams.countSelected = selectedLength
+                that.eventService.dispatchEvent(Events.EVENT_SELECTION_STATE_CHANGED, selectionParams);
+
+                if (selectedLength > 1) {
+                    that.showToolOverlay(selectedLength)
                 } else {
                     that.hideOverlay();
                 }
             })
+
             this.addScrollListener();
 
             if (this.gridOptionsWrapper.isSuppressHorizontalScroll()) {
@@ -217,11 +237,14 @@ module ag.grid {
             return templateLocalised;
         }
 
-        private createToolOverlayTemplate(): string {
+        private createToolOverlayTemplate(counterText?: string): string {
+            var tmpl = defaultToolOverlayTemplate;
+            if (!counterText) counterText = '';
+            tmpl = tmpl.replace('[COUNTER_PLACEHOLDER]', counterText);
 
             var template = this.createOverlayTemplate(
                 'tool',
-                defaultToolOverlayTemplate,
+                tmpl,
                 null
             );
 
@@ -326,7 +349,13 @@ module ag.grid {
             }
         }
 
-        public showToolOverlay(): void {
+        public showToolOverlay(counter?: number): void {
+            // rerender template with new counter values
+            if (counter) {
+                this.layout.getOverlays().tool = _.loadTemplate(this.createToolOverlayTemplate(
+                    'Выбрано: ' + counter
+                ));
+            }
             this.layout.showOverlay('tool');
         }
 

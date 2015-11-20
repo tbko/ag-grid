@@ -50,22 +50,38 @@ module ag.grid {
             this.checkEl = this.setupComponents();
         }
 
-        public toggle(deliberateState?: boolean): boolean {
-            var api = this.gridOptionsWrapper.getApi();
-            var turnOn = deliberateState;
+        public toggle(isOnState?: boolean, isSomeState?: boolean): boolean {
+            // debugger
+            var turnOn = isOnState;
+            if (isSomeState) {
+                this.checkEl.removeAttribute('checked');
+                this.checkEl.checked = false;
+                this.checkEl.indeterminate = true;
+                return;
+            }
             if (turnOn === undefined) {
                 turnOn = !this.checkerState();
             }
             if (turnOn) {
                 this.checkEl.setAttribute('checked', 'true');
+                this.checkEl.indeterminate = false;
                 this.checkEl.checked = true;
-                api.selectAll();
             } else {
                 this.checkEl.removeAttribute('checked');
+                this.checkEl.indeterminate = false;
                 this.checkEl.checked = false;
-                api.deselectAll();
             }
             return turnOn;
+        }
+
+        private changeSelection() {
+            var api = this.gridOptionsWrapper.getApi();
+            var desiredState = !this.checkerState();
+            if (desiredState) {
+                api.selectAll();
+            } else {
+                api.deselectAll();
+            }
         }
 
         public checkerState(): boolean {
@@ -89,57 +105,48 @@ module ag.grid {
                 this.eHeaderCell.title = this.column.colDef.headerTooltip;
             }
 
+            // checker element to indicate and to toggle "select all" state
             var eCheckBoxInput = document.createElement("input");
             eCheckBoxInput.id = this.angularGrid.getId() + '-checker-header';
             eCheckBoxInput.name = this.angularGrid.getId() + '-checker-header';
             eCheckBoxInput.type = 'checkbox';
             eCheckBoxInput.addEventListener('click', function(e: any) {
+                // change select all on checker click
                 e.stopPropagation();
-                that.toggle();
+                that.changeSelection();
             });
             
+            // checker element Xmas decorations template
             var eCheckBoxIcon = document.createElement("span");
             eCheckBoxIcon.className = 'input-icon';
             var eCheckBoxSpan = document.createElement("span");
             eCheckBoxSpan.className = 'checkbox-input';
+            
+            // !!!!!!!TODO: shift style to css
             eCheckBoxSpan.style.textAlign = 'left';
+            
             eCheckBoxSpan.appendChild(eCheckBoxInput);
             eCheckBoxSpan.appendChild(eCheckBoxIcon);
             var eCheckBoxLabel = document.createElement("label");
             eCheckBoxLabel.appendChild(eCheckBoxSpan);
-
             var eCheckBox = document.createElement("div");
             eCheckBox.className = "pi-btn-checkbox";
             eCheckBox.appendChild(eCheckBoxLabel);
-
             // label div
             var headerCellLabel = document.createElement("div");
             headerCellLabel.className = "ag-header-cell-label group-checkbox";
-            headerCellLabel.setAttribute('role', 'gridcell');
+            // headerCellLabel.setAttribute('role', 'gridcell');
             headerCellLabel.appendChild(eCheckBox);
 
-
+            // append header template into header cell element
             this.eHeaderCell.appendChild(headerCellLabel);
             this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
             this.eHeaderCell.addEventListener('click', function(e) {
-                that.toggle();
+                // change select all on click in header area
+                that.changeSelection();
             });
 
             return eCheckBoxInput;
-
-
-            // var eInnerText = document.createElement("span");
-            // eInnerText.className = 'ag-header-cell-text';
-            // <div class="pi-btn-checkbox" >
-            //     <label>
-            //         <span class="checkbox-input" >
-            //             <input name="{{id}}" type= "checkbox" />
-            //             <span class="input-icon" > </span>
-            //        < /span>
-            //     < /label>
-            // < /div>
-
-
         }
 
         public getGui(): HTMLElement {
