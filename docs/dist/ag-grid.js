@@ -5833,6 +5833,8 @@ var ag;
                     row = this.rowModel.getVirtualRow(k);
                     if (!row.group) {
                         rowEl = this.insertRow(row, k, mainRowWidth, 0, false);
+                        if (rowEl === void 0)
+                            throw 'Row is not rendered with id: ' + row.id;
                         row.gridHeight = rowEl.maxRowsNeeded;
                     }
                     else {
