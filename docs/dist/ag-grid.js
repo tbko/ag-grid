@@ -7567,7 +7567,9 @@ var ag;
                 return this.uniqueId;
             };
             HeaderRenderer.prototype.addDragAndDropToListItem = function (eListItem, item) {
+                // debugger
                 var that = this;
+                var eCell = eListItem.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode;
                 this.dragAndDropService.addDragSource(eListItem, {
                     getData: function () {
                         return item;
@@ -7576,19 +7578,20 @@ var ag;
                         return that.uniqueId;
                     }
                 });
-                this.dragAndDropService.addDropTarget(eListItem, {
+                this.dragAndDropService.addDropTarget(eCell, {
                     acceptDrag: function (dragItem) {
-                        return that.internalAcceptDrag(item, dragItem, eListItem);
+                        return that.internalAcceptDrag(item, dragItem, eCell);
                     },
                     drop: function (dragItem) {
                         that.internalDrop(item, dragItem.data);
                     },
                     noDrop: function () {
-                        that.internalNoDrop(eListItem);
+                        that.internalNoDrop(eCell);
                     }
                 });
             };
             HeaderRenderer.prototype.internalAcceptDrag = function (targetColumn, dragItem, eListItem) {
+                // debugger
                 var result = dragItem.data !== targetColumn && dragItem.containerId === this.uniqueId;
                 if (result) {
                     if (this.dragAfterThisItem(targetColumn, dragItem.data)) {

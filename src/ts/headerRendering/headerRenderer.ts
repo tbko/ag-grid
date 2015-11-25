@@ -57,7 +57,9 @@ module ag.grid {
         }
 
         private addDragAndDropToListItem(eListItem: any, item: any) {
+            // debugger
             var that = this;
+            var eCell = eListItem.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode;
             this.dragAndDropService.addDragSource(eListItem, {
                 getData: function() {
                     return item;
@@ -66,20 +68,21 @@ module ag.grid {
                     return that.uniqueId;
                 }
             });
-            this.dragAndDropService.addDropTarget(eListItem, {
+            this.dragAndDropService.addDropTarget(eCell, {
                 acceptDrag: function(dragItem: any) {
-                    return that.internalAcceptDrag(item, dragItem, eListItem);
+                    return that.internalAcceptDrag(item, dragItem, eCell);
                 },
                 drop: function(dragItem: any) {
                     that.internalDrop(item, dragItem.data);
                 },
                 noDrop: function() {
-                    that.internalNoDrop(eListItem);
+                    that.internalNoDrop(eCell);
                 }
             });
         }
 
         private internalAcceptDrag(targetColumn: any, dragItem: any, eListItem: any) {
+            // debugger
             var result = dragItem.data !== targetColumn && dragItem.containerId === this.uniqueId;
             if (result) {
                 if (this.dragAfterThisItem(targetColumn, dragItem.data)) {
