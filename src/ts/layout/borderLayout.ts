@@ -12,6 +12,8 @@ module ag.grid {
         private eWestWrapper: any;
         private eCenterWrapper: any;
         private eOverlayWrapper: any;
+        private eOverlayRowWrapper: any;
+        private eOverlayRowZoneWrapper: any;
         private eToolOverlayWrapper: any;
         private eCenterRow: any;
 
@@ -35,6 +37,7 @@ module ag.grid {
         private deleteListener: any;
 
         constructor(params: any) {
+            console.log(params);
 
             this.isLayoutPanel = true;
 
@@ -50,8 +53,6 @@ module ag.grid {
                         '<div id="east" style="height: 100%; float: right;"></div>' +
                         '<div id="center" style="height: 100%;"></div>' +
                         '<div id="overlay" class="ag-overlay"></div>' +
-                        // '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
-                        // '<div id="tool-overlay" style= "position: absolute; height: 10%; width: 34%; bottom: 7px; left: 33%; background-color: #444; opacity:0.6;" ></div>' +
                         '</div>';
                 } else {
                     template =
@@ -64,8 +65,6 @@ module ag.grid {
                         '</div>' +
                         '<div id="south"></div>' +
                         '<div id="overlay" class="ag-overlay"></div>' +
-                        // '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
-                        // '<div id="tool-overlay" style= "position: absolute; height: 10%; width: 34%; bottom: 7px; left: 33%; background-color: #444; opacity:0.6;" ></div>' +
                         '</div>';
                 }
                 this.layoutActive = true;
@@ -97,12 +96,24 @@ module ag.grid {
                 this.setupPanels(params);
             }
 
+            if (params.overlays) {
+                this.addOverlayRowZone();
+            }
+
             this.overlays = params.overlays;
             this.setupOverlays();
         }
 
         public getOverlays() {
             return this.overlays;
+        }
+
+        public getOverlayRow() {
+            return this.eOverlayRowWrapper;
+        }
+
+        public getOverlayRowZone() {
+            return this.eOverlayRowZoneWrapper;
         }
 
         public addSizeChangeListener(listener: Function): void {
@@ -122,7 +133,6 @@ module ag.grid {
             this.eWestWrapper = this.eGui.querySelector('#west');
             this.eCenterWrapper = this.eGui.querySelector('#center');
             this.eOverlayWrapper = this.eGui.querySelector('#overlay');
-            // this.eToolOverlayWrapper = this.eGui.querySelector('#tool-overlay');
             this.eCenterRow = this.eGui.querySelector('#centerRow');
 
             this.eNorthChildLayout = this.setupPanel(params.north, this.eNorthWrapper);
@@ -130,7 +140,53 @@ module ag.grid {
             this.eEastChildLayout = this.setupPanel(params.east, this.eEastWrapper);
             this.eWestChildLayout = this.setupPanel(params.west, this.eWestWrapper);
             this.eCenterChildLayout = this.setupPanel(params.center, this.eCenterWrapper);
+
         }
+
+        private addOverlayRowZone(): void {
+            var rowOverlay = document.createElement('div');
+            rowOverlay.id = 'ag-overlay-row';
+            rowOverlay.className = rowOverlay.id;
+            var rowOverlayZone = document.createElement('div');
+            rowOverlayZone.id = 'ag-overlay-row-zone';
+            rowOverlayZone.className = rowOverlayZone.id;
+            rowOverlayZone.appendChild(rowOverlay);
+            this.eCenterWrapper.appendChild(rowOverlayZone);
+            rowOverlayZone.addEventListener('click', function(ev) { console.log(ev); });
+
+            this.eOverlayRowWrapper = rowOverlay;
+            this.eOverlayRowZoneWrapper = rowOverlayZone;
+
+
+            // rowOverlayZone.addEventListener('mousemove', this.rowOverlayMouseMoveListener.bind(this));
+            rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
+            rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
+        }
+
+        // private rowOverlayMouseMoveListener(event: any): boolean {
+        //     var headerTopShift = parseInt(event.target.parentNode.querySelector('.ag-body').style.paddingTop);
+        //     // debugger
+        //     // var rowElement = _.findParentWithClass(event.target, 'ag-row');
+        //     // var bodyElement = _.findParentWithClass(event.target, 'ag-body');
+        //     // var overlayElement = this.layout.getOverlayRow();
+        //     // var topOffset = parseInt(rowElement.style.top) + parseInt(this.eBody.style.paddingTop);
+        //     // overlayElement.style.top = `${topOffset}px`;
+        //     // overlayElement.style.height = rowElement.style.height;
+        //     return;
+        // }
+
+        private rowOverlayLeaveListener(event: any): boolean {
+            console.log('leave zone');
+            this.eOverlayRowWrapper.style.display = 'none';
+            return;
+        }
+
+        private rowOverlayEnterListener(event: any): boolean {
+            console.log('enter zone');
+            this.eOverlayRowWrapper.style.display = '';
+            return;
+        }
+
 
         private setupPanel(content: any, ePanel: any) {
             if (!ePanel) {
@@ -285,6 +341,27 @@ module ag.grid {
             this.eOverlayWrapper.style.display = 'none';
         }
 
+        private getOverlayRowWrapper(content: string = '') {
+            var tmpl = `
+                <div class="ag-overlay-panel">
+                    <div class="ag-overlay-wrapper ag-overlay-row-wrapper">${content}</div>
+                </div>
+            `;
+            return tmpl;
+        }
+
+        private createOverlayRowTemplate(): string {
+            var tmpl = `<span>Row Tools</span>`
+            return this.getOverlayRowWrapper(tmpl);
+        }
+
+        public showOverlayRow() {
+            this.eOverlayRowWrapper.style.display = '';
+            this.eOverlayRowWrapper.appendChild(
+                _.loadTemplate(this.createOverlayRowTemplate().trim())
+            );
+        }
+
         public showOverlay(key: string) {
             var overlay = this.overlays ? this.overlays[key] : null;
             var elClick: any;
@@ -297,8 +374,10 @@ module ag.grid {
                 this.eOverlayWrapper.style.display = '';
                 this.eOverlayWrapper.appendChild(overlay);
                 // this.eOverlayWrapper.getElementsByClassName('k-grid-Delete').onclick = this.deleteListener;
-                elClick = this.eOverlayWrapper.getElementsByClassName('k-grid-Delete')[0];
-                elClick.addEventListener('click', this.deleteListener);
+                if (key === 'tool') {
+                    elClick = this.eOverlayWrapper.getElementsByClassName('k-grid-Delete')[0];
+                    elClick.addEventListener('click', this.deleteListener);
+                }
             } else {
                 console.log('ag-Grid: unknown overlay');
                 this.hideOverlay();

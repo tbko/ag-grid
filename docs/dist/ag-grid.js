@@ -364,6 +364,11 @@ var ag;
                     element.className = className;
                 }
             };
+            Utils.findParentWithClass = function (element, classname) {
+                if (element.className.split(' ').indexOf(classname) >= 0)
+                    return element;
+                return element.parentNode && this.findParentWithClass(element.parentNode, classname);
+            };
             Utils.offsetHeight = function (element) {
                 return element && element.clientHeight ? element.clientHeight : 0;
             };
@@ -4555,6 +4560,12 @@ var ag;
                 this.ePinnedContainer = ePinnedContainer;
                 this.pinning = columnController.isPinning();
                 this.eventService = eventService;
+                var eRoot = _.findParentWithClass(this.eBodyContainer, 'ag-root');
+                if (!node.group && readyToDraw) {
+                    console.log(eRoot.querySelector('#ag-overlay-row'));
+                    console.log(eRoot.querySelector('.ag-header'));
+                    console.log(eRoot.querySelector('.ag-header').style.height);
+                }
                 var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
                 var rowIsHeaderThatSpans = node.group && groupHeaderTakesEntireRow;
                 var baseHeight = this.gridOptionsWrapper.getRowHeight();
@@ -4593,22 +4604,20 @@ var ag;
                     }
                 }
                 // if showing scrolls, position on the container
-                // console.log(accumulatedExtraRows);
+                this.top = baseHeight * rowsBefore;
+                this.topPX = this.top + "px";
+                this.height = baseHeight * (this.maxRowsNeeded || 1);
+                this.heightPX = this.height + "px";
                 if (!this.gridOptionsWrapper.isForPrint()) {
-                    this.vBodyRow.style.top = (baseHeight * rowsBefore) + "px";
+                    this.vBodyRow.style.top = this.topPX;
                     if (this.pinning) {
-                        this.vPinnedRow.style.top = (baseHeight * rowsBefore) + "px";
+                        this.vPinnedRow.style.top = this.topPX;
                     }
                 }
-                // console.log(this.node.data.index);
-                this.vBodyRow.style.height = (baseHeight * (this.maxRowsNeeded || 1)) + "px";
+                this.vBodyRow.style.height = this.heightPX;
                 if (this.pinning) {
-                    this.vPinnedRow.style.height = (baseHeight * (this.maxRowsNeeded || 1)) + "px";
+                    this.vPinnedRow.style.height = this.heightPX;
                 }
-                // this.vBodyRow.style.height = (realHeight) + "px";
-                // if (this.pinning) {
-                //     this.vPinnedRow.style.height = (realHeight) + "px";
-                // }
                 // if group item, insert the first row
                 if (rowIsHeaderThatSpans) {
                     this.createGroupRow();
@@ -4859,6 +4868,13 @@ var ag;
                     var agEvent = that.createEvent(event, this);
                     that.eventService.dispatchEvent(grid.Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
                 });
+                vRow.addEventListener("mouseenter", (function (event) {
+                    var eRoot = _.findParentWithClass(this.eBodyContainer, 'ag-root');
+                    var eRowOverlay = eRoot.querySelector('#ag-overlay-row');
+                    var eHeader = eRoot.querySelector('.ag-header');
+                    eRowOverlay.style.top = (this.top + parseInt(eHeader.style.height)) + "px";
+                    eRowOverlay.style.height = this.heightPX;
+                }).bind(this));
                 return vRow;
             };
             RenderedRow.prototype.getRowNode = function () {
@@ -6619,6 +6635,7 @@ var ag;
             };
             RenderedHeaderCell.prototype.addClasses = function () {
                 _.addCssClass(this.eHeaderCell, 'ag-header-cell');
+                this.eHeaderCell.setAttribute('draggable', 'true');
                 if (this.gridOptionsWrapper.isGroupHeaders()) {
                     _.addCssClass(this.eHeaderCell, 'ag-header-cell-grouped'); // this takes 50% height
                 }
@@ -7569,7 +7586,9 @@ var ag;
             HeaderRenderer.prototype.addDragAndDropToListItem = function (eListItem, item) {
                 // debugger
                 var that = this;
-                var eCell = eListItem.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode;
+                eListItem.addEventListener('dragstart', function (ev) { console.log(ev); });
+                // var eCell = eListItem.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode;
+                var eCell = eListItem;
                 this.dragAndDropService.addDragSource(eListItem, {
                     getData: function () {
                         return item;
@@ -8933,6 +8952,7 @@ var ag;
         var BorderLayout = (function () {
             function BorderLayout(params) {
                 this.sizeChangeListeners = [];
+                console.log(params);
                 this.isLayoutPanel = true;
                 this.fullHeight = !params.north && !params.south;
                 this.deleteListener = params.deleteListener;
@@ -8945,8 +8965,6 @@ var ag;
                                 '<div id="east" style="height: 100%; float: right;"></div>' +
                                 '<div id="center" style="height: 100%;"></div>' +
                                 '<div id="overlay" class="ag-overlay"></div>' +
-                                // '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
-                                // '<div id="tool-overlay" style= "position: absolute; height: 10%; width: 34%; bottom: 7px; left: 33%; background-color: #444; opacity:0.6;" ></div>' +
                                 '</div>';
                     }
                     else {
@@ -8960,8 +8978,6 @@ var ag;
                                 '</div>' +
                                 '<div id="south"></div>' +
                                 '<div id="overlay" class="ag-overlay"></div>' +
-                                // '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
-                                // '<div id="tool-overlay" style= "position: absolute; height: 10%; width: 34%; bottom: 7px; left: 33%; background-color: #444; opacity:0.6;" ></div>' +
                                 '</div>';
                     }
                     this.layoutActive = true;
@@ -8990,11 +9006,20 @@ var ag;
                 if (params) {
                     this.setupPanels(params);
                 }
+                if (params.overlays) {
+                    this.addOverlayRowZone();
+                }
                 this.overlays = params.overlays;
                 this.setupOverlays();
             }
             BorderLayout.prototype.getOverlays = function () {
                 return this.overlays;
+            };
+            BorderLayout.prototype.getOverlayRow = function () {
+                return this.eOverlayRowWrapper;
+            };
+            BorderLayout.prototype.getOverlayRowZone = function () {
+                return this.eOverlayRowZoneWrapper;
             };
             BorderLayout.prototype.addSizeChangeListener = function (listener) {
                 this.sizeChangeListeners.push(listener);
@@ -9011,13 +9036,49 @@ var ag;
                 this.eWestWrapper = this.eGui.querySelector('#west');
                 this.eCenterWrapper = this.eGui.querySelector('#center');
                 this.eOverlayWrapper = this.eGui.querySelector('#overlay');
-                // this.eToolOverlayWrapper = this.eGui.querySelector('#tool-overlay');
                 this.eCenterRow = this.eGui.querySelector('#centerRow');
                 this.eNorthChildLayout = this.setupPanel(params.north, this.eNorthWrapper);
                 this.eSouthChildLayout = this.setupPanel(params.south, this.eSouthWrapper);
                 this.eEastChildLayout = this.setupPanel(params.east, this.eEastWrapper);
                 this.eWestChildLayout = this.setupPanel(params.west, this.eWestWrapper);
                 this.eCenterChildLayout = this.setupPanel(params.center, this.eCenterWrapper);
+            };
+            BorderLayout.prototype.addOverlayRowZone = function () {
+                var rowOverlay = document.createElement('div');
+                rowOverlay.id = 'ag-overlay-row';
+                rowOverlay.className = rowOverlay.id;
+                var rowOverlayZone = document.createElement('div');
+                rowOverlayZone.id = 'ag-overlay-row-zone';
+                rowOverlayZone.className = rowOverlayZone.id;
+                rowOverlayZone.appendChild(rowOverlay);
+                this.eCenterWrapper.appendChild(rowOverlayZone);
+                rowOverlayZone.addEventListener('click', function (ev) { console.log(ev); });
+                this.eOverlayRowWrapper = rowOverlay;
+                this.eOverlayRowZoneWrapper = rowOverlayZone;
+                // rowOverlayZone.addEventListener('mousemove', this.rowOverlayMouseMoveListener.bind(this));
+                rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
+                rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
+            };
+            // private rowOverlayMouseMoveListener(event: any): boolean {
+            //     var headerTopShift = parseInt(event.target.parentNode.querySelector('.ag-body').style.paddingTop);
+            //     // debugger
+            //     // var rowElement = _.findParentWithClass(event.target, 'ag-row');
+            //     // var bodyElement = _.findParentWithClass(event.target, 'ag-body');
+            //     // var overlayElement = this.layout.getOverlayRow();
+            //     // var topOffset = parseInt(rowElement.style.top) + parseInt(this.eBody.style.paddingTop);
+            //     // overlayElement.style.top = `${topOffset}px`;
+            //     // overlayElement.style.height = rowElement.style.height;
+            //     return;
+            // }
+            BorderLayout.prototype.rowOverlayLeaveListener = function (event) {
+                console.log('leave zone');
+                this.eOverlayRowWrapper.style.display = 'none';
+                return;
+            };
+            BorderLayout.prototype.rowOverlayEnterListener = function (event) {
+                console.log('enter zone');
+                this.eOverlayRowWrapper.style.display = '';
+                return;
             };
             BorderLayout.prototype.setupPanel = function (content, ePanel) {
                 if (!ePanel) {
@@ -9153,6 +9214,19 @@ var ag;
                 _.removeAllChildren(this.eOverlayWrapper);
                 this.eOverlayWrapper.style.display = 'none';
             };
+            BorderLayout.prototype.getOverlayRowWrapper = function (content) {
+                if (content === void 0) { content = ''; }
+                var tmpl = "\n                <div class=\"ag-overlay-panel\">\n                    <div class=\"ag-overlay-wrapper ag-overlay-row-wrapper\">" + content + "</div>\n                </div>\n            ";
+                return tmpl;
+            };
+            BorderLayout.prototype.createOverlayRowTemplate = function () {
+                var tmpl = "<span>Row Tools</span>";
+                return this.getOverlayRowWrapper(tmpl);
+            };
+            BorderLayout.prototype.showOverlayRow = function () {
+                this.eOverlayRowWrapper.style.display = '';
+                this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
+            };
             BorderLayout.prototype.showOverlay = function (key) {
                 var overlay = this.overlays ? this.overlays[key] : null;
                 var elClick;
@@ -9165,8 +9239,10 @@ var ag;
                     this.eOverlayWrapper.style.display = '';
                     this.eOverlayWrapper.appendChild(overlay);
                     // this.eOverlayWrapper.getElementsByClassName('k-grid-Delete').onclick = this.deleteListener;
-                    elClick = this.eOverlayWrapper.getElementsByClassName('k-grid-Delete')[0];
-                    elClick.addEventListener('click', this.deleteListener);
+                    if (key === 'tool') {
+                        elClick = this.eOverlayWrapper.getElementsByClassName('k-grid-Delete')[0];
+                        elClick.addEventListener('click', this.deleteListener);
+                    }
                 }
                 else {
                     console.log('ag-Grid: unknown overlay');
@@ -9418,6 +9494,9 @@ var ag;
                     this.layout.getOverlays().tool = _.loadTemplate(this.createToolOverlayTemplate('Выбрано: ' + counter));
                 }
                 this.layout.showOverlay('tool');
+            };
+            GridPanel.prototype.showOverlayRow = function () {
+                this.layout.showOverlayRow();
             };
             GridPanel.prototype.hideOverlay = function () {
                 this.layout.hideOverlay();
@@ -10800,6 +10879,7 @@ var ag;
                         this.showNoRowsOverlay();
                     }
                 }
+                this.showOverlayRow();
             };
             Grid.prototype.addWindowResizeListener = function () {
                 var that = this;
@@ -11110,6 +11190,9 @@ var ag;
             };
             Grid.prototype.showToolOverlay = function () {
                 this.gridPanel.showToolOverlay();
+            };
+            Grid.prototype.showOverlayRow = function () {
+                this.gridPanel.showOverlayRow();
             };
             Grid.prototype.hideOverlay = function () {
                 this.gridPanel.hideOverlay();

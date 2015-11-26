@@ -59,7 +59,9 @@ module ag.grid {
         private addDragAndDropToListItem(eListItem: any, item: any) {
             // debugger
             var that = this;
-            var eCell = eListItem.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode;
+            eListItem.addEventListener('dragstart', function(ev: any) { console.log(ev);})
+            // var eCell = eListItem.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode;
+            var eCell = eListItem;
             this.dragAndDropService.addDragSource(eListItem, {
                 getData: function() {
                     return item;

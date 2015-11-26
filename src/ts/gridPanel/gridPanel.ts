@@ -91,6 +91,8 @@ module ag.grid {
         private ePinnedFloatingBottom: HTMLElement;
         private eFloatingBottomContainer: HTMLElement;
 
+        private eOverlayRow: HTMLElement;
+
         public init(gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService) {
             this.gridOptionsWrapper = gridOptionsWrapper;
             this.eventService = eventService;
@@ -141,7 +143,6 @@ module ag.grid {
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                 }
             });
-
             this.layout.addSizeChangeListener(this.onBodyHeightChange.bind(this));
 
             // notify on all|some selected to toggle "select all" checker in header
@@ -359,6 +360,10 @@ module ag.grid {
             this.layout.showOverlay('tool');
         }
 
+        public showOverlayRow(): void {
+            this.layout.showOverlayRow();
+        }
+
         public hideOverlay(): void {
             this.layout.hideOverlay();
         }
@@ -442,6 +447,7 @@ module ag.grid {
                 this.ePinnedColsViewport.addEventListener('mousewheel', this.mouseWheelListener.bind(this));
                 // Firefox
                 this.ePinnedColsViewport.addEventListener('DOMMouseScroll', this.mouseWheelListener.bind(this));
+
             }
         }
 

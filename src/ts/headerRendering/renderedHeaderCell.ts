@@ -77,6 +77,7 @@ module ag.grid {
 
         private addClasses(): void {
             _.addCssClass(this.eHeaderCell, 'ag-header-cell');
+            this.eHeaderCell.setAttribute('draggable', 'true');
             if (this.gridOptionsWrapper.isGroupHeaders()) {
                 _.addCssClass(this.eHeaderCell, 'ag-header-cell-grouped'); // this takes 50% height
             } else {

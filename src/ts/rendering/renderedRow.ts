@@ -23,6 +23,10 @@ module ag.grid {
         private node: any;
         private rowIndex: number;
         private maxRowsNeeded: number;
+        private top: number;
+        private height: number;
+        private topPX: string;
+        private heightPX: string;
 
         private cellRendererMap: {[key: string]: any};
 
@@ -78,6 +82,14 @@ module ag.grid {
             this.pinning = columnController.isPinning();
             this.eventService = eventService;
 
+            var eRoot: HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
+
+            if (!node.group && readyToDraw) {
+                console.log(eRoot.querySelector('#ag-overlay-row'));
+                console.log(eRoot.querySelector('.ag-header'));
+                console.log((<HTMLElement>eRoot.querySelector('.ag-header')).style.height);
+            }
+
             var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
             var rowIsHeaderThatSpans = node.group && groupHeaderTakesEntireRow;
 
@@ -124,22 +136,21 @@ module ag.grid {
             }
 
             // if showing scrolls, position on the container
-            // console.log(accumulatedExtraRows);
+            this.top = baseHeight * rowsBefore;
+            this.topPX = `${this.top}px`;
+            this.height = baseHeight * (this.maxRowsNeeded || 1);
+            this.heightPX = `${this.height}px`;
+
             if (!this.gridOptionsWrapper.isForPrint()) {
-                this.vBodyRow.style.top = (baseHeight * rowsBefore) + "px";
+                this.vBodyRow.style.top = this.topPX;
                 if (this.pinning) {
-                    this.vPinnedRow.style.top = (baseHeight * rowsBefore) + "px";
+                    this.vPinnedRow.style.top = this.topPX;
                 }
             }
-            // console.log(this.node.data.index);
-            this.vBodyRow.style.height = (baseHeight * (this.maxRowsNeeded || 1)) + "px";
+            this.vBodyRow.style.height =  this.heightPX;
             if (this.pinning) {
-                this.vPinnedRow.style.height = (baseHeight * (this.maxRowsNeeded || 1)) + "px";
+                this.vPinnedRow.style.height = this.heightPX;
             }
-            // this.vBodyRow.style.height = (realHeight) + "px";
-            // if (this.pinning) {
-            //     this.vPinnedRow.style.height = (realHeight) + "px";
-            // }
 
             // if group item, insert the first row
             if (rowIsHeaderThatSpans) {
@@ -421,6 +432,14 @@ module ag.grid {
                 var agEvent = that.createEvent(event, this);
                 that.eventService.dispatchEvent(Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
             });
+
+            vRow.addEventListener("mouseenter", (function (event: any) {
+                var eRoot:HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
+                var eRowOverlay:HTMLElement = <HTMLElement>eRoot.querySelector('#ag-overlay-row');
+                var eHeader:HTMLElement = <HTMLElement>eRoot.querySelector('.ag-header');
+                eRowOverlay.style.top = `${this.top + parseInt(eHeader.style.height)}px`;
+                eRowOverlay.style.height = this.heightPX;
+            }).bind(this));
 
             return vRow;
         }

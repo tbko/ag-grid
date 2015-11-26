@@ -117,6 +117,7 @@ module ag.grid {
                     this.showNoRowsOverlay();
                 }
             }
+            this.showOverlayRow();
         }
 
         private addWindowResizeListener(): void {
@@ -479,6 +480,10 @@ module ag.grid {
 
         public showToolOverlay(): void {
             this.gridPanel.showToolOverlay();
+        }
+
+        public showOverlayRow(): void {
+            this.gridPanel.showOverlayRow();
         }
 
         public hideOverlay(): void {

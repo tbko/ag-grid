@@ -67,6 +67,7 @@ declare module ag.grid {
         static querySelectorAll_replaceCssClass(eParent: any, selector: string, cssClassToRemove: string, cssClassToAdd: string): void;
         static addOrRemoveCssClass(element: HTMLElement, className: string, addOrRemove: boolean): void;
         static addCssClass(element: HTMLElement, className: string): void;
+        static findParentWithClass(element: HTMLElement, classname: string): HTMLElement;
         static offsetHeight(element: HTMLElement): number;
         static offsetWidth(element: HTMLElement): number;
         static removeCssClass(element: HTMLElement, className: string): void;
@@ -971,6 +972,10 @@ declare module ag.grid {
         private node;
         private rowIndex;
         private maxRowsNeeded;
+        private top;
+        private height;
+        private topPX;
+        private heightPX;
         private cellRendererMap;
         private gridOptionsWrapper;
         private parentScope;
@@ -1466,6 +1471,8 @@ declare module ag.grid {
         private eWestWrapper;
         private eCenterWrapper;
         private eOverlayWrapper;
+        private eOverlayRowWrapper;
+        private eOverlayRowZoneWrapper;
         private eToolOverlayWrapper;
         private eCenterRow;
         private eNorthChildLayout;
@@ -1485,9 +1492,14 @@ declare module ag.grid {
         private deleteListener;
         constructor(params: any);
         getOverlays(): any;
+        getOverlayRow(): any;
+        getOverlayRowZone(): any;
         addSizeChangeListener(listener: Function): void;
         fireSizeChanged(): void;
         private setupPanels(params);
+        private addOverlayRowZone();
+        private rowOverlayLeaveListener(event);
+        private rowOverlayEnterListener(event);
         private setupPanel(content, ePanel);
         getGui(): any;
         doLayout(): boolean;
@@ -1500,6 +1512,9 @@ declare module ag.grid {
         setEastVisible(visible: any): void;
         private setupOverlays();
         hideOverlay(): void;
+        private getOverlayRowWrapper(content?);
+        private createOverlayRowTemplate();
+        showOverlayRow(): void;
         showOverlay(key: string): void;
         setSouthVisible(visible: any): void;
     }
@@ -1533,6 +1548,7 @@ declare module ag.grid {
         private eFloatingBottom;
         private ePinnedFloatingBottom;
         private eFloatingBottomContainer;
+        private eOverlayRow;
         init(gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService): void;
         getLayout(): BorderLayout;
         private setupComponents();
@@ -1549,6 +1565,7 @@ declare module ag.grid {
         showLoadingOverlay(): void;
         showNoRowsOverlay(): void;
         showToolOverlay(counter?: number): void;
+        showOverlayRow(): void;
         hideOverlay(): void;
         getWidthForSizeColsToFit(): number;
         setRowModel(rowModel: any): void;
@@ -1991,6 +2008,7 @@ declare module ag.grid {
         showLoadingOverlay(): void;
         showNoRowsOverlay(): void;
         showToolOverlay(): void;
+        showOverlayRow(): void;
         hideOverlay(): void;
         private setupColumns();
         updateModelAndRefresh(step: any, refreshFromIndex?: any): void;

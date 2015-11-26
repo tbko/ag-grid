@@ -303,6 +303,11 @@ module ag.grid {
             }
         }
 
+        static findParentWithClass(element: HTMLElement, classname: string):HTMLElement {
+            if (element.className.split(' ').indexOf(classname) >= 0) return element;
+            return element.parentNode && this.findParentWithClass(<HTMLElement>element.parentNode, classname);
+        }        
+
         static offsetHeight(element: HTMLElement) {
             return element && element.clientHeight ? element.clientHeight : 0;
         }
