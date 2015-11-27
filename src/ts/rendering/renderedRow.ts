@@ -13,6 +13,7 @@ module ag.grid {
 
     var _ = Utils;
 
+
     export class RenderedRow {
 
         public vPinnedRow: any;
@@ -27,6 +28,10 @@ module ag.grid {
         private height: number;
         private topPX: string;
         private heightPX: string;
+        private headerHeight: number;
+
+        private isListenMove: boolean;
+        public listenMoveRef: EventListener;
 
         private cellRendererMap: {[key: string]: any};
 
@@ -81,20 +86,18 @@ module ag.grid {
             this.ePinnedContainer = ePinnedContainer;
             this.pinning = columnController.isPinning();
             this.eventService = eventService;
+            this.headerHeight = 0;
 
             var eRoot: HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
-
-            if (!node.group && readyToDraw) {
-                console.log(eRoot.querySelector('#ag-overlay-row'));
-                console.log(eRoot.querySelector('.ag-header'));
-                console.log((<HTMLElement>eRoot.querySelector('.ag-header')).style.height);
-            }
 
             var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
             var rowIsHeaderThatSpans = node.group && groupHeaderTakesEntireRow;
 
             var baseHeight:number = this.gridOptionsWrapper.getRowHeight();
             var baseHeightExtra:number = this.gridOptionsWrapper.getRowHeightExtra();
+
+            this.isListenMove = false;
+            this.listenMoveRef = null;
 
             this.vBodyRow = this.createRowContainer();
             if (this.pinning) {
@@ -420,6 +423,20 @@ module ag.grid {
         private createRowContainer() {
             var vRow = new ag.vdom.VHtmlElement('div');
             var that = this;
+
+            function listenMove(event: any) {
+                var eRoot:HTMLElement = _.findParentWithClass(that.eBodyContainer, 'ag-root');
+                var eRowOverlay:HTMLElement = <HTMLElement>(<HTMLElement>eRoot.parentNode).querySelector('#ag-overlay-row');
+
+                eRowOverlay.style.top = `${that.top}px`;
+                eRowOverlay.style.height = that.heightPX;
+
+                that.rowRenderer.setListenMouseMove();
+                that.isListenMove = false;
+                that.vBodyRow.getElement().removeEventListener('mousemove', listenMove);
+            }
+            this.listenMoveRef = listenMove;
+
             vRow.addEventListener("click", function (event: any) {
                 var agEvent = that.createEvent(event, this);
                 that.eventService.dispatchEvent(Events.EVENT_ROW_CLICKED, agEvent);
@@ -433,16 +450,24 @@ module ag.grid {
                 that.eventService.dispatchEvent(Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
             });
 
-            vRow.addEventListener("mouseenter", (function (event: any) {
-                var eRoot:HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
-                var eRowOverlay:HTMLElement = <HTMLElement>eRoot.querySelector('#ag-overlay-row');
-                var eHeader:HTMLElement = <HTMLElement>eRoot.querySelector('.ag-header');
-                eRowOverlay.style.top = `${this.top + parseInt(eHeader.style.height)}px`;
-                eRowOverlay.style.height = this.heightPX;
-            }).bind(this));
-
+            // vRow.addEventListener("mouseenter", (function (event: any) {
+            //     var eRoot:HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
+            //     var eRowOverlay:HTMLElement = <HTMLElement>(<HTMLElement>eRoot.parentNode).querySelector('#ag-overlay-row');
+            //     eRowOverlay.style.top = `${this.top + this.gridOptionsWrapper.getFullHeaderHeight()}px`;
+            //     eRowOverlay.style.height = this.heightPX;
+            // }).bind(this));
+            this.isListenMove = true;
+            vRow.addEventListener("mousemove", this.listenMoveRef);
             return vRow;
         }
+
+        public isListenForMove(newValue?: boolean): boolean {
+            if (newValue !== void 0) {
+                this.isListenMove = newValue;
+            }
+            return this.isListenMove;
+        }
+
 
         public getRowNode(): any {
             return this.node;

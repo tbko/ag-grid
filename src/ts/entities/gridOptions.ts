@@ -40,6 +40,7 @@ module ag.grid {
         widthGap: number;
         maxRows: number;
         minRows: number;
+        metrics: any;
 
         // just set once
         localeText?: any;

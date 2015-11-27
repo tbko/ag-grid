@@ -179,7 +179,11 @@ module ag.grid {
             if (!this.gridOptionsWrapper.isForPrint()) {
                 var rowCount = this.rowModel.getGridRowCount();
                 var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
+
+                // debugger;
                 this.eBodyContainer.style.height = containerHeight + "px";
+                this.gridPanel.getLayout().setRowOverlayRowHeight(this.eBodyContainer.style.height);
+
                 this.ePinnedColsContainer.style.height = containerHeight + "px";
             }
 
@@ -513,6 +517,22 @@ module ag.grid {
             return Object.keys(renderedRows).map(key => {
                 return renderedRows[key].getRowNode();
             });
+        }
+
+        public getRenderedRows() {
+            return this.renderedRows;
+        }
+
+        public setListenMouseMove() {
+            var allRows = this.renderedRows;
+            var el: RenderedRow;
+            for (var k in allRows) {
+                el = allRows[k];
+                if (!el.isListenForMove()) {
+                    el.vBodyRow.addEventListener('mousemove', el.listenMoveRef);
+                    el.isListenForMove(true);
+                }
+            };
         }
 
         public getIndexOfRenderedNode(node: any): number {

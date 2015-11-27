@@ -46,6 +46,7 @@ module ag.grid {
         public static EVENT_READY = 'ready';
         public static EVENT_MULTITOOL_CLICK = 'multitoolClicked';
         public static EVENT_SELECTION_STATE_CHANGED = 'selectionStateChanged';
+        public static EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE = 'rowsListenMouseMove';
     }
 
 }

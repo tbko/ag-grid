@@ -108,7 +108,25 @@ module ag.grid {
         public getWidthGap() { return this.gridOptions.widthGap; }
         public getMaxRows() { return this.gridOptions.maxRows; }
         public getMinRows() { return this.gridOptions.minRows; }
-
+        public setMetrics(metrics: any): void {
+            this.gridOptions.metrics = metrics;
+        }
+        public getFullRowHeight(): number {
+            var row: any = this.gridOptions.metrics.row;
+            return row.height;
+        }
+        public getBaseRowHeight(): number {
+            var row: any = this.gridOptions.metrics.row;
+            return row.height - row.paddingTop - row.paddingBottom;
+        }
+        public getPaddingRowHeight(): number {
+            var row: any = this.gridOptions.metrics.row;
+            return row.paddingTop + row.paddingBottom;
+        }
+        public getFullHeaderHeight(): number {
+            var header: any = this.gridOptions.metrics.header;
+            return header.height;
+        }
         // properties
         public getHeaderHeight(): number {
             if (typeof this.headerHeight === 'number') {

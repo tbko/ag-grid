@@ -141,7 +141,9 @@ module ag.grid {
                         items: selected
                     }
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
-                }
+                },
+                eventService: that.eventService,
+                gridOptionsWrapper: that.gridOptionsWrapper
             });
             this.layout.addSizeChangeListener(this.onBodyHeightChange.bind(this));
 

@@ -35,6 +35,8 @@ module ag.grid {
         private sizeChangeListeners = <any>[];
         private overlays: any;
         private deleteListener: any;
+        private eventService: EventService;
+        private gridOptionsWrapper: GridOptionsWrapper;
 
         constructor(params: any) {
             console.log(params);
@@ -43,6 +45,8 @@ module ag.grid {
 
             this.fullHeight = !params.north && !params.south;
             this.deleteListener = params.deleteListener;
+            this.eventService = params.eventService;
+            this.gridOptionsWrapper = params.gridOptionsWrapper;
 
             var template: any;
             if (!params.dontFill) {
@@ -143,6 +147,10 @@ module ag.grid {
 
         }
 
+        public setRowOverlayRowHeight(heightPX: string): void {
+            this.eOverlayRowZoneWrapper.style.height = heightPX;
+        }
+
         private addOverlayRowZone(): void {
             var rowOverlay = document.createElement('div');
             rowOverlay.id = 'ag-overlay-row';
@@ -151,12 +159,19 @@ module ag.grid {
             rowOverlayZone.id = 'ag-overlay-row-zone';
             rowOverlayZone.className = rowOverlayZone.id;
             rowOverlayZone.appendChild(rowOverlay);
+            
+            rowOverlayZone.style.top = `${this.gridOptionsWrapper.getFullHeaderHeight()}px`;
+
             this.eCenterWrapper.appendChild(rowOverlayZone);
-            rowOverlayZone.addEventListener('click', function(ev) { console.log(ev); });
+            rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
+            // rowOverlayZone.addEventListener('mouseenter', this.overlayEventThrough.bind(this));
+            // rowOverlayZone.addEventListener('mouseleave', this.overlayEventThrough.bind(this));
+            // rowOverlayZone.addEventListener('mouseover', this.overlayEventThrough.bind(this));
+            // rowOverlayZone.addEventListener('mouseout', this.overlayEventThrough.bind(this));
+            rowOverlayZone.addEventListener('mousemove', this.overlayEventThrough.bind(this));
 
             this.eOverlayRowWrapper = rowOverlay;
             this.eOverlayRowZoneWrapper = rowOverlayZone;
-
 
             // rowOverlayZone.addEventListener('mousemove', this.rowOverlayMouseMoveListener.bind(this));
             rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
@@ -175,15 +190,32 @@ module ag.grid {
         //     return;
         // }
 
+        private overlayEventThrough(event: MouseEvent) {
+            var coordinates: any;
+            (<HTMLElement>event.target).style.display = 'none';
+            if (event.clientX) {
+                coordinates = {
+                    pointerX: event.clientX,
+                    pointerY: event.clientY
+                }
+            }
+            var underEl = document.elementFromPoint(event.clientX, event.clientY);
+            if (underEl) _.simulateEvent((<HTMLElement>underEl), event.type, coordinates);
+            (<HTMLElement>event.target).style.display = '';
+        }
+
         private rowOverlayLeaveListener(event: any): boolean {
             console.log('leave zone');
             this.eOverlayRowWrapper.style.display = 'none';
+            this.overlayEventThrough(event);
+            this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
             return;
         }
 
         private rowOverlayEnterListener(event: any): boolean {
             console.log('enter zone');
             this.eOverlayRowWrapper.style.display = '';
+            this.overlayEventThrough(event);
             return;
         }
 

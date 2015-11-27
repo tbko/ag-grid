@@ -220,6 +220,71 @@ module ag.grid {
             element.addEventListener("keyup", listener);
         }
 
+        // new event object from existing
+        static simulateEvent(element: HTMLElement, eventName: string, coordinates?: any): HTMLElement {
+
+            function extend(destination: any, source: any): any {
+                for (var property in source)
+                    destination[property] = source[property];
+                return destination;
+            }
+
+            var eventMatchers:any = {
+                'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll)$/,
+                'MouseEvents': /^(?:click|dblclick|mouse(?:down|up|over|move|out|enter|leave))$/
+            }
+
+            var defaultOptions = {
+                pointerX: 0,
+                pointerY: 0,
+                button: 0,
+                ctrlKey: false,
+                altKey: false,
+                shiftKey: false,
+                metaKey: false,
+                bubbles: true,
+                cancelable: true
+            }
+
+            var options = extend(defaultOptions, coordinates || {});
+            var oEvent: Event;
+            var eventType: string = null;
+
+            for (var name in eventMatchers) {
+                if (eventMatchers[name].test(eventName)) { eventType = name; break; }
+            }
+
+            if (!eventType)
+                throw new SyntaxError('Only HTMLEvents and MouseEvents interfaces are supported');
+
+            if (document.createEvent) {
+                oEvent = document.createEvent(eventType);
+                if (eventType == 'HTMLEvents') {
+                    oEvent = new Event(
+                        eventName,
+                        options
+                    );
+                }
+                else {
+                    oEvent = new MouseEvent(
+                        eventName,
+                        options
+                    );
+                }
+                element.dispatchEvent(oEvent);
+            }
+            else {
+                options.clientX = options.pointerX;
+                options.clientY = options.pointerY;
+                var evt: Event = new Event(eventName);
+                oEvent = extend(evt, options);
+                element.dispatchEvent(oEvent);
+            }
+            return element;
+        }
+
+
+
         //if value is undefined, null or blank, returns null, otherwise returns the value
         static makeNull(value: any) {
             if (value === null || value === undefined || value === "") {

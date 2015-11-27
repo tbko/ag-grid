@@ -52,6 +52,7 @@ declare module ag.grid {
         static isElement(o: any): boolean;
         static isNodeOrElement(o: any): boolean;
         static addChangeListener(element: HTMLElement, listener: EventListener): void;
+        static simulateEvent(element: HTMLElement, eventName: string, coordinates?: any): HTMLElement;
         static makeNull(value: any): any;
         static removeAllChildren(node: HTMLElement): void;
         static removeElement(parent: HTMLElement, cssSelector: string): void;
@@ -230,6 +231,11 @@ declare module ag.grid {
         getWidthGap(): number;
         getMaxRows(): number;
         getMinRows(): number;
+        setMetrics(metrics: any): void;
+        getFullRowHeight(): number;
+        getBaseRowHeight(): number;
+        getPaddingRowHeight(): number;
+        getFullHeaderHeight(): number;
         getHeaderHeight(): number;
         setHeaderHeight(headerHeight: number): void;
         isGroupHeaders(): boolean;
@@ -301,6 +307,7 @@ declare module ag.grid {
         static EVENT_READY: string;
         static EVENT_MULTITOOL_CLICK: string;
         static EVENT_SELECTION_STATE_CHANGED: string;
+        static EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE: string;
     }
 }
 declare module ag.grid {
@@ -976,6 +983,9 @@ declare module ag.grid {
         private height;
         private topPX;
         private heightPX;
+        private headerHeight;
+        private isListenMove;
+        listenMoveRef: EventListener;
         private cellRendererMap;
         private gridOptionsWrapper;
         private parentScope;
@@ -1017,6 +1027,7 @@ declare module ag.grid {
         private createParams();
         private createEvent(event, eventSource);
         private createRowContainer();
+        isListenForMove(newValue?: boolean): boolean;
         getRowNode(): any;
         getRowIndex(): any;
         refreshCells(colIds: string[]): void;
@@ -1103,6 +1114,10 @@ declare module ag.grid {
         private ensureRowsRendered(preparedRows?);
         private insertRow(node, rowIndex, mainRowWidth, rowsBefore, realDraw?);
         getRenderedNodes(): any[];
+        getRenderedRows(): {
+            [key: string]: RenderedRow;
+        };
+        setListenMouseMove(): void;
         getIndexOfRenderedNode(node: any): number;
         navigateToNextCell(key: any, rowIndex: number, column: Column): void;
         private getNextCellToFocus(key, lastCellToFocus);
@@ -1490,6 +1505,8 @@ declare module ag.grid {
         private sizeChangeListeners;
         private overlays;
         private deleteListener;
+        private eventService;
+        private gridOptionsWrapper;
         constructor(params: any);
         getOverlays(): any;
         getOverlayRow(): any;
@@ -1497,7 +1514,9 @@ declare module ag.grid {
         addSizeChangeListener(listener: Function): void;
         fireSizeChanged(): void;
         private setupPanels(params);
+        setRowOverlayRowHeight(heightPX: string): void;
         private addOverlayRowZone();
+        private overlayEventThrough(event);
         private rowOverlayLeaveListener(event);
         private rowOverlayEnterListener(event);
         private setupPanel(content, ePanel);
@@ -1775,6 +1794,7 @@ declare module ag.grid {
         widthGap: number;
         maxRows: number;
         minRows: number;
+        metrics: any;
         localeText?: any;
         localeTextFunc?: Function;
         suppressScrollLag?: boolean;
@@ -1991,6 +2011,7 @@ declare module ag.grid {
         getId(): string;
         private periodicallyDoLayout();
         private setupComponents($scope, $compile, eUserProvidedDiv, globalEventListener);
+        private onRowsListenMouseMove();
         private onColumnChanged(event);
         refreshPivot(): void;
         getEventService(): EventService;
