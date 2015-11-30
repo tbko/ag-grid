@@ -1071,6 +1071,7 @@ var ag;
             Events.EVENT_MULTITOOL_CLICK = 'multitoolClicked';
             Events.EVENT_SELECTION_STATE_CHANGED = 'selectionStateChanged';
             Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE = 'rowsListenMouseMove';
+            Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE = 'rowsStopListenMouseMove';
             return Events;
         })();
         grid.Events = Events;
@@ -3931,6 +3932,19 @@ var ag;
                     this.eventListeners.push(entry);
                 }
             };
+            VHtmlElement.prototype.removeEventListener = function (event, listener) {
+                var listenerIdx;
+                if (this.bound) {
+                    this.element.removeEventListener(event, listener);
+                }
+                else {
+                    if (this.eventListeners) {
+                        var entry = new VEventListener(event, listener);
+                        listenerIdx = this.eventListeners.indexOf(entry);
+                        this.eventListeners.splice(listenerIdx, 1);
+                    }
+                }
+            };
             VHtmlElement.prototype.elementAttached = function (element) {
                 _super.prototype.elementAttached.call(this, element);
                 this.element = element;
@@ -4929,14 +4943,27 @@ var ag;
                 var that = this;
                 function listenMove(event) {
                     var eRoot = _.findParentWithClass(that.eBodyContainer, 'ag-root');
-                    var eRowOverlay = eRoot.parentNode.querySelector('#ag-overlay-row');
-                    eRowOverlay.style.top = that.top + "px";
-                    eRowOverlay.style.height = that.heightPX;
+                    var eRowOverlay = document.querySelector('#ag-overlay-row');
+                    // debugger;
+                    that.rowRenderer.setHoveredOn(null);
+                    if (that.node) {
+                        if (that.node.group) {
+                            eRowOverlay.style.display = 'none';
+                        }
+                        else {
+                            // var eventTarget$('.ag-row[row="74"]')[0].parentNode.parentNode.parentNode.querySelector('.ag-body-viewport').scrollTop
+                            eRowOverlay.style.display = '';
+                            eRowOverlay.style.top = that.top + "px";
+                            eRowOverlay.style.height = that.heightPX;
+                            that.rowRenderer.setHoveredOn(that);
+                        }
+                    }
                     that.rowRenderer.setListenMouseMove();
                     that.isListenMove = false;
                     that.vBodyRow.getElement().removeEventListener('mousemove', listenMove);
                 }
                 this.listenMoveRef = listenMove;
+                this.isListenMove = false;
                 vRow.addEventListener("click", function (event) {
                     var agEvent = that.createEvent(event, this);
                     that.eventService.dispatchEvent(grid.Events.EVENT_ROW_CLICKED, agEvent);
@@ -4948,14 +4975,6 @@ var ag;
                     var agEvent = that.createEvent(event, this);
                     that.eventService.dispatchEvent(grid.Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
                 });
-                // vRow.addEventListener("mouseenter", (function (event: any) {
-                //     var eRoot:HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
-                //     var eRowOverlay:HTMLElement = <HTMLElement>(<HTMLElement>eRoot.parentNode).querySelector('#ag-overlay-row');
-                //     eRowOverlay.style.top = `${this.top + this.gridOptionsWrapper.getFullHeaderHeight()}px`;
-                //     eRowOverlay.style.height = this.heightPX;
-                // }).bind(this));
-                this.isListenMove = true;
-                vRow.addEventListener("mousemove", this.listenMoveRef);
                 return vRow;
             };
             RenderedRow.prototype.isListenForMove = function (newValue) {
@@ -5657,6 +5676,7 @@ var ag;
                 this.valueService = valueService;
                 this.findAllElements(gridPanel);
                 this.eventService = eventService;
+                this.hoveredOn = undefined;
                 this.cellRendererMap = {
                     'group': grid.groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
                     'groupHeader': grid.groupHeaderFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
@@ -6028,17 +6048,29 @@ var ag;
             RowRenderer.prototype.getRenderedRows = function () {
                 return this.renderedRows;
             };
-            RowRenderer.prototype.setListenMouseMove = function () {
+            RowRenderer.prototype.setListenMouseMove = function (toAllSet) {
+                if (toAllSet === void 0) { toAllSet = true; }
+                var eventAction;
                 var allRows = this.renderedRows;
                 var el;
                 for (var k in allRows) {
                     el = allRows[k];
-                    if (!el.isListenForMove()) {
-                        el.vBodyRow.addEventListener('mousemove', el.listenMoveRef);
-                        el.isListenForMove(true);
+                    eventAction = toAllSet ? el.vBodyRow.addEventListener.bind(el.vBodyRow) : el.vBodyRow.removeEventListener.bind(el.vBodyRow);
+                    if (toAllSet !== el.isListenForMove()) {
+                        console.log(el);
+                        eventAction('mousemove', el.listenMoveRef);
+                        el.isListenForMove(toAllSet);
                     }
                 }
                 ;
+            };
+            RowRenderer.prototype.setHoveredOn = function (rowNode) {
+                if (rowNode === null || rowNode === void 0 || !rowNode.node)
+                    return;
+                this.hoveredOn = rowNode.node;
+            };
+            RowRenderer.prototype.getHoveredOn = function () {
+                return this.hoveredOn;
             };
             RowRenderer.prototype.getIndexOfRenderedNode = function (node) {
                 var renderedRows = this.renderedRows;
@@ -9056,10 +9088,11 @@ var ag;
         var BorderLayout = (function () {
             function BorderLayout(params) {
                 this.sizeChangeListeners = [];
-                console.log(params);
                 this.isLayoutPanel = true;
                 this.fullHeight = !params.north && !params.south;
                 this.deleteListener = params.deleteListener;
+                this.rowEditListener = params.rowEditListener;
+                this.rowDeleteListener = params.rowDeleteListener;
                 this.eventService = params.eventService;
                 this.gridOptionsWrapper = params.gridOptionsWrapper;
                 var template;
@@ -9150,6 +9183,8 @@ var ag;
                 this.eCenterChildLayout = this.setupPanel(params.center, this.eCenterWrapper);
             };
             BorderLayout.prototype.setRowOverlayRowHeight = function (heightPX) {
+                if (this.eCenterRow)
+                    console.log(this.eCenterRow.style.height);
                 this.eOverlayRowZoneWrapper.style.height = heightPX;
             };
             BorderLayout.prototype.addOverlayRowZone = function () {
@@ -9159,57 +9194,56 @@ var ag;
                 var rowOverlayZone = document.createElement('div');
                 rowOverlayZone.id = 'ag-overlay-row-zone';
                 rowOverlayZone.className = rowOverlayZone.id;
+                rowOverlayZone.innerHTML = "\n                    <p>1</p>\n                    <p>2</p>\n                    <p>3</p>\n                    <p>4</p>\n                    <p>5</p>\n            ";
                 rowOverlayZone.appendChild(rowOverlay);
                 rowOverlayZone.style.top = this.gridOptionsWrapper.getFullHeaderHeight() + "px";
-                this.eCenterWrapper.appendChild(rowOverlayZone);
-                rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
-                // rowOverlayZone.addEventListener('mouseenter', this.overlayEventThrough.bind(this));
-                // rowOverlayZone.addEventListener('mouseleave', this.overlayEventThrough.bind(this));
-                // rowOverlayZone.addEventListener('mouseover', this.overlayEventThrough.bind(this));
-                // rowOverlayZone.addEventListener('mouseout', this.overlayEventThrough.bind(this));
+                // rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('mousemove', this.overlayEventThrough.bind(this));
-                this.eOverlayRowWrapper = rowOverlay;
-                this.eOverlayRowZoneWrapper = rowOverlayZone;
-                // rowOverlayZone.addEventListener('mousemove', this.rowOverlayMouseMoveListener.bind(this));
                 rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
                 rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
+                this.eOverlayRowWrapper = rowOverlay;
+                this.eOverlayRowZoneWrapper = rowOverlayZone;
             };
-            // private rowOverlayMouseMoveListener(event: any): boolean {
-            //     var headerTopShift = parseInt(event.target.parentNode.querySelector('.ag-body').style.paddingTop);
-            //     // debugger
-            //     // var rowElement = _.findParentWithClass(event.target, 'ag-row');
-            //     // var bodyElement = _.findParentWithClass(event.target, 'ag-body');
-            //     // var overlayElement = this.layout.getOverlayRow();
-            //     // var topOffset = parseInt(rowElement.style.top) + parseInt(this.eBody.style.paddingTop);
-            //     // overlayElement.style.top = `${topOffset}px`;
-            //     // overlayElement.style.height = rowElement.style.height;
-            //     return;
-            // }
             BorderLayout.prototype.overlayEventThrough = function (event) {
+                // relay mouse events to underlying element
+                // console.log(`client ${event.clientY}`);
+                // console.log(`page ${event.pageY}`);
+                // console.log(`screen ${event.screenY}`);
                 var coordinates;
                 event.target.style.display = 'none';
                 if (event.clientX) {
                     coordinates = {
                         pointerX: event.clientX,
-                        pointerY: event.clientY
+                        pointerY: event.clientY - 200
                     };
                 }
                 var underEl = document.elementFromPoint(event.clientX, event.clientY);
-                if (underEl)
-                    _.simulateEvent(underEl, event.type, coordinates);
+                // console.log(underEl);
+                if (underEl && underEl.classList.contains('ag-cell')) {
+                    // console.log(
+                    //     underEl.parentNode.childNodes[0]
+                    // );
+                    var newMouseEvent = new MouseEvent('mousemove', {
+                        screenX: event.screenX,
+                        screenY: event.screenY,
+                        clientX: event.clientX,
+                        clientY: event.clientY,
+                    });
+                    underEl.dispatchEvent(newMouseEvent);
+                }
+                // if (underEl) _.simulateEvent((<HTMLElement>underEl), event.type, coordinates);
                 event.target.style.display = '';
             };
             BorderLayout.prototype.rowOverlayLeaveListener = function (event) {
-                console.log('leave zone');
+                // stop processing overlay when move out of zone
                 this.eOverlayRowWrapper.style.display = 'none';
-                this.overlayEventThrough(event);
-                this.eventService.dispatchEvent(grid.Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
+                // this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE);
                 return;
             };
             BorderLayout.prototype.rowOverlayEnterListener = function (event) {
-                console.log('enter zone');
+                // start processing overlay when move into zone
                 this.eOverlayRowWrapper.style.display = '';
-                this.overlayEventThrough(event);
+                this.eventService.dispatchEvent(grid.Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
                 return;
             };
             BorderLayout.prototype.setupPanel = function (content, ePanel) {
@@ -9352,12 +9386,19 @@ var ag;
                 return tmpl;
             };
             BorderLayout.prototype.createOverlayRowTemplate = function () {
-                var tmpl = "<span>Row Tools</span>";
+                var tmpl = "\n                <a class=\"k-icon k-edit\" title=\"\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C\" href=\"#\" id=\"ag-action-row-edit\"><span class=\"i-edit\" style=\"pointer-events:all;\"></span></a>\n                <a class=\"k-icon k-delete\" title=\"\u0423\u0434\u0430\u043B\u0438\u0442\u044C\" href=\"#\" id=\"ag-action-row-delete\"><span class=\"i-delete\" style=\"pointer-events:all;\"></span></a>\n            ";
                 return this.getOverlayRowWrapper(tmpl);
             };
             BorderLayout.prototype.showOverlayRow = function () {
-                this.eOverlayRowWrapper.style.display = '';
+                if (this.eOverlayRowZoneWrapper === void 0)
+                    return;
+                debugger;
+                document.querySelector('.ag-body-container').appendChild(this.eOverlayRowZoneWrapper);
+                // this.eCenterWrapper.querySelector('.ag-body').appendChild(this.eOverlayRowZoneWrapper);
+                this.eOverlayRowWrapper.style.display = 'none';
                 this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
+                this.eOverlayRowWrapper.querySelector('#ag-action-row-edit > span').addEventListener('click', this.rowEditListener);
+                this.eOverlayRowWrapper.querySelector('#ag-action-row-delete > span').addEventListener('click', this.rowDeleteListener);
             };
             BorderLayout.prototype.showOverlay = function (key) {
                 var overlay = this.overlays ? this.overlays[key] : null;
@@ -9452,6 +9493,24 @@ var ag;
                     deleteListener: function (ev) {
                         ev.preventDefault();
                         var selected = that.gridOptionsWrapper.getApi().getSelectedNodes();
+                        var multitoolParams = {
+                            name: 'delete',
+                            items: selected
+                        };
+                        that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                    },
+                    rowEditListener: function (ev) {
+                        ev.preventDefault();
+                        var selected = [that.rowRenderer.getHoveredOn()];
+                        var multitoolParams = {
+                            name: 'edit',
+                            items: selected
+                        };
+                        that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                    },
+                    rowDeleteListener: function (ev) {
+                        ev.preventDefault();
+                        var selected = [that.rowRenderer.getHoveredOn()];
                         var multitoolParams = {
                             name: 'delete',
                             items: selected
@@ -9803,6 +9862,8 @@ var ag;
                 this.eFloatingBottom.style.height = floatingBottomHeight + 'px';
                 this.eFloatingBottom.style.top = floatingBottomTop + 'px';
                 this.ePinnedColsViewport.style.height = heightOfCentreRows + 'px';
+                // debugger;
+                this.layout.setRowOverlayRowHeight((this.eBodyViewport.clientHeight - 35) + "px");
             };
             GridPanel.prototype.sizeHeaderAndBodyForPrint = function () {
                 var headerHeightPixels = this.gridOptionsWrapper.getHeaderHeight() + 'px';
@@ -11153,9 +11214,13 @@ var ag;
                 eventService.addEventListener(grid.Events.EVENT_COLUMN_VALUE_CHANGE, this.onColumnChanged.bind(this));
                 eventService.addEventListener(grid.Events.EVENT_COLUMN_VISIBLE, this.onColumnChanged.bind(this));
                 eventService.addEventListener(grid.Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE, this.onRowsListenMouseMove.bind(this));
+                eventService.addEventListener(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.onRowsStopListenMouseMove.bind(this));
             };
             Grid.prototype.onRowsListenMouseMove = function () {
                 this.rowRenderer.setListenMouseMove();
+            };
+            Grid.prototype.onRowsStopListenMouseMove = function () {
+                this.rowRenderer.setListenMouseMove(false);
             };
             Grid.prototype.onColumnChanged = function (event) {
                 this.rowRenderer.countGridRows();

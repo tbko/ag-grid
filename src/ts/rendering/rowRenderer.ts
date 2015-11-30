@@ -46,6 +46,8 @@ module ag.grid {
         private eFloatingBottomPinnedContainer: HTMLElement;
         private eParentsOfRows: HTMLElement[];
 
+        private hoveredOn: any;
+
         public init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel,
                     angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any,
                     selectionController: SelectionController, expressionService: ExpressionService,
@@ -63,6 +65,7 @@ module ag.grid {
             this.valueService = valueService;
             this.findAllElements(gridPanel);
             this.eventService = eventService;
+            this.hoveredOn = undefined;
 
             this.cellRendererMap = {
                 'group': groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
@@ -523,16 +526,29 @@ module ag.grid {
             return this.renderedRows;
         }
 
-        public setListenMouseMove() {
+        public setListenMouseMove(toAllSet:boolean = true) {
+            var eventAction: Function;
             var allRows = this.renderedRows;
             var el: RenderedRow;
             for (var k in allRows) {
                 el = allRows[k];
-                if (!el.isListenForMove()) {
-                    el.vBodyRow.addEventListener('mousemove', el.listenMoveRef);
-                    el.isListenForMove(true);
+                eventAction = toAllSet ? el.vBodyRow.addEventListener.bind(el.vBodyRow) : el.vBodyRow.removeEventListener.bind(el.vBodyRow);
+                if (toAllSet !== el.isListenForMove()) {
+                    console.log(el);
+                    eventAction('mousemove', el.listenMoveRef);
+                    el.isListenForMove(toAllSet);
                 }
             };
+        }
+
+        public setHoveredOn(rowNode: any) {
+            if (rowNode === null || rowNode === void 0 || !rowNode.node)
+                return;
+            this.hoveredOn = rowNode.node;
+        }
+
+        public getHoveredOn(): any {
+            return this.hoveredOn;
         }
 
         public getIndexOfRenderedNode(node: any): number {

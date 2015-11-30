@@ -212,6 +212,19 @@ module ag.vdom {
             }
         }
 
+        public removeEventListener(event: string, listener: EventListener) {
+            var listenerIdx: number;
+            if (this.bound) {
+                this.element.removeEventListener(event, listener);
+            } else {
+                if (this.eventListeners) {
+                    var entry = new VEventListener(event, listener);
+                    listenerIdx = this.eventListeners.indexOf(entry);
+                    this.eventListeners.splice(listenerIdx, 1);
+                }
+            }
+        }
+
         public elementAttached(element: Element): void {
             super.elementAttached(element);
             this.element = <HTMLElement> element;

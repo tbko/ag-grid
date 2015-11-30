@@ -282,10 +282,15 @@ module ag.grid {
             eventService.addEventListener(Events.EVENT_COLUMN_VALUE_CHANGE, this.onColumnChanged.bind(this));
             eventService.addEventListener(Events.EVENT_COLUMN_VISIBLE, this.onColumnChanged.bind(this));
             eventService.addEventListener(Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE, this.onRowsListenMouseMove.bind(this));
+            eventService.addEventListener(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.onRowsStopListenMouseMove.bind(this));
         }
 
         private onRowsListenMouseMove() {
             this.rowRenderer.setListenMouseMove();
+        }
+
+        private onRowsStopListenMouseMove() {
+            this.rowRenderer.setListenMouseMove(false);
         }
 
         private onColumnChanged(event: ColumnChangeEvent): void {

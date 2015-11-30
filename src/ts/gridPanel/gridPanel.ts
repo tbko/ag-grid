@@ -142,6 +142,26 @@ module ag.grid {
                     }
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                 },
+                rowEditListener: function(ev: Event) {
+                    ev.preventDefault();
+
+                    var selected = [that.rowRenderer.getHoveredOn()];
+                    var multitoolParams = {
+                        name: 'edit',
+                        items: selected
+                    }
+                    that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                },
+                rowDeleteListener: function(ev: Event) {
+                    ev.preventDefault();
+
+                    var selected = [that.rowRenderer.getHoveredOn()];
+                    var multitoolParams = {
+                        name: 'delete',
+                        items: selected
+                    }
+                    that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                },
                 eventService: that.eventService,
                 gridOptionsWrapper: that.gridOptionsWrapper
             });
@@ -568,6 +588,8 @@ module ag.grid {
             this.eFloatingBottom.style.top = floatingBottomTop + 'px';
 
             this.ePinnedColsViewport.style.height = heightOfCentreRows + 'px';
+            // debugger;
+            this.layout.setRowOverlayRowHeight(`${this.eBodyViewport.clientHeight-35}px`);
         }
 
         private sizeHeaderAndBodyForPrint(): void {

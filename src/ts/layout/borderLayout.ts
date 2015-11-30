@@ -35,16 +35,19 @@ module ag.grid {
         private sizeChangeListeners = <any>[];
         private overlays: any;
         private deleteListener: any;
+        private rowEditListener: any;
+        private rowDeleteListener: any;
         private eventService: EventService;
         private gridOptionsWrapper: GridOptionsWrapper;
 
         constructor(params: any) {
-            console.log(params);
 
             this.isLayoutPanel = true;
 
             this.fullHeight = !params.north && !params.south;
             this.deleteListener = params.deleteListener;
+            this.rowEditListener = params.rowEditListener;
+            this.rowDeleteListener = params.rowDeleteListener;
             this.eventService = params.eventService;
             this.gridOptionsWrapper = params.gridOptionsWrapper;
 
@@ -145,9 +148,12 @@ module ag.grid {
             this.eWestChildLayout = this.setupPanel(params.west, this.eWestWrapper);
             this.eCenterChildLayout = this.setupPanel(params.center, this.eCenterWrapper);
 
+
         }
 
         public setRowOverlayRowHeight(heightPX: string): void {
+            if (this.eCenterRow)
+                console.log(this.eCenterRow.style.height);
             this.eOverlayRowZoneWrapper.style.height = heightPX;
         }
 
@@ -155,67 +161,76 @@ module ag.grid {
             var rowOverlay = document.createElement('div');
             rowOverlay.id = 'ag-overlay-row';
             rowOverlay.className = rowOverlay.id;
+
             var rowOverlayZone = document.createElement('div');
             rowOverlayZone.id = 'ag-overlay-row-zone';
             rowOverlayZone.className = rowOverlayZone.id;
+            rowOverlayZone.innerHTML = `
+                    <p>1</p>
+                    <p>2</p>
+                    <p>3</p>
+                    <p>4</p>
+                    <p>5</p>
+            `
+
             rowOverlayZone.appendChild(rowOverlay);
+
             
             rowOverlayZone.style.top = `${this.gridOptionsWrapper.getFullHeaderHeight()}px`;
 
-            this.eCenterWrapper.appendChild(rowOverlayZone);
-            rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
-            // rowOverlayZone.addEventListener('mouseenter', this.overlayEventThrough.bind(this));
-            // rowOverlayZone.addEventListener('mouseleave', this.overlayEventThrough.bind(this));
-            // rowOverlayZone.addEventListener('mouseover', this.overlayEventThrough.bind(this));
-            // rowOverlayZone.addEventListener('mouseout', this.overlayEventThrough.bind(this));
+            // rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
             rowOverlayZone.addEventListener('mousemove', this.overlayEventThrough.bind(this));
+            rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
+            rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
 
             this.eOverlayRowWrapper = rowOverlay;
             this.eOverlayRowZoneWrapper = rowOverlayZone;
 
-            // rowOverlayZone.addEventListener('mousemove', this.rowOverlayMouseMoveListener.bind(this));
-            rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
-            rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
         }
 
-        // private rowOverlayMouseMoveListener(event: any): boolean {
-        //     var headerTopShift = parseInt(event.target.parentNode.querySelector('.ag-body').style.paddingTop);
-        //     // debugger
-        //     // var rowElement = _.findParentWithClass(event.target, 'ag-row');
-        //     // var bodyElement = _.findParentWithClass(event.target, 'ag-body');
-        //     // var overlayElement = this.layout.getOverlayRow();
-        //     // var topOffset = parseInt(rowElement.style.top) + parseInt(this.eBody.style.paddingTop);
-        //     // overlayElement.style.top = `${topOffset}px`;
-        //     // overlayElement.style.height = rowElement.style.height;
-        //     return;
-        // }
-
         private overlayEventThrough(event: MouseEvent) {
+            // relay mouse events to underlying element
+            // console.log(`client ${event.clientY}`);
+            // console.log(`page ${event.pageY}`);
+            // console.log(`screen ${event.screenY}`);
             var coordinates: any;
             (<HTMLElement>event.target).style.display = 'none';
             if (event.clientX) {
                 coordinates = {
                     pointerX: event.clientX,
-                    pointerY: event.clientY
+                    pointerY: event.clientY - 200
                 }
             }
             var underEl = document.elementFromPoint(event.clientX, event.clientY);
-            if (underEl) _.simulateEvent((<HTMLElement>underEl), event.type, coordinates);
+            // console.log(underEl);
+            if (underEl && underEl.classList.contains('ag-cell')) {
+                // console.log(
+                //     underEl.parentNode.childNodes[0]
+                // );
+                var newMouseEvent = new MouseEvent('mousemove', {
+                    screenX: event.screenX,
+                    screenY: event.screenY,
+                    clientX: event.clientX,
+                    clientY: event.clientY,
+                });
+                (<HTMLElement>underEl).dispatchEvent(newMouseEvent);
+            }
+
+            // if (underEl) _.simulateEvent((<HTMLElement>underEl), event.type, coordinates);
             (<HTMLElement>event.target).style.display = '';
         }
 
         private rowOverlayLeaveListener(event: any): boolean {
-            console.log('leave zone');
+            // stop processing overlay when move out of zone
             this.eOverlayRowWrapper.style.display = 'none';
-            this.overlayEventThrough(event);
-            this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
+            // this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE);
             return;
         }
 
         private rowOverlayEnterListener(event: any): boolean {
-            console.log('enter zone');
+            // start processing overlay when move into zone
             this.eOverlayRowWrapper.style.display = '';
-            this.overlayEventThrough(event);
+            this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
             return;
         }
 
@@ -263,6 +278,7 @@ module ag.grid {
 
             if (this.layoutActive) {
                 var ourHeightChanged = this.layoutHeight();
+
                 var ourWidthChanged = this.layoutWidth();
                 if (ourHeightChanged || ourWidthChanged) {
                     atLeastOneChanged = true;
@@ -383,15 +399,24 @@ module ag.grid {
         }
 
         private createOverlayRowTemplate(): string {
-            var tmpl = `<span>Row Tools</span>`
+            var tmpl = `
+                <a class="k-icon k-edit" title="Редактировать" href="#" id="ag-action-row-edit"><span class="i-edit" style="pointer-events:all;"></span></a>
+                <a class="k-icon k-delete" title="Удалить" href="#" id="ag-action-row-delete"><span class="i-delete" style="pointer-events:all;"></span></a>
+            `;
             return this.getOverlayRowWrapper(tmpl);
         }
 
         public showOverlayRow() {
-            this.eOverlayRowWrapper.style.display = '';
+            if (this.eOverlayRowZoneWrapper === void 0) return;
+            // debugger;
+            document.querySelector('.ag-body-container').appendChild(this.eOverlayRowZoneWrapper);
+            // this.eCenterWrapper.querySelector('.ag-body').appendChild(this.eOverlayRowZoneWrapper);
+            this.eOverlayRowWrapper.style.display = 'none';
             this.eOverlayRowWrapper.appendChild(
                 _.loadTemplate(this.createOverlayRowTemplate().trim())
             );
+            this.eOverlayRowWrapper.querySelector('#ag-action-row-edit > span').addEventListener('click', this.rowEditListener);
+            this.eOverlayRowWrapper.querySelector('#ag-action-row-delete > span').addEventListener('click', this.rowDeleteListener);
         }
 
         public showOverlay(key: string) {

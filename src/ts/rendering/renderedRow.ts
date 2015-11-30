@@ -426,16 +426,28 @@ module ag.grid {
 
             function listenMove(event: any) {
                 var eRoot:HTMLElement = _.findParentWithClass(that.eBodyContainer, 'ag-root');
-                var eRowOverlay:HTMLElement = <HTMLElement>(<HTMLElement>eRoot.parentNode).querySelector('#ag-overlay-row');
+                var eRowOverlay:HTMLElement = <HTMLElement>document.querySelector('#ag-overlay-row');
+                // debugger;
+                that.rowRenderer.setHoveredOn(null);
 
-                eRowOverlay.style.top = `${that.top}px`;
-                eRowOverlay.style.height = that.heightPX;
+                if (that.node) {
+                    if (that.node.group) {
+                        eRowOverlay.style.display = 'none';
+                    } else {
+                        // var eventTarget$('.ag-row[row="74"]')[0].parentNode.parentNode.parentNode.querySelector('.ag-body-viewport').scrollTop
+                        eRowOverlay.style.display = '';
+                        eRowOverlay.style.top = `${that.top}px`;
+                        eRowOverlay.style.height = that.heightPX;
+                        that.rowRenderer.setHoveredOn(that);
+                    }
+                }
 
                 that.rowRenderer.setListenMouseMove();
                 that.isListenMove = false;
                 that.vBodyRow.getElement().removeEventListener('mousemove', listenMove);
             }
             this.listenMoveRef = listenMove;
+            this.isListenMove = false;
 
             vRow.addEventListener("click", function (event: any) {
                 var agEvent = that.createEvent(event, this);
@@ -450,14 +462,6 @@ module ag.grid {
                 that.eventService.dispatchEvent(Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
             });
 
-            // vRow.addEventListener("mouseenter", (function (event: any) {
-            //     var eRoot:HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
-            //     var eRowOverlay:HTMLElement = <HTMLElement>(<HTMLElement>eRoot.parentNode).querySelector('#ag-overlay-row');
-            //     eRowOverlay.style.top = `${this.top + this.gridOptionsWrapper.getFullHeaderHeight()}px`;
-            //     eRowOverlay.style.height = this.heightPX;
-            // }).bind(this));
-            this.isListenMove = true;
-            vRow.addEventListener("mousemove", this.listenMoveRef);
             return vRow;
         }
 

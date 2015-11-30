@@ -308,6 +308,7 @@ declare module ag.grid {
         static EVENT_MULTITOOL_CLICK: string;
         static EVENT_SELECTION_STATE_CHANGED: string;
         static EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE: string;
+        static EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE: string;
     }
 }
 declare module ag.grid {
@@ -894,6 +895,7 @@ declare module ag.vdom {
         appendChild(child: any): void;
         setAttribute(key: string, value: string): void;
         addEventListener(event: string, listener: EventListener): void;
+        removeEventListener(event: string, listener: EventListener): void;
         elementAttached(element: Element): void;
         fireElementAttachedToChildren(element: Element): void;
     }
@@ -1091,6 +1093,7 @@ declare module ag.grid {
         private eFloatingBottomContainer;
         private eFloatingBottomPinnedContainer;
         private eParentsOfRows;
+        private hoveredOn;
         init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel, angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any, selectionController: SelectionController, expressionService: ExpressionService, templateService: TemplateService, valueService: ValueService, eventService: EventService): void;
         setRowModel(rowModel: any): void;
         onIndividualColumnResized(column: Column): void;
@@ -1117,7 +1120,9 @@ declare module ag.grid {
         getRenderedRows(): {
             [key: string]: RenderedRow;
         };
-        setListenMouseMove(): void;
+        setListenMouseMove(toAllSet?: boolean): void;
+        setHoveredOn(rowNode: any): void;
+        getHoveredOn(): any;
         getIndexOfRenderedNode(node: any): number;
         navigateToNextCell(key: any, rowIndex: number, column: Column): void;
         private getNextCellToFocus(key, lastCellToFocus);
@@ -1505,6 +1510,8 @@ declare module ag.grid {
         private sizeChangeListeners;
         private overlays;
         private deleteListener;
+        private rowEditListener;
+        private rowDeleteListener;
         private eventService;
         private gridOptionsWrapper;
         constructor(params: any);
@@ -2012,6 +2019,7 @@ declare module ag.grid {
         private periodicallyDoLayout();
         private setupComponents($scope, $compile, eUserProvidedDiv, globalEventListener);
         private onRowsListenMouseMove();
+        private onRowsStopListenMouseMove();
         private onColumnChanged(event);
         refreshPivot(): void;
         getEventService(): EventService;
