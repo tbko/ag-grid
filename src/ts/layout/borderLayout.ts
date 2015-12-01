@@ -409,7 +409,7 @@ module ag.grid {
         public showOverlayRow() {
             if (this.eOverlayRowZoneWrapper === void 0) return;
             // debugger;
-            document.querySelector('.ag-body-container').appendChild(this.eOverlayRowZoneWrapper);
+            document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
             // this.eCenterWrapper.querySelector('.ag-body').appendChild(this.eOverlayRowZoneWrapper);
             this.eOverlayRowWrapper.style.display = 'none';
             this.eOverlayRowWrapper.appendChild(

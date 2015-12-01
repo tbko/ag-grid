@@ -6057,7 +6057,6 @@ var ag;
                     el = allRows[k];
                     eventAction = toAllSet ? el.vBodyRow.addEventListener.bind(el.vBodyRow) : el.vBodyRow.removeEventListener.bind(el.vBodyRow);
                     if (toAllSet !== el.isListenForMove()) {
-                        console.log(el);
                         eventAction('mousemove', el.listenMoveRef);
                         el.isListenForMove(toAllSet);
                     }
@@ -9392,8 +9391,8 @@ var ag;
             BorderLayout.prototype.showOverlayRow = function () {
                 if (this.eOverlayRowZoneWrapper === void 0)
                     return;
-                debugger;
-                document.querySelector('.ag-body-container').appendChild(this.eOverlayRowZoneWrapper);
+                // debugger;
+                document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
                 // this.eCenterWrapper.querySelector('.ag-body').appendChild(this.eOverlayRowZoneWrapper);
                 this.eOverlayRowWrapper.style.display = 'none';
                 this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
