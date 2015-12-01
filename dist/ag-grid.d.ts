@@ -1212,7 +1212,6 @@ declare module ag.grid {
         private createScope();
         private addAttributes();
         private addClasses();
-        private addMenu();
         private addSortIcons(headerCellLabel);
         private setupComponents();
         private useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);
@@ -1321,7 +1320,7 @@ declare module ag.grid {
         private uniqueId;
         init(gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, gridPanel: GridPanel, angularGrid: Grid, filterManager: FilterManager, $scope: any, $compile: any, dragAndDropService: DragAndDropService, popUpService: PopupService): void;
         getUniqueId(): any;
-        private addDragAndDropToListItem(eListItem, item);
+        private addDragAndDropToListItem(eDragHandler, item);
         private internalAcceptDrag(targetColumn, dragItem, eListItem);
         private internalDrop(targetColumn, draggedColumn);
         private internalNoDrop(eListItem);

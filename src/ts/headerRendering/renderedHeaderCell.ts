@@ -77,75 +77,11 @@ module ag.grid {
 
         private addClasses(): void {
             _.addCssClass(this.eHeaderCell, 'ag-header-cell');
-            this.eHeaderCell.setAttribute('draggable', 'true');
             if (this.gridOptionsWrapper.isGroupHeaders()) {
                 _.addCssClass(this.eHeaderCell, 'ag-header-cell-grouped'); // this takes 50% height
             } else {
                 _.addCssClass(this.eHeaderCell, 'ag-header-cell-not-grouped'); // this takes 100% height
             }
-        }
-
-        private addMenu(): void {
-            var that = this;
-
-            var eMenuButton = document.createElement('div');
-            var eMenuGui: HTMLDivElement;
-            eMenuButton.classList.add('pi-ag-header-cell-menu-button')
-            eMenuButton.classList.add('pi-icon');
-            eMenuButton.classList.add('i-kp');
-            eMenuButton.onclick = function () {
-                eMenuGui = document.createElement('div');
-                eMenuGui.classList.add('ag-filter');
-                var eItemList = document.createElement('ul');
-                var eItem1 = document.createElement('li');
-                eItem1.innerHTML = 'gopgop';
-                var eItem2 = document.createElement('li');
-                eItem2.innerHTML = 'toptop';
-                eItemList.appendChild(eItem1);
-                eItemList.appendChild(eItem2);
-                eMenuGui.appendChild(eItemList);
-                var hidePopup = that.popupService.addAsModalPopup(eMenuGui, true, function() {eMenuButton.style.opacity = '0'});
-                that.popupService.positionPopup(this, eMenuGui, true);
-                eMenuButton.style.opacity = '1';
-            };
-            eMenuButton.style.opacity = '0';
-            this.eHeaderCell.onmouseenter = function () {
-                eMenuButton.style.opacity = '1';
-            };
-            this.eHeaderCell.onmouseleave = function () {
-                if (!eMenuGui || !_.isVisible(eMenuGui)) eMenuButton.style.opacity = '0';
-            };
-            this.eHeaderCell.appendChild(eMenuButton);
-
-            return;
-
-            // var showMenu = this.gridOptionsWrapper.isEnableFilter() && !this.column.colDef.suppressMenu;
-            // if (!showMenu) {
-            //     return;
-            // }
-
-            // var eMenuButton = _.createIcon('menu', this.gridOptionsWrapper, this.column, svgFactory.createMenuSvg);
-            // _.addCssClass(eMenuButton, 'ag-header-icon');
-
-            // eMenuButton.setAttribute("class", "ag-header-cell-menu-button");
-            // var that = this;
-            // eMenuButton.onclick = function () {
-            //     that.filterManager.showFilter(that.column, this);
-            // };
-            // this.eHeaderCell.appendChild(eMenuButton);
-
-            // if (!this.gridOptionsWrapper.isSuppressMenuHide()) {
-            //     eMenuButton.style.opacity = '0';
-            //     this.eHeaderCell.onmouseenter = function () {
-            //         eMenuButton.style.opacity = '1';
-            //     };
-            //     this.eHeaderCell.onmouseleave = function () {
-            //         eMenuButton.style.opacity = '0';
-            //     };
-            // }
-            // eMenuButton.style['transition'] = 'opacity 0.5s, border 0.2s';
-            // var style: any = eMenuButton.style;
-            // style['-webkit-transition'] = 'opacity 0.5s, border 0.2s';
         }
 
         private addSortIcons(headerCellLabel: HTMLElement): void {
@@ -174,6 +110,8 @@ module ag.grid {
         }
 
         private setupComponents(): void {
+            var that = this;
+
             this.eHeaderCell = document.createElement("div");
 
             this.createScope();
@@ -193,14 +131,14 @@ module ag.grid {
                 this.addDragHandler(headerCellResize);
             }
 
-            this.addMenu();
+            // this.addMenu();
 
             // label div
             var headerCellLabel = document.createElement("div");
             headerCellLabel.className = "ag-header-cell-label";
 
             // add in sort icons
-            this.addSortIcons(headerCellLabel);
+            // this.addSortIcons(headerCellLabel);
 
 
             // add in filter icon
@@ -231,8 +169,64 @@ module ag.grid {
             this.eHeaderCell.appendChild(headerCellLabel);
             this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
 
+
+            // start/storp dragging header
+            var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
+            dragHandler.setAttribute('draggable', 'true');
+            dragHandler.addEventListener('dragstart', function(event: DragEvent) {
+                that.eHeaderCell.classList.add('ag-dragging');
+                event.dataTransfer.setData('text/plain', that.column.colId);
+            });
+            dragHandler.addEventListener('dragover', function(event: DragEvent) {
+                event.preventDefault();
+                event.dataTransfer.dropEffect = 'move';
+            });
+            dragHandler.addEventListener('dragend', function() {
+                that.eHeaderCell.classList.remove('ag-dragging');
+            });
+
+            // react to drag header over header
+            var lastenter: any;
+            var dragEnterHandler = (event: Event) => {
+                if (!lastenter && !that.eHeaderCell.classList.contains('ag-dragging'))
+                    that.eHeaderCell.classList.add('ag-dragging-over');
+                    // console.log('enter');
+                lastenter = event.target;
+                event.stopPropagation();
+                event.preventDefault();
+                return false;
+            };
+            var dragLeaveHandler = (event: Event) => {
+                if (lastenter === event.target) {
+                    // console.log('left');
+                    that.eHeaderCell.classList.remove('ag-dragging-over');
+                    lastenter = null;
+                }
+            };
+            this.eHeaderCell.addEventListener('dragenter', dragEnterHandler);
+            this.eHeaderCell.addEventListener('dragleave', dragLeaveHandler);
+
+            this.eHeaderCell.addEventListener('drop', function(event:DragEvent) {
+                console.log(event);
+                debugger;
+                var sourceIndex = that.columnController.getAllColumns().indexOf(
+                    that.columnController.getColumn(event.dataTransfer.getData('text/plain'))
+                );
+                var destinationIndex = that.columnController.getAllColumns().indexOf(
+                    that.column
+                );
+                that.columnController.moveColumn(sourceIndex, destinationIndex);
+
+                event.stopPropagation();
+                event.preventDefault();
+                return false;
+            });
+
+            this.addSortHandling(this.eHeaderCell);
+
+
             // this.refreshFilterIcon();
-            this.refreshSortIcon();
+            // this.refreshSortIcon();
         }
 
         private useRenderer(headerNameValue: string, headerCellRenderer: Function,
@@ -363,9 +357,22 @@ module ag.grid {
             var that = this;
 
             headerCellLabel.addEventListener("click", function (event: any) {
+                console.log(event);
+                debugger;
+                var sortDirectionMap: { [s: string]: string; } = {
+                    'desc': 'up',
+                    'asc': 'down'
+                }
 
                 // update sort on current col
                 that.column.sort = that.getNextSortDirection();
+                if (that.column.sort) {
+                    Array.prototype.slice.call(that.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function(el: HTMLElement) {
+                        el.classList.remove('active');
+                    });
+                    that.eHeaderCell.querySelector(`.icon-sort-alpha-${sortDirectionMap[that.column.sort]}`).classList.add('active');
+                }
+
 
                 // sortedAt used for knowing order of cols when multi-col sort
                 if (that.column.sort) {
@@ -381,7 +388,13 @@ module ag.grid {
                     that.columnController.getAllColumns().forEach(function (columnToClear: any) {
                         // Do not clear if either holding shift, or if column in question was clicked
                         if (!(columnToClear === that.column)) {
+                            if (columnToClear.sort) {
+                                Array.prototype.slice.call(that.eRoot.querySelector(`.ag-header-cell[colID="${columnToClear.colId}"]`).querySelectorAll('.ag-sort-icon'), 0).forEach(function(el: HTMLElement) {
+                                    el.classList.remove('active');
+                                });
+                            }
                             columnToClear.sort = null;
+
                         }
                     });
                 }

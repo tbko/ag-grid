@@ -6770,70 +6770,12 @@ var ag;
             };
             RenderedHeaderCell.prototype.addClasses = function () {
                 _.addCssClass(this.eHeaderCell, 'ag-header-cell');
-                this.eHeaderCell.setAttribute('draggable', 'true');
                 if (this.gridOptionsWrapper.isGroupHeaders()) {
                     _.addCssClass(this.eHeaderCell, 'ag-header-cell-grouped'); // this takes 50% height
                 }
                 else {
                     _.addCssClass(this.eHeaderCell, 'ag-header-cell-not-grouped'); // this takes 100% height
                 }
-            };
-            RenderedHeaderCell.prototype.addMenu = function () {
-                var that = this;
-                var eMenuButton = document.createElement('div');
-                var eMenuGui;
-                eMenuButton.classList.add('pi-ag-header-cell-menu-button');
-                eMenuButton.classList.add('pi-icon');
-                eMenuButton.classList.add('i-kp');
-                eMenuButton.onclick = function () {
-                    eMenuGui = document.createElement('div');
-                    eMenuGui.classList.add('ag-filter');
-                    var eItemList = document.createElement('ul');
-                    var eItem1 = document.createElement('li');
-                    eItem1.innerHTML = 'gopgop';
-                    var eItem2 = document.createElement('li');
-                    eItem2.innerHTML = 'toptop';
-                    eItemList.appendChild(eItem1);
-                    eItemList.appendChild(eItem2);
-                    eMenuGui.appendChild(eItemList);
-                    var hidePopup = that.popupService.addAsModalPopup(eMenuGui, true, function () { eMenuButton.style.opacity = '0'; });
-                    that.popupService.positionPopup(this, eMenuGui, true);
-                    eMenuButton.style.opacity = '1';
-                };
-                eMenuButton.style.opacity = '0';
-                this.eHeaderCell.onmouseenter = function () {
-                    eMenuButton.style.opacity = '1';
-                };
-                this.eHeaderCell.onmouseleave = function () {
-                    if (!eMenuGui || !_.isVisible(eMenuGui))
-                        eMenuButton.style.opacity = '0';
-                };
-                this.eHeaderCell.appendChild(eMenuButton);
-                return;
-                // var showMenu = this.gridOptionsWrapper.isEnableFilter() && !this.column.colDef.suppressMenu;
-                // if (!showMenu) {
-                //     return;
-                // }
-                // var eMenuButton = _.createIcon('menu', this.gridOptionsWrapper, this.column, svgFactory.createMenuSvg);
-                // _.addCssClass(eMenuButton, 'ag-header-icon');
-                // eMenuButton.setAttribute("class", "ag-header-cell-menu-button");
-                // var that = this;
-                // eMenuButton.onclick = function () {
-                //     that.filterManager.showFilter(that.column, this);
-                // };
-                // this.eHeaderCell.appendChild(eMenuButton);
-                // if (!this.gridOptionsWrapper.isSuppressMenuHide()) {
-                //     eMenuButton.style.opacity = '0';
-                //     this.eHeaderCell.onmouseenter = function () {
-                //         eMenuButton.style.opacity = '1';
-                //     };
-                //     this.eHeaderCell.onmouseleave = function () {
-                //         eMenuButton.style.opacity = '0';
-                //     };
-                // }
-                // eMenuButton.style['transition'] = 'opacity 0.5s, border 0.2s';
-                // var style: any = eMenuButton.style;
-                // style['-webkit-transition'] = 'opacity 0.5s, border 0.2s';
             };
             RenderedHeaderCell.prototype.addSortIcons = function (headerCellLabel) {
                 var addSortIcons = this.gridOptionsWrapper.isEnableSorting() && !this.column.colDef.suppressSorting;
@@ -6857,6 +6799,7 @@ var ag;
                 this.addSortHandling(headerCellLabel);
             };
             RenderedHeaderCell.prototype.setupComponents = function () {
+                var that = this;
                 this.eHeaderCell = document.createElement("div");
                 this.createScope();
                 this.addClasses();
@@ -6872,12 +6815,12 @@ var ag;
                     this.eHeaderCell.appendChild(headerCellResize);
                     this.addDragHandler(headerCellResize);
                 }
-                this.addMenu();
+                // this.addMenu();
                 // label div
                 var headerCellLabel = document.createElement("div");
                 headerCellLabel.className = "ag-header-cell-label";
                 // add in sort icons
-                this.addSortIcons(headerCellLabel);
+                // this.addSortIcons(headerCellLabel);
                 // add in filter icon
                 // this.eFilterIcon = _.createIcon('filter', this.gridOptionsWrapper, this.column, svgFactory.createFilterSvg);
                 // _.addCssClass(this.eFilterIcon, 'ag-header-icon');
@@ -6903,8 +6846,53 @@ var ag;
                 }
                 this.eHeaderCell.appendChild(headerCellLabel);
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
+                // start/storp dragging header
+                var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
+                dragHandler.setAttribute('draggable', 'true');
+                dragHandler.addEventListener('dragstart', function (event) {
+                    that.eHeaderCell.classList.add('ag-dragging');
+                    event.dataTransfer.setData('text/plain', that.column.colId);
+                });
+                dragHandler.addEventListener('dragover', function (event) {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                });
+                dragHandler.addEventListener('dragend', function () {
+                    that.eHeaderCell.classList.remove('ag-dragging');
+                });
+                // react to drag header over header
+                var lastenter;
+                var dragEnterHandler = function (event) {
+                    if (!lastenter && !that.eHeaderCell.classList.contains('ag-dragging'))
+                        that.eHeaderCell.classList.add('ag-dragging-over');
+                    // console.log('enter');
+                    lastenter = event.target;
+                    event.stopPropagation();
+                    event.preventDefault();
+                    return false;
+                };
+                var dragLeaveHandler = function (event) {
+                    if (lastenter === event.target) {
+                        // console.log('left');
+                        that.eHeaderCell.classList.remove('ag-dragging-over');
+                        lastenter = null;
+                    }
+                };
+                this.eHeaderCell.addEventListener('dragenter', dragEnterHandler);
+                this.eHeaderCell.addEventListener('dragleave', dragLeaveHandler);
+                this.eHeaderCell.addEventListener('drop', function (event) {
+                    console.log(event);
+                    debugger;
+                    var sourceIndex = that.columnController.getAllColumns().indexOf(that.columnController.getColumn(event.dataTransfer.getData('text/plain')));
+                    var destinationIndex = that.columnController.getAllColumns().indexOf(that.column);
+                    that.columnController.moveColumn(sourceIndex, destinationIndex);
+                    event.stopPropagation();
+                    event.preventDefault();
+                    return false;
+                });
+                this.addSortHandling(this.eHeaderCell);
                 // this.refreshFilterIcon();
-                this.refreshSortIcon();
+                // this.refreshSortIcon();
             };
             RenderedHeaderCell.prototype.useRenderer = function (headerNameValue, headerCellRenderer, headerCellLabel) {
                 // renderer provided, use it
@@ -7008,8 +6996,20 @@ var ag;
             RenderedHeaderCell.prototype.addSortHandling = function (headerCellLabel) {
                 var that = this;
                 headerCellLabel.addEventListener("click", function (event) {
+                    console.log(event);
+                    debugger;
+                    var sortDirectionMap = {
+                        'desc': 'up',
+                        'asc': 'down'
+                    };
                     // update sort on current col
                     that.column.sort = that.getNextSortDirection();
+                    if (that.column.sort) {
+                        Array.prototype.slice.call(that.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function (el) {
+                            el.classList.remove('active');
+                        });
+                        that.eHeaderCell.querySelector(".icon-sort-alpha-" + sortDirectionMap[that.column.sort]).classList.add('active');
+                    }
                     // sortedAt used for knowing order of cols when multi-col sort
                     if (that.column.sort) {
                         that.column.sortedAt = new Date().valueOf();
@@ -7023,6 +7023,11 @@ var ag;
                         that.columnController.getAllColumns().forEach(function (columnToClear) {
                             // Do not clear if either holding shift, or if column in question was clicked
                             if (!(columnToClear === that.column)) {
+                                if (columnToClear.sort) {
+                                    Array.prototype.slice.call(that.eRoot.querySelector(".ag-header-cell[colID=\"" + columnToClear.colId + "\"]").querySelectorAll('.ag-sort-icon'), 0).forEach(function (el) {
+                                        el.classList.remove('active');
+                                    });
+                                }
                                 columnToClear.sort = null;
                             }
                         });
@@ -7718,13 +7723,12 @@ var ag;
             HeaderRenderer.prototype.getUniqueId = function () {
                 return this.uniqueId;
             };
-            HeaderRenderer.prototype.addDragAndDropToListItem = function (eListItem, item) {
+            HeaderRenderer.prototype.addDragAndDropToListItem = function (eDragHandler, item) {
                 // debugger
                 var that = this;
-                eListItem.addEventListener('dragstart', function (ev) { console.log(ev); });
-                // var eCell = eListItem.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode;
-                var eCell = eListItem;
-                this.dragAndDropService.addDragSource(eListItem, {
+                // eListItem.addEventListener('dragstart', function(ev: any) { console.log(ev);})
+                // var eCell = eListItem.querySelector('.b-content-center');
+                this.dragAndDropService.addDragSource(eDragHandler, {
                     getData: function () {
                         return item;
                     },
@@ -7732,20 +7736,20 @@ var ag;
                         return that.uniqueId;
                     }
                 });
-                this.dragAndDropService.addDropTarget(eCell, {
+                this.dragAndDropService.addDropTarget(item, {
                     acceptDrag: function (dragItem) {
-                        return that.internalAcceptDrag(item, dragItem, eCell);
+                        return that.internalAcceptDrag(item, dragItem, eDragHandler);
                     },
                     drop: function (dragItem) {
                         that.internalDrop(item, dragItem.data);
                     },
                     noDrop: function () {
-                        that.internalNoDrop(eCell);
+                        that.internalNoDrop(eDragHandler);
                     }
                 });
             };
             HeaderRenderer.prototype.internalAcceptDrag = function (targetColumn, dragItem, eListItem) {
-                // debugger
+                return true;
                 var result = dragItem.data !== targetColumn && dragItem.containerId === this.uniqueId;
                 if (result) {
                     if (this.dragAfterThisItem(targetColumn, dragItem.data)) {
@@ -7758,6 +7762,7 @@ var ag;
                 return result;
             };
             HeaderRenderer.prototype.internalDrop = function (targetColumn, draggedColumn) {
+                return;
                 // debugger;
                 var oldIndex = this.headerElements.indexOf(draggedColumn);
                 var newIndex = this.headerElements.indexOf(targetColumn);
@@ -7772,6 +7777,7 @@ var ag;
                 // }
             };
             HeaderRenderer.prototype.internalNoDrop = function (eListItem) {
+                return;
                 this.setDropCssClasses(eListItem, DropTargetLocation.NOT_DROP_TARGET);
             };
             HeaderRenderer.prototype.dragAfterThisItem = function (targetColumn, draggedColumn) {
@@ -7832,21 +7838,20 @@ var ag;
                     _this.headerElements.push(renderedHeaderCell);
                     var eContainerToAddTo = column.pinned ? _this.ePinnedHeader : _this.eHeaderContainer;
                     eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
-                    if (!column.colDef.checkboxSelection) {
-                        var elHeader = renderedHeaderCell.getGui();
-                        var elDrag = elHeader.getElementsByClassName('pi-ag-header-cell-drag-handler')[0];
-                        if (!elDrag) {
-                            elDrag = elHeader;
-                        }
-                        else {
-                            elDrag.onclick = function (e) {
-                                e.preventDefault();
-                                e.stopPropagation();
-                            };
-                        }
-                        // debugger
-                        _this.addDragAndDropToListItem(elDrag, renderedHeaderCell);
-                    }
+                    // if (!column.colDef.checkboxSelection) {
+                    //     var elHeader = renderedHeaderCell.getGui();
+                    //     var elDrag = elHeader.getElementsByClassName('b-content-center')[0];
+                    //     if (!elDrag) {
+                    //         elDrag = elHeader;
+                    //     } else {
+                    //         elDrag.onclick = function(e: Event) {
+                    //             e.preventDefault();
+                    //             e.stopPropagation();
+                    //         };
+                    //     }
+                    //     // debugger
+                    //     this.addDragAndDropToListItem(elDrag, renderedHeaderCell);
+                    // }
                 });
             };
             HeaderRenderer.prototype.updateSortIcons = function () {

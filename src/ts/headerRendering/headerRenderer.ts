@@ -56,13 +56,12 @@ module ag.grid {
             return this.uniqueId;
         }
 
-        private addDragAndDropToListItem(eListItem: any, item: any) {
+        private addDragAndDropToListItem(eDragHandler: any, item: any) {
             // debugger
             var that = this;
-            eListItem.addEventListener('dragstart', function(ev: any) { console.log(ev);})
-            // var eCell = eListItem.parentNode.parentNode.parentNode.parentNode.parentNode.parentNode;
-            var eCell = eListItem;
-            this.dragAndDropService.addDragSource(eListItem, {
+            // eListItem.addEventListener('dragstart', function(ev: any) { console.log(ev);})
+            // var eCell = eListItem.querySelector('.b-content-center');
+            this.dragAndDropService.addDragSource(eDragHandler, {
                 getData: function() {
                     return item;
                 },
@@ -70,21 +69,21 @@ module ag.grid {
                     return that.uniqueId;
                 }
             });
-            this.dragAndDropService.addDropTarget(eCell, {
+            this.dragAndDropService.addDropTarget(item, {
                 acceptDrag: function(dragItem: any) {
-                    return that.internalAcceptDrag(item, dragItem, eCell);
+                    return that.internalAcceptDrag(item, dragItem, eDragHandler);
                 },
                 drop: function(dragItem: any) {
                     that.internalDrop(item, dragItem.data);
                 },
                 noDrop: function() {
-                    that.internalNoDrop(eCell);
+                    that.internalNoDrop(eDragHandler);
                 }
             });
         }
 
         private internalAcceptDrag(targetColumn: any, dragItem: any, eListItem: any) {
-            // debugger
+            return true;
             var result = dragItem.data !== targetColumn && dragItem.containerId === this.uniqueId;
             if (result) {
                 if (this.dragAfterThisItem(targetColumn, dragItem.data)) {
@@ -97,6 +96,7 @@ module ag.grid {
         }
 
         private internalDrop(targetColumn: any, draggedColumn: any) {
+            return;
             // debugger;
             var oldIndex = this.headerElements.indexOf(draggedColumn);
             var newIndex = this.headerElements.indexOf(targetColumn);
@@ -115,6 +115,7 @@ module ag.grid {
         }
 
         private internalNoDrop(eListItem: any) {
+            return;
             this.setDropCssClasses(eListItem, DropTargetLocation.NOT_DROP_TARGET);
         }
 
@@ -186,21 +187,22 @@ module ag.grid {
                 this.headerElements.push(renderedHeaderCell);
                 var eContainerToAddTo = column.pinned ? this.ePinnedHeader : this.eHeaderContainer;
                 eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
-                if (!column.colDef.checkboxSelection) {
-                    var elHeader = renderedHeaderCell.getGui();
-                    var elDrag = elHeader.getElementsByClassName('pi-ag-header-cell-drag-handler')[0];
-                    if (!elDrag) {
-                        elDrag = elHeader;
-                    } else {
-                        elDrag.onclick = function(e: Event) {
-                            e.preventDefault();
-                            e.stopPropagation();
-                        };
-                    }
 
-                    // debugger
-                    this.addDragAndDropToListItem(elDrag, renderedHeaderCell);
-                }
+                // if (!column.colDef.checkboxSelection) {
+                //     var elHeader = renderedHeaderCell.getGui();
+                //     var elDrag = elHeader.getElementsByClassName('b-content-center')[0];
+                //     if (!elDrag) {
+                //         elDrag = elHeader;
+                //     } else {
+                //         elDrag.onclick = function(e: Event) {
+                //             e.preventDefault();
+                //             e.stopPropagation();
+                //         };
+                //     }
+
+                //     // debugger
+                //     this.addDragAndDropToListItem(elDrag, renderedHeaderCell);
+                // }
             });
         }
 
