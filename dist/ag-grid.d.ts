@@ -1514,6 +1514,7 @@ declare module ag.grid {
         private rowDeleteListener;
         private eventService;
         private gridOptionsWrapper;
+        private gridPanel;
         constructor(params: any);
         getOverlays(): any;
         getOverlayRow(): any;
@@ -1521,8 +1522,8 @@ declare module ag.grid {
         addSizeChangeListener(listener: Function): void;
         fireSizeChanged(): void;
         private setupPanels(params);
-        setRowOverlayRowHeight(heightPX: string): void;
         private addOverlayRowZone();
+        positionOverlayRowZone(offsetTopY: number): void;
         private overlayEventThrough(event);
         private rowOverlayLeaveListener(event);
         private rowOverlayEnterListener(event);
@@ -1542,6 +1543,10 @@ declare module ag.grid {
         private createOverlayRowTemplate();
         showOverlayRow(): void;
         showOverlay(key: string): void;
+        private pXhelper(value);
+        setRowOverlayTop(offsetY: number): void;
+        setRowOverlayRight(offsetRight: number): void;
+        setRowOverlayRowHeight(height: number): void;
         setSouthVisible(visible: any): void;
     }
 }
@@ -1578,6 +1583,7 @@ declare module ag.grid {
         init(gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService): void;
         getLayout(): BorderLayout;
         private setupComponents();
+        initRowOverlay(): void;
         getPinnedFloatingTop(): HTMLElement;
         getFloatingTopContainer(): HTMLElement;
         getPinnedFloatingBottom(): HTMLElement;
@@ -1604,6 +1610,7 @@ declare module ag.grid {
         getRowsParent(): HTMLElement[];
         private queryHtmlElement(selector);
         private findElements();
+        getRightGap(): number;
         private mouseWheelListener(event);
         setBodyContainerWidth(): void;
         setPinnedColContainerWidth(): void;

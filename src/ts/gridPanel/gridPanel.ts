@@ -163,7 +163,8 @@ module ag.grid {
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                 },
                 eventService: that.eventService,
-                gridOptionsWrapper: that.gridOptionsWrapper
+                gridOptionsWrapper: that.gridOptionsWrapper,
+                gridPanel: this
             });
             this.layout.addSizeChangeListener(this.onBodyHeightChange.bind(this));
 
@@ -199,6 +200,12 @@ module ag.grid {
             if (this.gridOptionsWrapper.isSuppressHorizontalScroll()) {
                 this.eBodyViewport.style.overflowX = 'hidden';
             }
+        }
+
+        public initRowOverlay() {
+            this.layout.positionOverlayRowZone(
+                this.eBodyViewport.scrollTop || 0
+            );
         }
 
         public getPinnedFloatingTop(): HTMLElement {
@@ -473,6 +480,11 @@ module ag.grid {
             }
         }
 
+        public getRightGap(): number {
+            // return this.eHeader.clientWidth - this.eHeaderContainer.clientWidth - this.ePinnedHeader.clientWidth;
+            return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
+        }
+
         private mouseWheelListener(event: any): boolean {
             var delta: number;
             if (event.deltaY && event.deltaX != 0) {
@@ -588,8 +600,6 @@ module ag.grid {
             this.eFloatingBottom.style.top = floatingBottomTop + 'px';
 
             this.ePinnedColsViewport.style.height = heightOfCentreRows + 'px';
-            // debugger;
-            this.layout.setRowOverlayRowHeight(`${this.eBodyViewport.clientHeight-35}px`);
         }
 
         private sizeHeaderAndBodyForPrint(): void {
@@ -606,6 +616,7 @@ module ag.grid {
             if (this.forPrint) {
                 return;
             }
+
 
             var lastLeftPosition = -1;
             var lastTopPosition = -1;
@@ -626,6 +637,8 @@ module ag.grid {
                 }
 
                 this.masterSlaveService.fireHorizontalScrollEvent(newLeftPosition);
+
+                this.layout.positionOverlayRowZone(newTopPosition);
             });
 
             this.ePinnedColsViewport.addEventListener('scroll', () => {

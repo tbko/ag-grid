@@ -39,6 +39,7 @@ module ag.grid {
         private rowDeleteListener: any;
         private eventService: EventService;
         private gridOptionsWrapper: GridOptionsWrapper;
+        private gridPanel: GridPanel;
 
         constructor(params: any) {
 
@@ -50,6 +51,7 @@ module ag.grid {
             this.rowDeleteListener = params.rowDeleteListener;
             this.eventService = params.eventService;
             this.gridOptionsWrapper = params.gridOptionsWrapper;
+            this.gridPanel = params.gridPanel;
 
             var template: any;
             if (!params.dontFill) {
@@ -151,12 +153,6 @@ module ag.grid {
 
         }
 
-        public setRowOverlayRowHeight(heightPX: string): void {
-            if (this.eCenterRow)
-                console.log(this.eCenterRow.style.height);
-            this.eOverlayRowZoneWrapper.style.height = heightPX;
-        }
-
         private addOverlayRowZone(): void {
             var rowOverlay = document.createElement('div');
             rowOverlay.id = 'ag-overlay-row';
@@ -165,21 +161,19 @@ module ag.grid {
             var rowOverlayZone = document.createElement('div');
             rowOverlayZone.id = 'ag-overlay-row-zone';
             rowOverlayZone.className = rowOverlayZone.id;
-            rowOverlayZone.innerHTML = `
-                    <p>1</p>
-                    <p>2</p>
-                    <p>3</p>
-                    <p>4</p>
-                    <p>5</p>
-            `
 
             rowOverlayZone.appendChild(rowOverlay);
 
             
-            rowOverlayZone.style.top = `${this.gridOptionsWrapper.getFullHeaderHeight()}px`;
+            // rowOverlayZone.style.top = `${this.gridOptionsWrapper.getFullHeaderHeight()}px`;
 
-            // rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
+            rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
+            rowOverlayZone.addEventListener('scroll', this.overlayEventThrough.bind(this));
             rowOverlayZone.addEventListener('mousemove', this.overlayEventThrough.bind(this));
+            rowOverlayZone.addEventListener('DOMMouseScroll', this.overlayEventThrough.bind(this));
+            rowOverlayZone.addEventListener('mousewheel', this.overlayEventThrough.bind(this));
+
+
             rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
             rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
 
@@ -188,42 +182,39 @@ module ag.grid {
 
         }
 
+        public positionOverlayRowZone(offsetTopY: number) {
+            var eBodyViewport = this.gridPanel.getBodyViewport();
+            var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
+            var rowOverlayOffset = headerHeight - offsetTopY;
+            var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
+
+            var rightGap = this.gridPanel.getRightGap();
+            var rightPosition = rightGap > 0 ? rightGap : 15;
+
+            this.setRowOverlayTop(rowOverlayOffset);
+            this.setRowOverlayRowHeight(rowOverlayHeight);            
+            this.setRowOverlayRight(rightPosition);
+        }
+
         private overlayEventThrough(event: MouseEvent) {
             // relay mouse events to underlying element
-            // console.log(`client ${event.clientY}`);
-            // console.log(`page ${event.pageY}`);
-            // console.log(`screen ${event.screenY}`);
             var coordinates: any;
             (<HTMLElement>event.target).style.display = 'none';
             if (event.clientX) {
                 coordinates = {
                     pointerX: event.clientX,
-                    pointerY: event.clientY - 200
+                    pointerY: event.clientY
                 }
             }
             var underEl = document.elementFromPoint(event.clientX, event.clientY);
-            // console.log(underEl);
-            if (underEl && underEl.classList.contains('ag-cell')) {
-                // console.log(
-                //     underEl.parentNode.childNodes[0]
-                // );
-                var newMouseEvent = new MouseEvent('mousemove', {
-                    screenX: event.screenX,
-                    screenY: event.screenY,
-                    clientX: event.clientX,
-                    clientY: event.clientY,
-                });
-                (<HTMLElement>underEl).dispatchEvent(newMouseEvent);
-            }
-
-            // if (underEl) _.simulateEvent((<HTMLElement>underEl), event.type, coordinates);
+            if (underEl) _.simulateEvent((<HTMLElement>underEl), event.type, coordinates);
             (<HTMLElement>event.target).style.display = '';
         }
 
         private rowOverlayLeaveListener(event: any): boolean {
             // stop processing overlay when move out of zone
             this.eOverlayRowWrapper.style.display = 'none';
-            // this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE);
+            this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE);
             return;
         }
 
@@ -408,9 +399,7 @@ module ag.grid {
 
         public showOverlayRow() {
             if (this.eOverlayRowZoneWrapper === void 0) return;
-            // debugger;
             document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
-            // this.eCenterWrapper.querySelector('.ag-body').appendChild(this.eOverlayRowZoneWrapper);
             this.eOverlayRowWrapper.style.display = 'none';
             this.eOverlayRowWrapper.appendChild(
                 _.loadTemplate(this.createOverlayRowTemplate().trim())
@@ -430,7 +419,6 @@ module ag.grid {
                 }
                 this.eOverlayWrapper.style.display = '';
                 this.eOverlayWrapper.appendChild(overlay);
-                // this.eOverlayWrapper.getElementsByClassName('k-grid-Delete').onclick = this.deleteListener;
                 if (key === 'tool') {
                     elClick = this.eOverlayWrapper.getElementsByClassName('k-grid-Delete')[0];
                     elClick.addEventListener('click', this.deleteListener);
@@ -439,6 +427,22 @@ module ag.grid {
                 console.log('ag-Grid: unknown overlay');
                 this.hideOverlay();
             }
+        }
+
+        private pXhelper(value: number): string {
+            return `${value}px`
+        }
+
+        public setRowOverlayTop(offsetY: number): void {
+            this.eOverlayRowZoneWrapper.style.top = this.pXhelper(offsetY);
+        }
+
+        public setRowOverlayRight(offsetRight: number): void {
+            this.eOverlayRowZoneWrapper.style.right = this.pXhelper(offsetRight);
+        }
+
+        public setRowOverlayRowHeight(height: number): void {
+            this.eOverlayRowZoneWrapper.style.height = this.pXhelper(height);
         }
 
         public setSouthVisible(visible: any) {

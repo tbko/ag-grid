@@ -185,7 +185,7 @@ module ag.grid {
 
                 // debugger;
                 this.eBodyContainer.style.height = containerHeight + "px";
-                this.gridPanel.getLayout().setRowOverlayRowHeight(this.eBodyContainer.style.height);
+                // this.gridPanel.getLayout().setRowOverlayRowHeight(this.eBodyContainer.style.height);
 
                 this.ePinnedColsContainer.style.height = containerHeight + "px";
             }

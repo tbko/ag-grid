@@ -297,8 +297,8 @@ var ag;
                     return destination;
                 }
                 var eventMatchers = {
-                    'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll)$/,
-                    'MouseEvents': /^(?:click|dblclick|mouse(?:down|up|over|move|out|enter|leave))$/
+                    'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll|DOMMouseScroll)$/,
+                    'MouseEvents': /^(?:click|dblclick|mouse(?:down|up|over|move|out|enter|leave|wheel))$/
                 };
                 var defaultOptions = {
                     pointerX: 0,
@@ -5763,7 +5763,7 @@ var ag;
                     var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
                     // debugger;
                     this.eBodyContainer.style.height = containerHeight + "px";
-                    this.gridPanel.getLayout().setRowOverlayRowHeight(this.eBodyContainer.style.height);
+                    // this.gridPanel.getLayout().setRowOverlayRowHeight(this.eBodyContainer.style.height);
                     this.ePinnedColsContainer.style.height = containerHeight + "px";
                 }
                 this.refreshAllVirtualRows(refreshFromIndex);
@@ -9094,6 +9094,7 @@ var ag;
                 this.rowDeleteListener = params.rowDeleteListener;
                 this.eventService = params.eventService;
                 this.gridOptionsWrapper = params.gridOptionsWrapper;
+                this.gridPanel = params.gridPanel;
                 var template;
                 if (!params.dontFill) {
                     if (this.fullHeight) {
@@ -9181,11 +9182,6 @@ var ag;
                 this.eWestChildLayout = this.setupPanel(params.west, this.eWestWrapper);
                 this.eCenterChildLayout = this.setupPanel(params.center, this.eCenterWrapper);
             };
-            BorderLayout.prototype.setRowOverlayRowHeight = function (heightPX) {
-                if (this.eCenterRow)
-                    console.log(this.eCenterRow.style.height);
-                this.eOverlayRowZoneWrapper.style.height = heightPX;
-            };
             BorderLayout.prototype.addOverlayRowZone = function () {
                 var rowOverlay = document.createElement('div');
                 rowOverlay.id = 'ag-overlay-row';
@@ -9193,50 +9189,48 @@ var ag;
                 var rowOverlayZone = document.createElement('div');
                 rowOverlayZone.id = 'ag-overlay-row-zone';
                 rowOverlayZone.className = rowOverlayZone.id;
-                rowOverlayZone.innerHTML = "\n                    <p>1</p>\n                    <p>2</p>\n                    <p>3</p>\n                    <p>4</p>\n                    <p>5</p>\n            ";
                 rowOverlayZone.appendChild(rowOverlay);
-                rowOverlayZone.style.top = this.gridOptionsWrapper.getFullHeaderHeight() + "px";
-                // rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
+                // rowOverlayZone.style.top = `${this.gridOptionsWrapper.getFullHeaderHeight()}px`;
+                rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
+                rowOverlayZone.addEventListener('scroll', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('mousemove', this.overlayEventThrough.bind(this));
+                rowOverlayZone.addEventListener('DOMMouseScroll', this.overlayEventThrough.bind(this));
+                rowOverlayZone.addEventListener('mousewheel', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
                 rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
                 this.eOverlayRowWrapper = rowOverlay;
                 this.eOverlayRowZoneWrapper = rowOverlayZone;
             };
+            BorderLayout.prototype.positionOverlayRowZone = function (offsetTopY) {
+                var eBodyViewport = this.gridPanel.getBodyViewport();
+                var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
+                var rowOverlayOffset = headerHeight - offsetTopY;
+                var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
+                var rightGap = this.gridPanel.getRightGap();
+                var rightPosition = rightGap > 0 ? rightGap : 15;
+                this.setRowOverlayTop(rowOverlayOffset);
+                this.setRowOverlayRowHeight(rowOverlayHeight);
+                this.setRowOverlayRight(rightPosition);
+            };
             BorderLayout.prototype.overlayEventThrough = function (event) {
                 // relay mouse events to underlying element
-                // console.log(`client ${event.clientY}`);
-                // console.log(`page ${event.pageY}`);
-                // console.log(`screen ${event.screenY}`);
                 var coordinates;
                 event.target.style.display = 'none';
                 if (event.clientX) {
                     coordinates = {
                         pointerX: event.clientX,
-                        pointerY: event.clientY - 200
+                        pointerY: event.clientY
                     };
                 }
                 var underEl = document.elementFromPoint(event.clientX, event.clientY);
-                // console.log(underEl);
-                if (underEl && underEl.classList.contains('ag-cell')) {
-                    // console.log(
-                    //     underEl.parentNode.childNodes[0]
-                    // );
-                    var newMouseEvent = new MouseEvent('mousemove', {
-                        screenX: event.screenX,
-                        screenY: event.screenY,
-                        clientX: event.clientX,
-                        clientY: event.clientY,
-                    });
-                    underEl.dispatchEvent(newMouseEvent);
-                }
-                // if (underEl) _.simulateEvent((<HTMLElement>underEl), event.type, coordinates);
+                if (underEl)
+                    _.simulateEvent(underEl, event.type, coordinates);
                 event.target.style.display = '';
             };
             BorderLayout.prototype.rowOverlayLeaveListener = function (event) {
                 // stop processing overlay when move out of zone
                 this.eOverlayRowWrapper.style.display = 'none';
-                // this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE);
+                this.eventService.dispatchEvent(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE);
                 return;
             };
             BorderLayout.prototype.rowOverlayEnterListener = function (event) {
@@ -9391,9 +9385,7 @@ var ag;
             BorderLayout.prototype.showOverlayRow = function () {
                 if (this.eOverlayRowZoneWrapper === void 0)
                     return;
-                // debugger;
                 document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
-                // this.eCenterWrapper.querySelector('.ag-body').appendChild(this.eOverlayRowZoneWrapper);
                 this.eOverlayRowWrapper.style.display = 'none';
                 this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
                 this.eOverlayRowWrapper.querySelector('#ag-action-row-edit > span').addEventListener('click', this.rowEditListener);
@@ -9410,7 +9402,6 @@ var ag;
                     }
                     this.eOverlayWrapper.style.display = '';
                     this.eOverlayWrapper.appendChild(overlay);
-                    // this.eOverlayWrapper.getElementsByClassName('k-grid-Delete').onclick = this.deleteListener;
                     if (key === 'tool') {
                         elClick = this.eOverlayWrapper.getElementsByClassName('k-grid-Delete')[0];
                         elClick.addEventListener('click', this.deleteListener);
@@ -9420,6 +9411,18 @@ var ag;
                     console.log('ag-Grid: unknown overlay');
                     this.hideOverlay();
                 }
+            };
+            BorderLayout.prototype.pXhelper = function (value) {
+                return value + "px";
+            };
+            BorderLayout.prototype.setRowOverlayTop = function (offsetY) {
+                this.eOverlayRowZoneWrapper.style.top = this.pXhelper(offsetY);
+            };
+            BorderLayout.prototype.setRowOverlayRight = function (offsetRight) {
+                this.eOverlayRowZoneWrapper.style.right = this.pXhelper(offsetRight);
+            };
+            BorderLayout.prototype.setRowOverlayRowHeight = function (height) {
+                this.eOverlayRowZoneWrapper.style.height = this.pXhelper(height);
             };
             BorderLayout.prototype.setSouthVisible = function (visible) {
                 if (this.eSouthWrapper) {
@@ -9517,7 +9520,8 @@ var ag;
                         that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                     },
                     eventService: that.eventService,
-                    gridOptionsWrapper: that.gridOptionsWrapper
+                    gridOptionsWrapper: that.gridOptionsWrapper,
+                    gridPanel: this
                 });
                 this.layout.addSizeChangeListener(this.onBodyHeightChange.bind(this));
                 // notify on all|some selected to toggle "select all" checker in header
@@ -9551,6 +9555,9 @@ var ag;
                 if (this.gridOptionsWrapper.isSuppressHorizontalScroll()) {
                     this.eBodyViewport.style.overflowX = 'hidden';
                 }
+            };
+            GridPanel.prototype.initRowOverlay = function () {
+                this.layout.positionOverlayRowZone(this.eBodyViewport.scrollTop || 0);
             };
             GridPanel.prototype.getPinnedFloatingTop = function () {
                 return this.ePinnedFloatingTop;
@@ -9760,6 +9767,10 @@ var ag;
                     this.ePinnedColsViewport.addEventListener('DOMMouseScroll', this.mouseWheelListener.bind(this));
                 }
             };
+            GridPanel.prototype.getRightGap = function () {
+                // return this.eHeader.clientWidth - this.eHeaderContainer.clientWidth - this.ePinnedHeader.clientWidth;
+                return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
+            };
             GridPanel.prototype.mouseWheelListener = function (event) {
                 var delta;
                 if (event.deltaY && event.deltaX != 0) {
@@ -9861,8 +9872,6 @@ var ag;
                 this.eFloatingBottom.style.height = floatingBottomHeight + 'px';
                 this.eFloatingBottom.style.top = floatingBottomTop + 'px';
                 this.ePinnedColsViewport.style.height = heightOfCentreRows + 'px';
-                // debugger;
-                this.layout.setRowOverlayRowHeight((this.eBodyViewport.clientHeight - 35) + "px");
             };
             GridPanel.prototype.sizeHeaderAndBodyForPrint = function () {
                 var headerHeightPixels = this.gridOptionsWrapper.getHeaderHeight() + 'px';
@@ -9892,6 +9901,7 @@ var ag;
                         _this.requestDrawVirtualRows();
                     }
                     _this.masterSlaveService.fireHorizontalScrollEvent(newLeftPosition);
+                    _this.layout.positionOverlayRowZone(newTopPosition);
                 });
                 this.ePinnedColsViewport.addEventListener('scroll', function () {
                     // this means the pinned panel was moved, which can only
@@ -11058,6 +11068,7 @@ var ag;
                 // if ready function provided, use it
                 var readyParams = { api: gridOptions.api };
                 this.eventService.dispatchEvent(grid.Events.EVENT_READY, readyParams);
+                this.gridPanel.initRowOverlay();
                 this.logger.log('initialised');
             }
             Grid.prototype.decideStartingOverlay = function () {
@@ -11081,8 +11092,10 @@ var ag;
                 // we are sure we are removing the exact same function (i'm not
                 // sure what 'bind' does to the function reference, if it's safe
                 // the result from 'bind').
-                this.windowResizeListener = function resizeListener() {
+                this.windowResizeListener = function resizeListener(ev) {
+                    // console.log(ev.timeStamp);
                     that.doLayout();
+                    that.gridPanel.initRowOverlay();
                 };
                 window.addEventListener('resize', this.windowResizeListener);
             };
@@ -11241,6 +11254,7 @@ var ag;
                 this.columnController.onColumnsChanged();
                 this.inMemoryRowController.onPivotChanged();
                 this.refreshHeaderAndBody();
+                this.gridPanel.initRowOverlay();
             };
             Grid.prototype.getEventService = function () {
                 return this.eventService;
@@ -11254,6 +11268,7 @@ var ag;
                 else {
                     this.updateBodyContainerWidthAfterColResize();
                 }
+                this.gridPanel.initRowOverlay();
             };
             Grid.prototype.showToolPanel = function (show) {
                 if (!this.toolPanel) {

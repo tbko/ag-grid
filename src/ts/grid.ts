@@ -100,6 +100,7 @@ module ag.grid {
             // if ready function provided, use it
             var readyParams = {api: gridOptions.api};
             this.eventService.dispatchEvent(Events.EVENT_READY, readyParams);
+            this.gridPanel.initRowOverlay();
 
             this.logger.log('initialised');
         }
@@ -126,8 +127,10 @@ module ag.grid {
             // we are sure we are removing the exact same function (i'm not
             // sure what 'bind' does to the function reference, if it's safe
             // the result from 'bind').
-            this.windowResizeListener = function resizeListener() {
+            this.windowResizeListener = function resizeListener(ev) {
+                // console.log(ev.timeStamp);
                 that.doLayout();
+                that.gridPanel.initRowOverlay();
             };
             window.addEventListener('resize', this.windowResizeListener);
         }
@@ -268,6 +271,7 @@ module ag.grid {
             eUserProvidedDiv.appendChild(this.eRootPanel.getGui());
             this.logger.log('grid DOM added');
 
+
             this.eventService.addEventListener('selectionStateChanged', function(pamparams: any) {
                 // relay "selection change" message to header
                 headerRenderer.toggleSelectAll(pamparams);
@@ -315,6 +319,7 @@ module ag.grid {
             this.columnController.onColumnsChanged();
             this.inMemoryRowController.onPivotChanged();
             this.refreshHeaderAndBody();
+            this.gridPanel.initRowOverlay();
         }
 
         public getEventService(): EventService {
@@ -329,6 +334,7 @@ module ag.grid {
             } else {
                 this.updateBodyContainerWidthAfterColResize();
             }
+            this.gridPanel.initRowOverlay();
         }
 
         public showToolPanel(show: any) {

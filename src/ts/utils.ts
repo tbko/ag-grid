@@ -230,8 +230,8 @@ module ag.grid {
             }
 
             var eventMatchers:any = {
-                'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll)$/,
-                'MouseEvents': /^(?:click|dblclick|mouse(?:down|up|over|move|out|enter|leave))$/
+                'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll|DOMMouseScroll)$/,
+                'MouseEvents': /^(?:click|dblclick|mouse(?:down|up|over|move|out|enter|leave|wheel))$/
             }
 
             var defaultOptions = {
