@@ -36,6 +36,7 @@ module ag.grid {
         public addValueColumn(column: Column): void { this._columnController.addValueColumn(column); }
         public removePivotColumn(column: Column): void { this._columnController.removePivotColumn(column); }
         public setPinnedColumnCount(count: number): void { this._columnController.setPinnedColumnCount(count); }
+        public getPinnedColumnCount(): number { return this._columnController.getPinnedColumnCount(); }
         public addPivotColumn(column: Column): void { this._columnController.addPivotColumn(column); }
         public getHeaderGroups(): ColumnGroup[] { return this._columnController.getHeaderGroups(); }
         public hideColumn(colId: any, hide: any): void { this._columnController.hideColumns([colId], hide); }
@@ -119,6 +120,10 @@ module ag.grid {
             this.updateModel();
             var event = new ColumnChangeEvent(Events.EVENT_COLUMN_PIVOT_CHANGE);
             this.eventService.dispatchEvent(Events.EVENT_COLUMN_PIVOT_CHANGE, event);
+        }
+
+        public getPinnedColumnCount(): number {
+            return this.pinnedColumnCount;
         }
 
         public setPinnedColumnCount(count: number): void {

@@ -1298,6 +1298,7 @@ var ag;
             ColumnApi.prototype.addValueColumn = function (column) { this._columnController.addValueColumn(column); };
             ColumnApi.prototype.removePivotColumn = function (column) { this._columnController.removePivotColumn(column); };
             ColumnApi.prototype.setPinnedColumnCount = function (count) { this._columnController.setPinnedColumnCount(count); };
+            ColumnApi.prototype.getPinnedColumnCount = function () { return this._columnController.getPinnedColumnCount(); };
             ColumnApi.prototype.addPivotColumn = function (column) { this._columnController.addPivotColumn(column); };
             ColumnApi.prototype.getHeaderGroups = function () { return this._columnController.getHeaderGroups(); };
             ColumnApi.prototype.hideColumn = function (colId, hide) { this._columnController.hideColumns([colId], hide); };
@@ -1353,6 +1354,9 @@ var ag;
                 this.updateModel();
                 var event = new grid.ColumnChangeEvent(grid.Events.EVENT_COLUMN_PIVOT_CHANGE);
                 this.eventService.dispatchEvent(grid.Events.EVENT_COLUMN_PIVOT_CHANGE, event);
+            };
+            ColumnController.prototype.getPinnedColumnCount = function () {
+                return this.pinnedColumnCount;
             };
             ColumnController.prototype.setPinnedColumnCount = function (count) {
                 if (!(typeof count === 'number')) {
@@ -6707,7 +6711,6 @@ var ag;
                 });
             };
             RenderedHeaderElement.prototype.stopDragging = function (listenersToRemove, dragChange) {
-                console.log(dragChange);
                 this.eRoot.style.cursor = "";
                 var that = this;
                 _.iterateObject(listenersToRemove, function (key, listener) {
@@ -6737,6 +6740,7 @@ var ag;
             __extends(RenderedHeaderCell, _super);
             function RenderedHeaderCell(column, parentGroup, gridOptionsWrapper, parentScope, filterManager, columnController, $compile, angularGrid, eRoot, popupService) {
                 _super.call(this, eRoot);
+                this.eRootRef = eRoot;
                 this.column = column;
                 this.parentGroup = parentGroup;
                 this.gridOptionsWrapper = gridOptionsWrapper;
@@ -6880,9 +6884,8 @@ var ag;
                 };
                 this.eHeaderCell.addEventListener('dragenter', dragEnterHandler);
                 this.eHeaderCell.addEventListener('dragleave', dragLeaveHandler);
+                // swap columns on drop
                 this.eHeaderCell.addEventListener('drop', function (event) {
-                    console.log(event);
-                    debugger;
                     var sourceIndex = that.columnController.getAllColumns().indexOf(that.columnController.getColumn(event.dataTransfer.getData('text/plain')));
                     var destinationIndex = that.columnController.getAllColumns().indexOf(that.column);
                     that.columnController.moveColumn(sourceIndex, destinationIndex);
@@ -6891,6 +6894,28 @@ var ag;
                     return false;
                 });
                 this.addSortHandling(this.eHeaderCell);
+                // debugger;
+                this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('change', function (event) {
+                    var clickedColumnPosition = that.columnController.getDisplayedColumns().indexOf(that.column);
+                    if (event.target.checked) {
+                        clickedColumnPosition++;
+                    }
+                    that.columnController.setPinnedColumnCount(clickedColumnPosition);
+                    event.preventDefault();
+                    event.stopPropagation();
+                    return false;
+                });
+                this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('click', function (event) {
+                    // event.preventDefault();
+                    event.stopPropagation();
+                    // return false;
+                });
+                if (this.column.index < this.columnController.getPinnedColumnCount()) {
+                    this.eHeaderCell.querySelector('#ag-js-freeze').checked = true;
+                }
+                // this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('click', function(event) {
+                //     console.log(event);
+                // });
                 // this.refreshFilterIcon();
                 // this.refreshSortIcon();
             };
@@ -6996,11 +7021,9 @@ var ag;
             RenderedHeaderCell.prototype.addSortHandling = function (headerCellLabel) {
                 var that = this;
                 headerCellLabel.addEventListener("click", function (event) {
-                    console.log(event);
-                    debugger;
                     var sortDirectionMap = {
-                        'desc': 'up',
-                        'asc': 'down'
+                        'asc': 'up',
+                        'desc': 'down'
                     };
                     // update sort on current col
                     that.column.sort = that.getNextSortDirection();
@@ -7020,11 +7043,11 @@ var ag;
                     var doingMultiSort = !that.gridOptionsWrapper.isSuppressMultiSort() && event.shiftKey;
                     // clear sort on all columns except this one, and update the icons
                     if (!doingMultiSort) {
-                        that.columnController.getAllColumns().forEach(function (columnToClear) {
+                        that.columnController.getDisplayedColumns().forEach(function (columnToClear) {
                             // Do not clear if either holding shift, or if column in question was clicked
                             if (!(columnToClear === that.column)) {
                                 if (columnToClear.sort) {
-                                    Array.prototype.slice.call(that.eRoot.querySelector(".ag-header-cell[colID=\"" + columnToClear.colId + "\"]").querySelectorAll('.ag-sort-icon'), 0).forEach(function (el) {
+                                    Array.prototype.slice.call(that.eRootRef.querySelector(".ag-header-cell[colID=\"" + columnToClear.colId + "\"]").querySelectorAll('.ag-sort-icon'), 0).forEach(function (el) {
                                         el.classList.remove('active');
                                     });
                                 }

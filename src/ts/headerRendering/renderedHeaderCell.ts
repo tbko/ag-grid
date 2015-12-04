@@ -31,6 +31,7 @@ module ag.grid {
         private angularGrid: Grid;
         private parentGroup: RenderedHeaderGroupCell;
         private popupService: PopupService;
+        private eRootRef: HTMLElement;
 
         private startWidth: number;
 
@@ -38,6 +39,7 @@ module ag.grid {
                     parentScope: any, filterManager: FilterManager, columnController: ColumnController,
                     $compile: any, angularGrid: Grid, eRoot: HTMLElement, popupService?: PopupService ) {
             super(eRoot);
+            this.eRootRef = eRoot;
             this.column = column;
             this.parentGroup = parentGroup;
             this.gridOptionsWrapper = gridOptionsWrapper;
@@ -206,9 +208,8 @@ module ag.grid {
             this.eHeaderCell.addEventListener('dragenter', dragEnterHandler);
             this.eHeaderCell.addEventListener('dragleave', dragLeaveHandler);
 
+            // swap columns on drop
             this.eHeaderCell.addEventListener('drop', function(event:DragEvent) {
-                console.log(event);
-                debugger;
                 var sourceIndex = that.columnController.getAllColumns().indexOf(
                     that.columnController.getColumn(event.dataTransfer.getData('text/plain'))
                 );
@@ -223,6 +224,31 @@ module ag.grid {
             });
 
             this.addSortHandling(this.eHeaderCell);
+
+            // debugger;
+            this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('change', function(event) {
+                var clickedColumnPosition = that.columnController.getDisplayedColumns().indexOf(that.column);
+                if ((<HTMLInputElement>event.target).checked) {
+                    clickedColumnPosition++;
+                }
+                that.columnController.setPinnedColumnCount(clickedColumnPosition);
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            });
+            this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('click', function(event) {
+                // event.preventDefault();
+                event.stopPropagation();
+                // return false;
+            });
+
+            if (this.column.index < this.columnController.getPinnedColumnCount()) {
+                     (<HTMLInputElement>this.eHeaderCell.querySelector('#ag-js-freeze')).checked = true;
+            }
+            // this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('click', function(event) {
+            //     console.log(event);
+            // });
+
 
 
             // this.refreshFilterIcon();
@@ -357,11 +383,9 @@ module ag.grid {
             var that = this;
 
             headerCellLabel.addEventListener("click", function (event: any) {
-                console.log(event);
-                debugger;
                 var sortDirectionMap: { [s: string]: string; } = {
-                    'desc': 'up',
-                    'asc': 'down'
+                    'asc': 'up',
+                    'desc': 'down'
                 }
 
                 // update sort on current col
@@ -385,11 +409,11 @@ module ag.grid {
 
                 // clear sort on all columns except this one, and update the icons
                 if (!doingMultiSort) {
-                    that.columnController.getAllColumns().forEach(function (columnToClear: any) {
+                    that.columnController.getDisplayedColumns().forEach(function (columnToClear: any) {
                         // Do not clear if either holding shift, or if column in question was clicked
                         if (!(columnToClear === that.column)) {
                             if (columnToClear.sort) {
-                                Array.prototype.slice.call(that.eRoot.querySelector(`.ag-header-cell[colID="${columnToClear.colId}"]`).querySelectorAll('.ag-sort-icon'), 0).forEach(function(el: HTMLElement) {
+                                Array.prototype.slice.call(that.eRootRef.querySelector(`.ag-header-cell[colID="${columnToClear.colId}"]`).querySelectorAll('.ag-sort-icon'), 0).forEach(function(el: HTMLElement) {
                                     el.classList.remove('active');
                                 });
                             }

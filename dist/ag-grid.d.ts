@@ -370,6 +370,7 @@ declare module ag.grid {
         addValueColumn(column: Column): void;
         removePivotColumn(column: Column): void;
         setPinnedColumnCount(count: number): void;
+        getPinnedColumnCount(): number;
         addPivotColumn(column: Column): void;
         getHeaderGroups(): ColumnGroup[];
         hideColumn(colId: any, hide: any): void;
@@ -397,6 +398,7 @@ declare module ag.grid {
         getHeaderGroups(): ColumnGroup[];
         getPinnedContainerWidth(): number;
         addPivotColumn(column: Column): void;
+        getPinnedColumnCount(): number;
         setPinnedColumnCount(count: number): void;
         removePivotColumn(column: Column): void;
         addValueColumn(column: Column): void;
@@ -1205,6 +1207,7 @@ declare module ag.grid {
         private angularGrid;
         private parentGroup;
         private popupService;
+        private eRootRef;
         private startWidth;
         constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement, popupService?: PopupService);
         getGui(): HTMLElement;
