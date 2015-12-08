@@ -171,9 +171,31 @@ module ag.grid {
             this.eHeaderCell.appendChild(headerCellLabel);
             this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
 
-
-            // start/storp dragging header
             var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
+            if (dragHandler) this.setupDND(dragHandler);
+
+            this.addSortHandling(this.eHeaderCell);
+
+            var freezeChecker = this.eHeaderCell.querySelector('#ag-js-freeze');
+            if (freezeChecker) this.setupFreeze(freezeChecker);
+        }
+
+        private isNogroupSamegroup(el: HTMLElement): boolean {
+            // debugger
+            if (
+                !this.column.colDef.headerGroup &&
+                !targetCol.colDef.headerGroup
+            ) {
+                return true;
+            }
+            var targetColId = el.getAttribute('colId');
+            var targetCol = this.columnController.getColumn(targetColId);
+            return this.column.colDef.headerGroup === targetCol.colDef.headerGroup;
+        }
+
+        private setupDND(dragHandler: Element) {
+            var that = this;
+            // start/storp dragging header
             dragHandler.setAttribute('draggable', 'true');
             dragHandler.addEventListener('dragstart', function(event: DragEvent) {
                 that.eHeaderCell.classList.add('ag-dragging');
@@ -190,9 +212,18 @@ module ag.grid {
             // react to drag header over header
             var lastenter: any;
             var dragEnterHandler = (event: Event) => {
-                if (!lastenter && !that.eHeaderCell.classList.contains('ag-dragging'))
+
+                console.log(lastenter);
+                console.log(that.eHeaderCell.classList.contains('ag-dragging'));
+                console.log(that.isNogroupSamegroup.call(that, <HTMLElement>event.currentTarget));
+
+                if (
+                    !lastenter &&
+                    !that.eHeaderCell.classList.contains('ag-dragging') &&
+                    that.isNogroupSamegroup.call(that, <HTMLElement>event.currentTarget)
+                )
                     that.eHeaderCell.classList.add('ag-dragging-over');
-                    // console.log('enter');
+
                 lastenter = event.target;
                 event.stopPropagation();
                 event.preventDefault();
@@ -222,11 +253,12 @@ module ag.grid {
                 event.preventDefault();
                 return false;
             });
+        }
 
-            this.addSortHandling(this.eHeaderCell);
+        private setupFreeze(freezeChecker: Element) {
+            var that = this;
 
-            // debugger;
-            this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('change', function(event) {
+            freezeChecker.addEventListener('change', function(event) {
                 var clickedColumnPosition = that.columnController.getDisplayedColumns().indexOf(that.column);
                 if ((<HTMLInputElement>event.target).checked) {
                     clickedColumnPosition++;
@@ -237,22 +269,12 @@ module ag.grid {
                 return false;
             });
             this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('click', function(event) {
-                // event.preventDefault();
                 event.stopPropagation();
-                // return false;
             });
 
             if (this.column.index < this.columnController.getPinnedColumnCount()) {
                      (<HTMLInputElement>this.eHeaderCell.querySelector('#ag-js-freeze')).checked = true;
             }
-            // this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('click', function(event) {
-            //     console.log(event);
-            // });
-
-
-
-            // this.refreshFilterIcon();
-            // this.refreshSortIcon();
         }
 
         private useRenderer(headerNameValue: string, headerCellRenderer: Function,

@@ -111,13 +111,13 @@ function tsReleaseTask() {
             .pipe(rename('ag-grid.js'))
             .pipe(header(headerTemplate, { pkg : pkg }))
             // .pipe(gulp.dest('./dist'))
-            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid'))
+            .pipe(gulp.dest('/dome/pi/pi/frontend/app/vendor/ag-grid'))
             .pipe(gulp.dest('./docs/dist'))
             .pipe(buffer())
             .pipe(uglify())
             .pipe(rename('ag-grid.min.js'))
             // .pipe(gulp.dest('./dist'))
-            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid'))
+            .pipe(gulp.dest('/dome/pi/pi/frontend/app/vendor/ag-grid'))
             .pipe(gulp.dest('./docs/dist'))
     ]);
 }
@@ -156,6 +156,7 @@ function stylusTask() {
 }
 
 function watchTask() {
-    gulp.watch('./src/ts/**/*', ['ts-debug']);
+    // gulp.watch('./src/ts/**/*', ['ts-debug']);
+    gulp.watch('./src/ts/**/*', ['ts-release']);
     gulp.watch('./src/styles/**/*', ['stylus']);
 }

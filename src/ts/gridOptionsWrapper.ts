@@ -129,8 +129,11 @@ module ag.grid {
         }
         // properties
         public getHeaderHeight(): number {
+            var k = 1;
+            if (this.groupHeaders)
+                k = 2;
             if (typeof this.headerHeight === 'number') {
-                return this.headerHeight;
+                return this.headerHeight * k;
             } else {
                 // otherwise return 25 if no grouping, 50 if grouping
                 if (this.groupHeaders) {

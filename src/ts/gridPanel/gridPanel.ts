@@ -527,6 +527,7 @@ module ag.grid {
             this.ePinnedColsContainer.style.width = pinnedColWidth;
             this.ePinnedFloatingBottom.style.width = pinnedColWidth;
             this.ePinnedFloatingTop.style.width = pinnedColWidth;
+            this.ePinnedHeader.style.width = pinnedColWidth;
 
             this.eBodyViewportWrapper.style.marginLeft = pinnedColWidth;
         }

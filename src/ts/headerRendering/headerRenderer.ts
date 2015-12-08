@@ -168,8 +168,15 @@ module ag.grid {
         public toggleSelectAll(pamparams: any) {
             // toggle header state for all checker columns
             this.headerElements.forEach( (headerElement: any) => {
-                if (headerElement.column.colDef.checkboxSelection) {
+                if (headerElement && headerElement.column && headerElement.column.colDef.checkboxSelection) {
                     headerElement.toggle(pamparams.allSelected, pamparams.someSelected);
+                }
+                if (headerElement && headerElement.columnGroup) {
+                    headerElement.children.forEach(function(groupedElement: any) {
+                        if (groupedElement.column && groupedElement.column.colDef && groupedElement.column.colDef.checkboxSelection) {
+                            groupedElement.toggle(pamparams.allSelected, pamparams.someSelected);
+                        }
+                    });
                 }
             });
         }

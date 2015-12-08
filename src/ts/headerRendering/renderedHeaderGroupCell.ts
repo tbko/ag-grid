@@ -1,6 +1,7 @@
 /// <reference path='../utils.ts' />
 /// <reference path='renderedHeaderCell.ts' />
 /// <reference path='renderedHeaderElement.ts' />
+/// <reference path="../headerRendering/renderedHeaderCheckerCell.ts" />
 
 module ag.grid {
 
@@ -114,7 +115,11 @@ module ag.grid {
             this.eHeaderGroup.appendChild(this.eHeaderGroupCell);
 
             this.columnGroup.displayedColumns.forEach( (column: Column) => {
-                var renderedHeaderCell = new RenderedHeaderCell(column, this, this.gridOptionsWrapper,
+                var headerCellRenderer: any = RenderedHeaderCell;
+                if (column.colDef.checkboxSelection) {
+                    headerCellRenderer = RenderedHeaderCheckerCell;
+                }
+                var renderedHeaderCell = new headerCellRenderer(column, this, this.gridOptionsWrapper,
                     this.parentScope, this.filterManager, this.columnController, this.$compile,
                     this.angularGrid, this.getERoot());
                 this.children.push(renderedHeaderCell);

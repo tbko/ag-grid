@@ -878,8 +878,11 @@ var ag;
             };
             // properties
             GridOptionsWrapper.prototype.getHeaderHeight = function () {
+                var k = 1;
+                if (this.groupHeaders)
+                    k = 2;
                 if (typeof this.headerHeight === 'number') {
-                    return this.headerHeight;
+                    return this.headerHeight * k;
                 }
                 else {
                     // otherwise return 25 if no grouping, 50 if grouping
@@ -1072,6 +1075,7 @@ var ag;
             Events.EVENT_SELECTION_STATE_CHANGED = 'selectionStateChanged';
             Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE = 'rowsListenMouseMove';
             Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE = 'rowsStopListenMouseMove';
+            Events.EVENT_DO_NOTHING = 'doNothing';
             return Events;
         })();
         grid.Events = Events;
@@ -6850,8 +6854,27 @@ var ag;
                 }
                 this.eHeaderCell.appendChild(headerCellLabel);
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
-                // start/storp dragging header
                 var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
+                if (dragHandler)
+                    this.setupDND(dragHandler);
+                this.addSortHandling(this.eHeaderCell);
+                var freezeChecker = this.eHeaderCell.querySelector('#ag-js-freeze');
+                if (freezeChecker)
+                    this.setupFreeze(freezeChecker);
+            };
+            RenderedHeaderCell.prototype.isNogroupSamegroup = function (el) {
+                // debugger
+                if (!this.column.colDef.headerGroup &&
+                    !targetCol.colDef.headerGroup) {
+                    return true;
+                }
+                var targetColId = el.getAttribute('colId');
+                var targetCol = this.columnController.getColumn(targetColId);
+                return this.column.colDef.headerGroup === targetCol.colDef.headerGroup;
+            };
+            RenderedHeaderCell.prototype.setupDND = function (dragHandler) {
+                var that = this;
+                // start/storp dragging header
                 dragHandler.setAttribute('draggable', 'true');
                 dragHandler.addEventListener('dragstart', function (event) {
                     that.eHeaderCell.classList.add('ag-dragging');
@@ -6867,9 +6890,13 @@ var ag;
                 // react to drag header over header
                 var lastenter;
                 var dragEnterHandler = function (event) {
-                    if (!lastenter && !that.eHeaderCell.classList.contains('ag-dragging'))
+                    console.log(lastenter);
+                    console.log(that.eHeaderCell.classList.contains('ag-dragging'));
+                    console.log(that.isNogroupSamegroup.call(that, event.currentTarget));
+                    if (!lastenter &&
+                        !that.eHeaderCell.classList.contains('ag-dragging') &&
+                        that.isNogroupSamegroup.call(that, event.currentTarget))
                         that.eHeaderCell.classList.add('ag-dragging-over');
-                    // console.log('enter');
                     lastenter = event.target;
                     event.stopPropagation();
                     event.preventDefault();
@@ -6893,9 +6920,10 @@ var ag;
                     event.preventDefault();
                     return false;
                 });
-                this.addSortHandling(this.eHeaderCell);
-                // debugger;
-                this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('change', function (event) {
+            };
+            RenderedHeaderCell.prototype.setupFreeze = function (freezeChecker) {
+                var that = this;
+                freezeChecker.addEventListener('change', function (event) {
                     var clickedColumnPosition = that.columnController.getDisplayedColumns().indexOf(that.column);
                     if (event.target.checked) {
                         clickedColumnPosition++;
@@ -6906,18 +6934,11 @@ var ag;
                     return false;
                 });
                 this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('click', function (event) {
-                    // event.preventDefault();
                     event.stopPropagation();
-                    // return false;
                 });
                 if (this.column.index < this.columnController.getPinnedColumnCount()) {
                     this.eHeaderCell.querySelector('#ag-js-freeze').checked = true;
                 }
-                // this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('click', function(event) {
-                //     console.log(event);
-                // });
-                // this.refreshFilterIcon();
-                // this.refreshSortIcon();
             };
             RenderedHeaderCell.prototype.useRenderer = function (headerNameValue, headerCellRenderer, headerCellLabel) {
                 // renderer provided, use it
@@ -7132,7 +7153,6 @@ var ag;
                 this.checkEl = this.setupComponents();
             }
             RenderedHeaderCheckerCell.prototype.toggle = function (isOnState, isSomeState) {
-                // debugger
                 var turnOn = isOnState;
                 if (isSomeState) {
                     this.checkEl.removeAttribute('checked');
@@ -7155,9 +7175,11 @@ var ag;
                 }
                 return turnOn;
             };
-            RenderedHeaderCheckerCell.prototype.changeSelection = function () {
+            RenderedHeaderCheckerCell.prototype.changeSelection = function (currentState) {
                 var api = this.gridOptionsWrapper.getApi();
                 var desiredState = !this.checkerState();
+                if (currentState !== void 0)
+                    desiredState = currentState;
                 if (desiredState) {
                     api.selectAll();
                 }
@@ -7166,7 +7188,10 @@ var ag;
                 }
             };
             RenderedHeaderCheckerCell.prototype.checkerState = function () {
-                return (this.checkEl.getAttribute('checked'));
+                // return (
+                //     this.checkEl.getAttribute('checked')
+                // );
+                return this.checkEl.checked;
             };
             RenderedHeaderCheckerCell.prototype.setupComponents = function () {
                 var that = this;
@@ -7187,7 +7212,7 @@ var ag;
                 eCheckBoxInput.addEventListener('click', function (e) {
                     // change select all on checker click
                     e.stopPropagation();
-                    that.changeSelection();
+                    that.changeSelection(this.checked);
                 });
                 // checker element Xmas decorations template
                 var eCheckBoxIcon = document.createElement("span");
@@ -7246,53 +7271,6 @@ var ag;
                     _.addCssClass(this.eHeaderCell, 'ag-header-cell-not-grouped'); // this takes 100% height
                 }
             };
-            // private addMenu(): void {
-            //     var showMenu = this.gridOptionsWrapper.isEnableFilter() && !this.column.colDef.suppressMenu;
-            //     if (!showMenu) {
-            //         return;
-            //     }
-            //     var eMenuButton = _.createIcon('menu', this.gridOptionsWrapper, this.column, svgFactory.createMenuSvg);
-            //     _.addCssClass(eMenuButton, 'ag-header-icon');
-            //     eMenuButton.setAttribute("class", "ag-header-cell-menu-button");
-            //     var that = this;
-            //     eMenuButton.onclick = function () {
-            //         that.filterManager.showFilter(that.column, this);
-            //     };
-            //     this.eHeaderCell.appendChild(eMenuButton);
-            //     if (!this.gridOptionsWrapper.isSuppressMenuHide()) {
-            //         eMenuButton.style.opacity = '0';
-            //         this.eHeaderCell.onmouseenter = function () {
-            //             eMenuButton.style.opacity = '1';
-            //         };
-            //         this.eHeaderCell.onmouseleave = function () {
-            //             eMenuButton.style.opacity = '0';
-            //         };
-            //     }
-            //     eMenuButton.style['transition'] = 'opacity 0.5s, border 0.2s';
-            //     var style: any = eMenuButton.style;
-            //     style['-webkit-transition'] = 'opacity 0.5s, border 0.2s';
-            // }
-            // private addSortIcons(headerCellLabel: HTMLElement): void {
-            //     var addSortIcons = this.gridOptionsWrapper.isEnableSorting() && !this.column.colDef.suppressSorting;
-            //     if (!addSortIcons) {
-            //         return;
-            //     }
-            //     this.eSortAsc = _.createIcon('sortAscending', this.gridOptionsWrapper, this.column, svgFactory.createArrowUpSvg);
-            //     this.eSortDesc = _.createIcon('sortDescending', this.gridOptionsWrapper, this.column, svgFactory.createArrowDownSvg);
-            //     _.addCssClass(this.eSortAsc, 'ag-header-icon ag-sort-ascending-icon');
-            //     _.addCssClass(this.eSortDesc, 'ag-header-icon ag-sort-descending-icon');
-            //     headerCellLabel.appendChild(this.eSortAsc);
-            //     headerCellLabel.appendChild(this.eSortDesc);
-            //     // 'no sort' icon
-            //     if (this.column.colDef.unSortIcon || this.gridOptionsWrapper.isUnSortIcon()) {
-            //         this.eSortNone = _.createIcon('sortUnSort', this.gridOptionsWrapper, this.column, svgFactory.createArrowUpDownSvg);
-            //         _.addCssClass(this.eSortNone, 'ag-header-icon ag-sort-none-icon');
-            //         headerCellLabel.appendChild(this.eSortNone);
-            //     }
-            //     this.eSortAsc.style.display = 'none';
-            //     this.eSortDesc.style.display = 'none';
-            //     this.addSortHandling(headerCellLabel);
-            // }
             RenderedHeaderCheckerCell.prototype.useRenderer = function (headerNameValue, headerCellRenderer, headerCellLabel) {
                 // renderer provided, use it
                 var cellRendererParams = {
@@ -7324,98 +7302,6 @@ var ag;
                     headerCellLabel.appendChild(childToAppend);
                 }
             };
-            // public refreshFilterIcon(): void {
-            //     var filterPresent = this.filterManager.isFilterPresentForCol(this.column.colId);
-            //     if (filterPresent) {
-            //         _.addCssClass(this.eHeaderCell, 'ag-header-cell-filtered');
-            //         this.eFilterIcon.style.display = 'inline';
-            //     } else {
-            //         _.removeCssClass(this.eHeaderCell, 'ag-header-cell-filtered');
-            //         this.eFilterIcon.style.display = 'none';
-            //     }
-            // }
-            // public refreshSortIcon(): void {
-            //     // update visibility of icons
-            //     var sortAscending = this.column.sort === constants.ASC;
-            //     var sortDescending = this.column.sort === constants.DESC;
-            //     var unSort = this.column.sort !== constants.DESC && this.column.sort !== constants.ASC;
-            //     if (this.eSortAsc) {
-            //         _.setVisible(this.eSortAsc, sortAscending);
-            //     }
-            //     if (this.eSortDesc) {
-            //         _.setVisible(this.eSortDesc, sortDescending);
-            //     }
-            //     if (this.eSortNone) {
-            //         _.setVisible(this.eSortNone, unSort);
-            //     }
-            // }
-            // private getNextSortDirection(): string {
-            //     var sortingOrder: string[];
-            //     if (this.column.colDef.sortingOrder) {
-            //         sortingOrder = this.column.colDef.sortingOrder;
-            //     } else if (this.gridOptionsWrapper.getSortingOrder()) {
-            //         sortingOrder = this.gridOptionsWrapper.getSortingOrder();
-            //     } else {
-            //         sortingOrder = RenderedHeaderCheckerCell.DEFAULT_SORTING_ORDER;
-            //     }
-            //     if ( !Array.isArray(sortingOrder) || sortingOrder.length <= 0) {
-            //         console.warn('ag-grid: sortingOrder must be an array with at least one element, currently it\'s ' + sortingOrder);
-            //         return;
-            //     }
-            //     var currentIndex = sortingOrder.indexOf(this.column.sort);
-            //     var notInArray = currentIndex < 0;
-            //     var lastItemInArray = currentIndex == sortingOrder.length - 1;
-            //     var result: string;
-            //     if (notInArray || lastItemInArray) {
-            //         result = sortingOrder[0];
-            //     } else {
-            //         result = sortingOrder[currentIndex + 1];
-            //     }
-            //     // verify the sort type exists, as the user could provide the sortOrder, need to make sure it's valid
-            //     if (RenderedHeaderCheckerCell.DEFAULT_SORTING_ORDER.indexOf(result) < 0) {
-            //         console.warn('ag-grid: invalid sort type ' + result);
-            //         return null;
-            //     }
-            //     return result;
-            // }
-            // private addSortHandling(headerCellLabel: HTMLElement) {
-            //     var that = this;
-            //     headerCellLabel.addEventListener("click", function (event: any) {
-            //         // update sort on current col
-            //         that.column.sort = that.getNextSortDirection();
-            //         // sortedAt used for knowing order of cols when multi-col sort
-            //         if (that.column.sort) {
-            //             that.column.sortedAt = new Date().valueOf();
-            //         } else {
-            //             that.column.sortedAt = null;
-            //         }
-            //         var doingMultiSort = !that.gridOptionsWrapper.isSuppressMultiSort() && event.shiftKey;
-            //         // clear sort on all columns except this one, and update the icons
-            //         if (!doingMultiSort) {
-            //             that.columnController.getAllColumns().forEach(function (columnToClear: any) {
-            //                 // Do not clear if either holding shift, or if column in question was clicked
-            //                 if (!(columnToClear === that.column)) {
-            //                     columnToClear.sort = null;
-            //                 }
-            //             });
-            //         }
-            //         that.angularGrid.onSortingChanged();
-            //     });
-            // }
-            // public onDragStart(): void {
-            //     this.startWidth = this.column.actualWidth;
-            // }
-            // public onDragging(dragChange: number, finished: boolean): void {
-            //     var newWidth = this.startWidth + dragChange;
-            //     this.columnController.setColumnWidth(this.column, newWidth, finished);
-            // }
-            // public onIndividualColumnResized(column: Column) {
-            //     if (this.column !== column) {
-            //         return;
-            //     }
-            //     var newWidthPx = column.actualWidth + "px";
-            //     this.eHeaderCell.style.width = newWidthPx;
-            // }
             RenderedHeaderCheckerCell.prototype.addHeaderClassesFromCollDef = function () {
                 var _this = this;
                 if (this.column.colDef.headerClass) {
@@ -7452,6 +7338,7 @@ var ag;
 /// <reference path='../utils.ts' />
 /// <reference path='renderedHeaderCell.ts' />
 /// <reference path='renderedHeaderElement.ts' />
+/// <reference path="../headerRendering/renderedHeaderCheckerCell.ts" />
 var ag;
 (function (ag) {
     var grid;
@@ -7537,7 +7424,11 @@ var ag;
                 }
                 this.eHeaderGroup.appendChild(this.eHeaderGroupCell);
                 this.columnGroup.displayedColumns.forEach(function (column) {
-                    var renderedHeaderCell = new grid.RenderedHeaderCell(column, _this, _this.gridOptionsWrapper, _this.parentScope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.getERoot());
+                    var headerCellRenderer = grid.RenderedHeaderCell;
+                    if (column.colDef.checkboxSelection) {
+                        headerCellRenderer = grid.RenderedHeaderCheckerCell;
+                    }
+                    var renderedHeaderCell = new headerCellRenderer(column, _this, _this.gridOptionsWrapper, _this.parentScope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.getERoot());
                     _this.children.push(renderedHeaderCell);
                     _this.eHeaderGroup.appendChild(renderedHeaderCell.getGui());
                 });
@@ -7844,8 +7735,15 @@ var ag;
             HeaderRenderer.prototype.toggleSelectAll = function (pamparams) {
                 // toggle header state for all checker columns
                 this.headerElements.forEach(function (headerElement) {
-                    if (headerElement.column.colDef.checkboxSelection) {
+                    if (headerElement && headerElement.column && headerElement.column.colDef.checkboxSelection) {
                         headerElement.toggle(pamparams.allSelected, pamparams.someSelected);
+                    }
+                    if (headerElement && headerElement.columnGroup) {
+                        headerElement.children.forEach(function (groupedElement) {
+                            if (groupedElement.column && groupedElement.column.colDef && groupedElement.column.colDef.checkboxSelection) {
+                                groupedElement.toggle(pamparams.allSelected, pamparams.someSelected);
+                            }
+                        });
                     }
                 });
             };
@@ -9840,6 +9738,7 @@ var ag;
                 this.ePinnedColsContainer.style.width = pinnedColWidth;
                 this.ePinnedFloatingBottom.style.width = pinnedColWidth;
                 this.ePinnedFloatingTop.style.width = pinnedColWidth;
+                this.ePinnedHeader.style.width = pinnedColWidth;
                 this.eBodyViewportWrapper.style.marginLeft = pinnedColWidth;
             };
             GridPanel.prototype.showPinnedColContainersIfNeeded = function () {
