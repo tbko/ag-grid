@@ -309,6 +309,7 @@ declare module ag.grid {
         static EVENT_SELECTION_STATE_CHANGED: string;
         static EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE: string;
         static EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE: string;
+        static EVENT_DO_NOTHING: string;
     }
 }
 declare module ag.grid {
@@ -1217,6 +1218,9 @@ declare module ag.grid {
         private addClasses();
         private addSortIcons(headerCellLabel);
         private setupComponents();
+        private isNogroupSamegroup(el);
+        private setupDND(dragHandler);
+        private setupFreeze(freezeChecker);
         private useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);
         refreshFilterIcon(): void;
         refreshSortIcon(): void;
@@ -1249,7 +1253,7 @@ declare module ag.grid {
         private checkEl;
         constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement);
         toggle(isOnState?: boolean, isSomeState?: boolean): boolean;
-        private changeSelection();
+        private changeSelection(currentState?);
         checkerState(): boolean;
         private setupComponents();
         getGui(): HTMLElement;

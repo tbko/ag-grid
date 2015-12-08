@@ -51,7 +51,6 @@ module ag.grid {
         }
 
         public toggle(isOnState?: boolean, isSomeState?: boolean): boolean {
-            // debugger
             var turnOn = isOnState;
             if (isSomeState) {
                 this.checkEl.removeAttribute('checked');
@@ -74,9 +73,11 @@ module ag.grid {
             return turnOn;
         }
 
-        private changeSelection() {
+        private changeSelection(currentState?:boolean) {
             var api = this.gridOptionsWrapper.getApi();
             var desiredState = !this.checkerState();
+            if (currentState !== void 0)
+                desiredState = currentState;
             if (desiredState) {
                 api.selectAll();
             } else {
@@ -85,9 +86,10 @@ module ag.grid {
         }
 
         public checkerState(): boolean {
-            return (
-                this.checkEl.getAttribute('checked')
-            );
+            // return (
+            //     this.checkEl.getAttribute('checked')
+            // );
+            return this.checkEl.checked;
         }
 
         private setupComponents(): HTMLElement {
@@ -113,7 +115,7 @@ module ag.grid {
             eCheckBoxInput.addEventListener('click', function(e: any) {
                 // change select all on checker click
                 e.stopPropagation();
-                that.changeSelection();
+                that.changeSelection(this.checked);
             });
             
             // checker element Xmas decorations template
@@ -182,62 +184,6 @@ module ag.grid {
             }
         }
 
-        // private addMenu(): void {
-        //     var showMenu = this.gridOptionsWrapper.isEnableFilter() && !this.column.colDef.suppressMenu;
-        //     if (!showMenu) {
-        //         return;
-        //     }
-
-        //     var eMenuButton = _.createIcon('menu', this.gridOptionsWrapper, this.column, svgFactory.createMenuSvg);
-        //     _.addCssClass(eMenuButton, 'ag-header-icon');
-
-        //     eMenuButton.setAttribute("class", "ag-header-cell-menu-button");
-        //     var that = this;
-        //     eMenuButton.onclick = function () {
-        //         that.filterManager.showFilter(that.column, this);
-        //     };
-        //     this.eHeaderCell.appendChild(eMenuButton);
-
-        //     if (!this.gridOptionsWrapper.isSuppressMenuHide()) {
-        //         eMenuButton.style.opacity = '0';
-        //         this.eHeaderCell.onmouseenter = function () {
-        //             eMenuButton.style.opacity = '1';
-        //         };
-        //         this.eHeaderCell.onmouseleave = function () {
-        //             eMenuButton.style.opacity = '0';
-        //         };
-        //     }
-        //     eMenuButton.style['transition'] = 'opacity 0.5s, border 0.2s';
-        //     var style: any = eMenuButton.style;
-        //     style['-webkit-transition'] = 'opacity 0.5s, border 0.2s';
-        // }
-
-        // private addSortIcons(headerCellLabel: HTMLElement): void {
-        //     var addSortIcons = this.gridOptionsWrapper.isEnableSorting() && !this.column.colDef.suppressSorting;
-        //     if (!addSortIcons) {
-        //         return;
-        //     }
-
-        //     this.eSortAsc = _.createIcon('sortAscending', this.gridOptionsWrapper, this.column, svgFactory.createArrowUpSvg);
-        //     this.eSortDesc = _.createIcon('sortDescending', this.gridOptionsWrapper, this.column, svgFactory.createArrowDownSvg);
-        //     _.addCssClass(this.eSortAsc, 'ag-header-icon ag-sort-ascending-icon');
-        //     _.addCssClass(this.eSortDesc, 'ag-header-icon ag-sort-descending-icon');
-        //     headerCellLabel.appendChild(this.eSortAsc);
-        //     headerCellLabel.appendChild(this.eSortDesc);
-
-        //     // 'no sort' icon
-        //     if (this.column.colDef.unSortIcon || this.gridOptionsWrapper.isUnSortIcon()) {
-        //         this.eSortNone = _.createIcon('sortUnSort', this.gridOptionsWrapper, this.column, svgFactory.createArrowUpDownSvg);
-        //         _.addCssClass(this.eSortNone, 'ag-header-icon ag-sort-none-icon');
-        //         headerCellLabel.appendChild(this.eSortNone);
-        //     }
-
-        //     this.eSortAsc.style.display = 'none';
-        //     this.eSortDesc.style.display = 'none';
-        //     this.addSortHandling(headerCellLabel);
-        // }
-
-
         private useRenderer(headerNameValue: string, headerCellRenderer: Function,
                             headerCellLabel: HTMLElement): void {
             // renderer provided, use it
@@ -268,117 +214,6 @@ module ag.grid {
                 headerCellLabel.appendChild(childToAppend);
             }
         }
-
-        // public refreshFilterIcon(): void {
-        //     var filterPresent = this.filterManager.isFilterPresentForCol(this.column.colId);
-        //     if (filterPresent) {
-        //         _.addCssClass(this.eHeaderCell, 'ag-header-cell-filtered');
-        //         this.eFilterIcon.style.display = 'inline';
-        //     } else {
-        //         _.removeCssClass(this.eHeaderCell, 'ag-header-cell-filtered');
-        //         this.eFilterIcon.style.display = 'none';
-        //     }
-        // }
-
-        // public refreshSortIcon(): void {
-        //     // update visibility of icons
-        //     var sortAscending = this.column.sort === constants.ASC;
-        //     var sortDescending = this.column.sort === constants.DESC;
-        //     var unSort = this.column.sort !== constants.DESC && this.column.sort !== constants.ASC;
-
-        //     if (this.eSortAsc) {
-        //         _.setVisible(this.eSortAsc, sortAscending);
-        //     }
-        //     if (this.eSortDesc) {
-        //         _.setVisible(this.eSortDesc, sortDescending);
-        //     }
-        //     if (this.eSortNone) {
-        //         _.setVisible(this.eSortNone, unSort);
-        //     }
-        // }
-
-        // private getNextSortDirection(): string {
-
-        //     var sortingOrder: string[];
-        //     if (this.column.colDef.sortingOrder) {
-        //         sortingOrder = this.column.colDef.sortingOrder;
-        //     } else if (this.gridOptionsWrapper.getSortingOrder()) {
-        //         sortingOrder = this.gridOptionsWrapper.getSortingOrder();
-        //     } else {
-        //         sortingOrder = RenderedHeaderCheckerCell.DEFAULT_SORTING_ORDER;
-        //     }
-
-        //     if ( !Array.isArray(sortingOrder) || sortingOrder.length <= 0) {
-        //         console.warn('ag-grid: sortingOrder must be an array with at least one element, currently it\'s ' + sortingOrder);
-        //         return;
-        //     }
-
-        //     var currentIndex = sortingOrder.indexOf(this.column.sort);
-        //     var notInArray = currentIndex < 0;
-        //     var lastItemInArray = currentIndex == sortingOrder.length - 1;
-        //     var result: string;
-        //     if (notInArray || lastItemInArray) {
-        //         result = sortingOrder[0];
-        //     } else {
-        //         result = sortingOrder[currentIndex + 1];
-        //     }
-
-        //     // verify the sort type exists, as the user could provide the sortOrder, need to make sure it's valid
-        //     if (RenderedHeaderCheckerCell.DEFAULT_SORTING_ORDER.indexOf(result) < 0) {
-        //         console.warn('ag-grid: invalid sort type ' + result);
-        //         return null;
-        //     }
-
-        //     return result;
-        // }
-
-        // private addSortHandling(headerCellLabel: HTMLElement) {
-        //     var that = this;
-
-        //     headerCellLabel.addEventListener("click", function (event: any) {
-
-        //         // update sort on current col
-        //         that.column.sort = that.getNextSortDirection();
-
-        //         // sortedAt used for knowing order of cols when multi-col sort
-        //         if (that.column.sort) {
-        //             that.column.sortedAt = new Date().valueOf();
-        //         } else {
-        //             that.column.sortedAt = null;
-        //         }
-
-        //         var doingMultiSort = !that.gridOptionsWrapper.isSuppressMultiSort() && event.shiftKey;
-
-        //         // clear sort on all columns except this one, and update the icons
-        //         if (!doingMultiSort) {
-        //             that.columnController.getAllColumns().forEach(function (columnToClear: any) {
-        //                 // Do not clear if either holding shift, or if column in question was clicked
-        //                 if (!(columnToClear === that.column)) {
-        //                     columnToClear.sort = null;
-        //                 }
-        //             });
-        //         }
-
-        //         that.angularGrid.onSortingChanged();
-        //     });
-        // }
-
-        // public onDragStart(): void {
-        //     this.startWidth = this.column.actualWidth;
-        // }
-
-        // public onDragging(dragChange: number, finished: boolean): void {
-        //     var newWidth = this.startWidth + dragChange;
-        //     this.columnController.setColumnWidth(this.column, newWidth, finished);
-        // }
-
-        // public onIndividualColumnResized(column: Column) {
-        //     if (this.column !== column) {
-        //         return;
-        //     }
-        //     var newWidthPx = column.actualWidth + "px";
-        //     this.eHeaderCell.style.width = newWidthPx;
-        // }
 
         private addHeaderClassesFromCollDef() {
             if (this.column.colDef.headerClass) {
