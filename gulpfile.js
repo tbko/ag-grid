@@ -156,6 +156,6 @@ function stylusTask() {
 }
 
 function watchTask() {
-    gulp.watch('./src/ts/**/*', ['ts-debug']);
+    gulp.watch('./src/ts/**/*', ['ts-release']);
     gulp.watch('./src/styles/**/*', ['stylus']);
 }
