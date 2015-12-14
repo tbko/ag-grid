@@ -34,7 +34,7 @@ module ag.grid {
         private startWidth: number;
         private checkEl: any;
 
-        constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper,
+        constructor(column: Column, _:any, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper,
                     parentScope: any, filterManager: FilterManager, columnController: ColumnController,
                     $compile: any, angularGrid: Grid, eRoot: HTMLElement) {
             super(eRoot);

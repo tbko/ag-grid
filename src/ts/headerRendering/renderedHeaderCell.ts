@@ -34,8 +34,10 @@ module ag.grid {
         private eRootRef: HTMLElement;
 
         private startWidth: number;
+        private headerElements: any;
 
-        constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper,
+        constructor(column: Column, headerElements: any,
+                    parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper,
                     parentScope: any, filterManager: FilterManager, columnController: ColumnController,
                     $compile: any, angularGrid: Grid, eRoot: HTMLElement, popupService?: PopupService ) {
             super(eRoot);
@@ -49,6 +51,7 @@ module ag.grid {
             this.$compile = $compile;
             this.angularGrid = angularGrid;
             this.popupService = popupService;
+            this.headerElements = headerElements;
 
             this.setupComponents();
         }
@@ -116,17 +119,22 @@ module ag.grid {
 
             this.eHeaderCell = document.createElement("div");
 
-            this.createScope();
-            this.addClasses();
-            this.addAttributes();
-            this.addHeaderClassesFromCollDef();
+            if (this.headerElements.frame) {
+                this.createScope();
+                this.addClasses();
+                this.addAttributes();
+                this.addHeaderClassesFromCollDef();
+
+            } else {
+                                            
+            }
 
             // add tooltip if exists
             if (this.column.colDef.headerTooltip) {
                 this.eHeaderCell.title = this.column.colDef.headerTooltip;
             }
 
-            if (this.gridOptionsWrapper.isEnableColResize() && !this.column.colDef.suppressResize) {
+            if (this.headerElements.resize && this.gridOptionsWrapper.isEnableColResize() && !this.column.colDef.suppressResize) {
                 var headerCellResize = document.createElement("div");
                 headerCellResize.className = "ag-header-cell-resize";
                 this.eHeaderCell.appendChild(headerCellResize);
@@ -154,6 +162,35 @@ module ag.grid {
                 headerCellRenderer = this.column.colDef.headerCellRenderer;
             } else if (this.gridOptionsWrapper.getHeaderCellRenderer()) { // second look for one in grid options
                 headerCellRenderer = this.gridOptionsWrapper.getHeaderCellRenderer();
+            } else {
+                headerCellRenderer = function() {
+                    return `
+                      <div class="b-content-center b-content-center_block ag-js-draghandler">
+                          <div class="b-content-center_fluid_cell pi-clip">
+                              <span class='pi-ag-header-cell-text'>#{params.value}</span>
+                          </div>
+                          <div class="b-content__cell">
+                              <div class="ag-locked-icon">
+                                  <div class="pi-table-column-locked" >
+                                      <label>
+                                          <span class="checkbox-input">
+                                              <input id="ag-js-freeze" name="locked" type="checkbox" />
+                                              <span class="input-icon"></span>
+                                          </span>
+                                      </label>
+                                  </div>
+                              </div>
+
+                          </div>
+                          <div class="b-content__cell">
+                              <span class="ag-sort-icon b-icon icon-sort-arrow-up"></span>
+                              <span class="ag-sort-icon b-icon icon-sort-arrow-down"></span>
+                              <span class="ag-sort-icon b-icon icon-sort-alpha-up "></span>
+                              <span class="ag-sort-icon b-icon icon-sort-alpha-down"></span>
+                          </div>
+                      </div>                    
+                    `;
+                }
             }
 
             var headerNameValue = this.columnController.getDisplayNameForCol(this.column);
@@ -168,29 +205,42 @@ module ag.grid {
                 headerCellLabel.appendChild(eInnerText);
             }
 
-            this.eHeaderCell.appendChild(headerCellLabel);
-            this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
+            if (this.headerElements.frame) {
+                this.eHeaderCell.appendChild(headerCellLabel);
+                this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
 
-            var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
-            if (dragHandler) this.setupDND(dragHandler);
+            } else {
+                this.eHeaderCell = headerCellLabel;
+            }
 
-            this.addSortHandling(this.eHeaderCell);
+            if (this.headerElements.drag) {
+                var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
+                if (dragHandler) this.setupDND(dragHandler);
+            }
 
-            var freezeChecker = this.eHeaderCell.querySelector('#ag-js-freeze');
-            if (freezeChecker) this.setupFreeze(freezeChecker);
+            if (this.headerElements.sort) {
+                this.addSortHandling(this.eHeaderCell);
+            }
+
+            if (this.headerElements.freeze) {
+                var freezeChecker = this.eHeaderCell.querySelector('#ag-js-freeze');
+                if (freezeChecker) this.setupFreeze(freezeChecker);
+            }
         }
 
-        private isNogroupSamegroup(el: HTMLElement): boolean {
+        private isNogroupSamegroup(): boolean {
             // debugger
+            var sourceColId = this.eRootRef.querySelector('.ag-dragging').getAttribute('colId');
+            var sourceCol = this.columnController.getColumn(sourceColId);
+            var targetCol = this.column;
+
             if (
-                !this.column.colDef.headerGroup &&
+                !sourceCol.colDef.headerGroup &&
                 !targetCol.colDef.headerGroup
             ) {
                 return true;
             }
-            var targetColId = el.getAttribute('colId');
-            var targetCol = this.columnController.getColumn(targetColId);
-            return this.column.colDef.headerGroup === targetCol.colDef.headerGroup;
+            return sourceCol.colDef.headerGroup === targetCol.colDef.headerGroup;
         }
 
         private setupDND(dragHandler: Element) {
@@ -203,7 +253,11 @@ module ag.grid {
             });
             dragHandler.addEventListener('dragover', function(event: DragEvent) {
                 event.preventDefault();
-                event.dataTransfer.dropEffect = 'move';
+                if (that.isNogroupSamegroup()) {
+                    event.dataTransfer.dropEffect = 'move';
+                } else {
+                    event.dataTransfer.dropEffect = 'none';
+                }
             });
             dragHandler.addEventListener('dragend', function() {
                 that.eHeaderCell.classList.remove('ag-dragging');
@@ -211,16 +265,12 @@ module ag.grid {
 
             // react to drag header over header
             var lastenter: any;
-            var dragEnterHandler = (event: Event) => {
-
-                console.log(lastenter);
-                console.log(that.eHeaderCell.classList.contains('ag-dragging'));
-                console.log(that.isNogroupSamegroup.call(that, <HTMLElement>event.currentTarget));
+            var dragEnterHandler = (event: DragEvent) => {
 
                 if (
                     !lastenter &&
                     !that.eHeaderCell.classList.contains('ag-dragging') &&
-                    that.isNogroupSamegroup.call(that, <HTMLElement>event.currentTarget)
+                    that.isNogroupSamegroup.call(that)
                 )
                     that.eHeaderCell.classList.add('ag-dragging-over');
 

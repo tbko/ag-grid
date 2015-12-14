@@ -1210,7 +1210,8 @@ declare module ag.grid {
         private popupService;
         private eRootRef;
         private startWidth;
-        constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement, popupService?: PopupService);
+        private headerElements;
+        constructor(column: Column, headerElements: any, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement, popupService?: PopupService);
         getGui(): HTMLElement;
         destroy(): void;
         private createScope();
@@ -1218,7 +1219,7 @@ declare module ag.grid {
         private addClasses();
         private addSortIcons(headerCellLabel);
         private setupComponents();
-        private isNogroupSamegroup(el);
+        private isNogroupSamegroup();
         private setupDND(dragHandler);
         private setupFreeze(freezeChecker);
         private useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);
@@ -1251,7 +1252,7 @@ declare module ag.grid {
         private parentGroup;
         private startWidth;
         private checkEl;
-        constructor(column: Column, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement);
+        constructor(column: Column, _: any, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement);
         toggle(isOnState?: boolean, isSomeState?: boolean): boolean;
         private changeSelection(currentState?);
         checkerState(): boolean;

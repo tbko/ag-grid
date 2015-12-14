@@ -2,6 +2,7 @@
 /// <reference path='renderedHeaderCell.ts' />
 /// <reference path='renderedHeaderElement.ts' />
 /// <reference path="../headerRendering/renderedHeaderCheckerCell.ts" />
+/// <reference path="../entities/column.ts" />
 
 module ag.grid {
 
@@ -96,17 +97,32 @@ module ag.grid {
                 this.addDragHandler(this.eHeaderCellResize);
             }
 
+
             // no renderer, default text render
             var groupName = this.columnGroup.name;
             if (groupName && groupName !== '') {
                 var eGroupCellLabel = document.createElement("div");
+                var renderedBracketHeaderCell = new RenderedHeaderCell(
+                    new Column(<ColDef>{headerName: groupName+'zzz...'}, this.columnGroup.actualWidth),
+                    {
+                        'frame': false,
+                        'sort': false,
+                        'freeze': true,
+                        'resize': false,
+                        'drag': true
+                    },
+                    this, this.gridOptionsWrapper,
+                    this.parentScope, this.filterManager, this.columnController, this.$compile,
+                    this.angularGrid, this.getERoot());
+
                 eGroupCellLabel.className = 'ag-header-group-cell-label';
                 this.eHeaderGroupCell.appendChild(eGroupCellLabel);
 
-                var eInnerText = document.createElement("span");
-                eInnerText.className = 'ag-header-group-text';
-                eInnerText.innerHTML = groupName;
-                eGroupCellLabel.appendChild(eInnerText);
+                // var eInnerText = document.createElement("span");
+                // eInnerText.className = 'ag-header-group-text';
+                // eInnerText.innerHTML = groupName;
+                // eGroupCellLabel.appendChild(eInnerText);
+                eGroupCellLabel.appendChild(renderedBracketHeaderCell.getGui());
 
                 if (this.columnGroup.expandable) {
                     this.addGroupExpandIcon(eGroupCellLabel);
@@ -119,7 +135,13 @@ module ag.grid {
                 if (column.colDef.checkboxSelection) {
                     headerCellRenderer = RenderedHeaderCheckerCell;
                 }
-                var renderedHeaderCell = new headerCellRenderer(column, this, this.gridOptionsWrapper,
+                var renderedHeaderCell = new headerCellRenderer(column, {
+                        'frame': true,
+                        'sort': true,
+                        'freeze': false,
+                        'resize': true,
+                        'drag': true
+                    }, this, this.gridOptionsWrapper,
                     this.parentScope, this.filterManager, this.columnController, this.$compile,
                     this.angularGrid, this.getERoot());
                 this.children.push(renderedHeaderCell);
@@ -171,9 +193,9 @@ module ag.grid {
             }
 
             // set the new width to the group header
-            //var newWidthPx = newWidth + "px";
-            //this.eHeaderGroupCell.style.width = newWidthPx;
-            //this.columnGroup.actualWidth = newWidth;
+            var newWidthPx = newWidth + "px";
+            this.eHeaderGroupCell.style.width = newWidthPx;
+            this.columnGroup.actualWidth = newWidth;
 
             // distribute the new width to the child headers
             var changeRatio = newWidth / this.groupWidthStart;

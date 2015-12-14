@@ -177,7 +177,14 @@ module ag.grid {
                     someSelected: false
                 };
                 var selectedLength = pamparams.selectedRows.length
-                if ( selectedLength === that.gridOptionsWrapper.getApi().getModel().getAllRows().length) {
+                var totalLength = that.gridOptionsWrapper.getApi().getModel().getAllRows().length;
+                if (!totalLength)
+                    return;
+
+                if (
+                    selectedLength &&
+                    selectedLength === totalLength
+                ) {
                     // all are selected
                     selectionParams.allSelected = true;
                 } else {

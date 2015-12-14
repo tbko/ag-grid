@@ -6742,7 +6742,7 @@ var ag;
         var svgFactory = grid.SvgFactory.getInstance();
         var RenderedHeaderCell = (function (_super) {
             __extends(RenderedHeaderCell, _super);
-            function RenderedHeaderCell(column, parentGroup, gridOptionsWrapper, parentScope, filterManager, columnController, $compile, angularGrid, eRoot, popupService) {
+            function RenderedHeaderCell(column, headerElements, parentGroup, gridOptionsWrapper, parentScope, filterManager, columnController, $compile, angularGrid, eRoot, popupService) {
                 _super.call(this, eRoot);
                 this.eRootRef = eRoot;
                 this.column = column;
@@ -6754,6 +6754,7 @@ var ag;
                 this.$compile = $compile;
                 this.angularGrid = angularGrid;
                 this.popupService = popupService;
+                this.headerElements = headerElements;
                 this.setupComponents();
             }
             RenderedHeaderCell.prototype.getGui = function () {
@@ -6809,15 +6810,19 @@ var ag;
             RenderedHeaderCell.prototype.setupComponents = function () {
                 var that = this;
                 this.eHeaderCell = document.createElement("div");
-                this.createScope();
-                this.addClasses();
-                this.addAttributes();
-                this.addHeaderClassesFromCollDef();
+                if (this.headerElements.frame) {
+                    this.createScope();
+                    this.addClasses();
+                    this.addAttributes();
+                    this.addHeaderClassesFromCollDef();
+                }
+                else {
+                }
                 // add tooltip if exists
                 if (this.column.colDef.headerTooltip) {
                     this.eHeaderCell.title = this.column.colDef.headerTooltip;
                 }
-                if (this.gridOptionsWrapper.isEnableColResize() && !this.column.colDef.suppressResize) {
+                if (this.headerElements.resize && this.gridOptionsWrapper.isEnableColResize() && !this.column.colDef.suppressResize) {
                     var headerCellResize = document.createElement("div");
                     headerCellResize.className = "ag-header-cell-resize";
                     this.eHeaderCell.appendChild(headerCellResize);
@@ -6841,6 +6846,11 @@ var ag;
                 else if (this.gridOptionsWrapper.getHeaderCellRenderer()) {
                     headerCellRenderer = this.gridOptionsWrapper.getHeaderCellRenderer();
                 }
+                else {
+                    headerCellRenderer = function () {
+                        return "\n                      <div class=\"b-content-center b-content-center_block ag-js-draghandler\">\n                          <div class=\"b-content-center_fluid_cell pi-clip\">\n                              <span class='pi-ag-header-cell-text'>#{params.value}</span>\n                          </div>\n                          <div class=\"b-content__cell\">\n                              <div class=\"ag-locked-icon\">\n                                  <div class=\"pi-table-column-locked\" >\n                                      <label>\n                                          <span class=\"checkbox-input\">\n                                              <input id=\"ag-js-freeze\" name=\"locked\" type=\"checkbox\" />\n                                              <span class=\"input-icon\"></span>\n                                          </span>\n                                      </label>\n                                  </div>\n                              </div>\n\n                          </div>\n                          <div class=\"b-content__cell\">\n                              <span class=\"ag-sort-icon b-icon icon-sort-arrow-up\"></span>\n                              <span class=\"ag-sort-icon b-icon icon-sort-arrow-down\"></span>\n                              <span class=\"ag-sort-icon b-icon icon-sort-alpha-up \"></span>\n                              <span class=\"ag-sort-icon b-icon icon-sort-alpha-down\"></span>\n                          </div>\n                      </div>                    \n                    ";
+                    };
+                }
                 var headerNameValue = this.columnController.getDisplayNameForCol(this.column);
                 if (headerCellRenderer) {
                     this.useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);
@@ -6852,25 +6862,37 @@ var ag;
                     eInnerText.innerHTML = headerNameValue;
                     headerCellLabel.appendChild(eInnerText);
                 }
-                this.eHeaderCell.appendChild(headerCellLabel);
-                this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
-                var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
-                if (dragHandler)
-                    this.setupDND(dragHandler);
-                this.addSortHandling(this.eHeaderCell);
-                var freezeChecker = this.eHeaderCell.querySelector('#ag-js-freeze');
-                if (freezeChecker)
-                    this.setupFreeze(freezeChecker);
+                if (this.headerElements.frame) {
+                    this.eHeaderCell.appendChild(headerCellLabel);
+                    this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
+                }
+                else {
+                    this.eHeaderCell = headerCellLabel;
+                }
+                if (this.headerElements.drag) {
+                    var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
+                    if (dragHandler)
+                        this.setupDND(dragHandler);
+                }
+                if (this.headerElements.sort) {
+                    this.addSortHandling(this.eHeaderCell);
+                }
+                if (this.headerElements.freeze) {
+                    var freezeChecker = this.eHeaderCell.querySelector('#ag-js-freeze');
+                    if (freezeChecker)
+                        this.setupFreeze(freezeChecker);
+                }
             };
-            RenderedHeaderCell.prototype.isNogroupSamegroup = function (el) {
+            RenderedHeaderCell.prototype.isNogroupSamegroup = function () {
                 // debugger
-                if (!this.column.colDef.headerGroup &&
+                var sourceColId = this.eRootRef.querySelector('.ag-dragging').getAttribute('colId');
+                var sourceCol = this.columnController.getColumn(sourceColId);
+                var targetCol = this.column;
+                if (!sourceCol.colDef.headerGroup &&
                     !targetCol.colDef.headerGroup) {
                     return true;
                 }
-                var targetColId = el.getAttribute('colId');
-                var targetCol = this.columnController.getColumn(targetColId);
-                return this.column.colDef.headerGroup === targetCol.colDef.headerGroup;
+                return sourceCol.colDef.headerGroup === targetCol.colDef.headerGroup;
             };
             RenderedHeaderCell.prototype.setupDND = function (dragHandler) {
                 var that = this;
@@ -6882,7 +6904,12 @@ var ag;
                 });
                 dragHandler.addEventListener('dragover', function (event) {
                     event.preventDefault();
-                    event.dataTransfer.dropEffect = 'move';
+                    if (that.isNogroupSamegroup()) {
+                        event.dataTransfer.dropEffect = 'move';
+                    }
+                    else {
+                        event.dataTransfer.dropEffect = 'none';
+                    }
                 });
                 dragHandler.addEventListener('dragend', function () {
                     that.eHeaderCell.classList.remove('ag-dragging');
@@ -6890,12 +6917,9 @@ var ag;
                 // react to drag header over header
                 var lastenter;
                 var dragEnterHandler = function (event) {
-                    console.log(lastenter);
-                    console.log(that.eHeaderCell.classList.contains('ag-dragging'));
-                    console.log(that.isNogroupSamegroup.call(that, event.currentTarget));
                     if (!lastenter &&
                         !that.eHeaderCell.classList.contains('ag-dragging') &&
-                        that.isNogroupSamegroup.call(that, event.currentTarget))
+                        that.isNogroupSamegroup.call(that))
                         that.eHeaderCell.classList.add('ag-dragging-over');
                     lastenter = event.target;
                     event.stopPropagation();
@@ -7140,7 +7164,7 @@ var ag;
         var svgFactory = grid.SvgFactory.getInstance();
         var RenderedHeaderCheckerCell = (function (_super) {
             __extends(RenderedHeaderCheckerCell, _super);
-            function RenderedHeaderCheckerCell(column, parentGroup, gridOptionsWrapper, parentScope, filterManager, columnController, $compile, angularGrid, eRoot) {
+            function RenderedHeaderCheckerCell(column, _, parentGroup, gridOptionsWrapper, parentScope, filterManager, columnController, $compile, angularGrid, eRoot) {
                 _super.call(this, eRoot);
                 this.column = column;
                 this.parentGroup = parentGroup;
@@ -7339,6 +7363,7 @@ var ag;
 /// <reference path='renderedHeaderCell.ts' />
 /// <reference path='renderedHeaderElement.ts' />
 /// <reference path="../headerRendering/renderedHeaderCheckerCell.ts" />
+/// <reference path="../entities/column.ts" />
 var ag;
 (function (ag) {
     var grid;
@@ -7412,12 +7437,20 @@ var ag;
                 var groupName = this.columnGroup.name;
                 if (groupName && groupName !== '') {
                     var eGroupCellLabel = document.createElement("div");
+                    var renderedBracketHeaderCell = new grid.RenderedHeaderCell(new grid.Column({ headerName: groupName + 'zzz...' }, this.columnGroup.actualWidth), {
+                        'frame': false,
+                        'sort': false,
+                        'freeze': true,
+                        'resize': false,
+                        'drag': true
+                    }, this, this.gridOptionsWrapper, this.parentScope, this.filterManager, this.columnController, this.$compile, this.angularGrid, this.getERoot());
                     eGroupCellLabel.className = 'ag-header-group-cell-label';
                     this.eHeaderGroupCell.appendChild(eGroupCellLabel);
-                    var eInnerText = document.createElement("span");
-                    eInnerText.className = 'ag-header-group-text';
-                    eInnerText.innerHTML = groupName;
-                    eGroupCellLabel.appendChild(eInnerText);
+                    // var eInnerText = document.createElement("span");
+                    // eInnerText.className = 'ag-header-group-text';
+                    // eInnerText.innerHTML = groupName;
+                    // eGroupCellLabel.appendChild(eInnerText);
+                    eGroupCellLabel.appendChild(renderedBracketHeaderCell.getGui());
                     if (this.columnGroup.expandable) {
                         this.addGroupExpandIcon(eGroupCellLabel);
                     }
@@ -7428,7 +7461,13 @@ var ag;
                     if (column.colDef.checkboxSelection) {
                         headerCellRenderer = grid.RenderedHeaderCheckerCell;
                     }
-                    var renderedHeaderCell = new headerCellRenderer(column, _this, _this.gridOptionsWrapper, _this.parentScope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.getERoot());
+                    var renderedHeaderCell = new headerCellRenderer(column, {
+                        'frame': true,
+                        'sort': true,
+                        'freeze': false,
+                        'resize': true,
+                        'drag': true
+                    }, _this, _this.gridOptionsWrapper, _this.parentScope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.getERoot());
                     _this.children.push(renderedHeaderCell);
                     _this.eHeaderGroup.appendChild(renderedHeaderCell.getGui());
                 });
@@ -7472,9 +7511,9 @@ var ag;
                     newWidth = this.minWidth;
                 }
                 // set the new width to the group header
-                //var newWidthPx = newWidth + "px";
-                //this.eHeaderGroupCell.style.width = newWidthPx;
-                //this.columnGroup.actualWidth = newWidth;
+                var newWidthPx = newWidth + "px";
+                this.eHeaderGroupCell.style.width = newWidthPx;
+                this.columnGroup.actualWidth = newWidth;
                 // distribute the new width to the child headers
                 var changeRatio = newWidth / this.groupWidthStart;
                 // keep track of pixels used, and last column gets the remaining,
@@ -7755,24 +7794,16 @@ var ag;
                     if (column.colDef.checkboxSelection) {
                         headerCellRenderer = grid.RenderedHeaderCheckerCell;
                     }
-                    var renderedHeaderCell = new headerCellRenderer(column, null, _this.gridOptionsWrapper, _this.$scope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.eRoot, _this.popupService);
+                    var renderedHeaderCell = new headerCellRenderer(column, {
+                        'frame': true,
+                        'sort': true,
+                        'freeze': true,
+                        'resize': true,
+                        'drag': true
+                    }, null, _this.gridOptionsWrapper, _this.$scope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.eRoot, _this.popupService);
                     _this.headerElements.push(renderedHeaderCell);
                     var eContainerToAddTo = column.pinned ? _this.ePinnedHeader : _this.eHeaderContainer;
                     eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
-                    // if (!column.colDef.checkboxSelection) {
-                    //     var elHeader = renderedHeaderCell.getGui();
-                    //     var elDrag = elHeader.getElementsByClassName('b-content-center')[0];
-                    //     if (!elDrag) {
-                    //         elDrag = elHeader;
-                    //     } else {
-                    //         elDrag.onclick = function(e: Event) {
-                    //             e.preventDefault();
-                    //             e.stopPropagation();
-                    //         };
-                    //     }
-                    //     // debugger
-                    //     this.addDragAndDropToListItem(elDrag, renderedHeaderCell);
-                    // }
                 });
             };
             HeaderRenderer.prototype.updateSortIcons = function () {
@@ -9459,7 +9490,11 @@ var ag;
                         someSelected: false
                     };
                     var selectedLength = pamparams.selectedRows.length;
-                    if (selectedLength === that.gridOptionsWrapper.getApi().getModel().getAllRows().length) {
+                    var totalLength = that.gridOptionsWrapper.getApi().getModel().getAllRows().length;
+                    if (!totalLength)
+                        return;
+                    if (selectedLength &&
+                        selectedLength === totalLength) {
                         // all are selected
                         selectionParams.allSelected = true;
                     }

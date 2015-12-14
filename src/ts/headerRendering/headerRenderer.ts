@@ -188,28 +188,19 @@ module ag.grid {
                 if (column.colDef.checkboxSelection) {
                     headerCellRenderer = RenderedHeaderCheckerCell;
                 }
-                var renderedHeaderCell = new headerCellRenderer(column, null, this.gridOptionsWrapper,
+                var renderedHeaderCell = new headerCellRenderer(column, {
+                    'frame': true,
+                    'sort': true,
+                    'freeze': true,
+                    'resize': true,
+                    'drag': true                    
+                }, null, this.gridOptionsWrapper,
                     this.$scope, this.filterManager, this.columnController, this.$compile,
                     this.angularGrid, this.eRoot, this.popupService);
                 this.headerElements.push(renderedHeaderCell);
                 var eContainerToAddTo = column.pinned ? this.ePinnedHeader : this.eHeaderContainer;
                 eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
 
-                // if (!column.colDef.checkboxSelection) {
-                //     var elHeader = renderedHeaderCell.getGui();
-                //     var elDrag = elHeader.getElementsByClassName('b-content-center')[0];
-                //     if (!elDrag) {
-                //         elDrag = elHeader;
-                //     } else {
-                //         elDrag.onclick = function(e: Event) {
-                //             e.preventDefault();
-                //             e.stopPropagation();
-                //         };
-                //     }
-
-                //     // debugger
-                //     this.addDragAndDropToListItem(elDrag, renderedHeaderCell);
-                // }
             });
         }
 
