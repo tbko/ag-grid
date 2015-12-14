@@ -103,7 +103,11 @@ module ag.grid {
             if (groupName && groupName !== '') {
                 var eGroupCellLabel = document.createElement("div");
                 var renderedBracketHeaderCell = new RenderedHeaderCell(
-                    new Column(<ColDef>{headerName: groupName+'zzz...'}, this.columnGroup.actualWidth),
+                    new Column(<any>{
+                        headerName: groupName,
+                        colId: groupName,
+                        columnGroup: this.columnGroup
+                    }, this.columnGroup.actualWidth),
                     {
                         'frame': false,
                         'sort': false,
@@ -138,7 +142,7 @@ module ag.grid {
                 var renderedHeaderCell = new headerCellRenderer(column, {
                         'frame': true,
                         'sort': true,
-                        'freeze': false,
+                        'freeze': !groupName || (groupName === ''),
                         'resize': true,
                         'drag': true
                     }, this, this.gridOptionsWrapper,

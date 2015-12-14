@@ -635,6 +635,7 @@ declare module ag.grid {
         onCellDoubleClicked?: Function;
         /** Function callback, gets called when a cell is right clicked. */
         onCellContextMenu?: Function;
+        columnGroup?: any;
     }
 }
 declare module ag.grid {

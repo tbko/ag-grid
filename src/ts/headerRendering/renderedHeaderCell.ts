@@ -122,11 +122,8 @@ module ag.grid {
             if (this.headerElements.frame) {
                 this.createScope();
                 this.addClasses();
-                this.addAttributes();
                 this.addHeaderClassesFromCollDef();
-
-            } else {
-                                            
+                this.addAttributes();
             }
 
             // add tooltip if exists
@@ -157,43 +154,54 @@ module ag.grid {
             // headerCellLabel.appendChild(this.eFilterIcon);
 
             // render the cell, use a renderer if one is provided
+            var headerNameValue = this.columnController.getDisplayNameForCol(this.column);
             var headerCellRenderer: any;
             if (this.column.colDef.headerCellRenderer) { // first look for a renderer in col def
                 headerCellRenderer = this.column.colDef.headerCellRenderer;
             } else if (this.gridOptionsWrapper.getHeaderCellRenderer()) { // second look for one in grid options
                 headerCellRenderer = this.gridOptionsWrapper.getHeaderCellRenderer();
             } else {
+                var sortBlock = '';
+                if (this.headerElements.sort) {
+                    sortBlock = `
+                    <div class="b-content__cell">
+                      <span class="ag-sort-icon b-icon icon-sort-arrow-up"></span>
+                      <span class="ag-sort-icon b-icon icon-sort-arrow-down"></span>
+                      <span class="ag-sort-icon b-icon icon-sort-alpha-up "></span>
+                      <span class="ag-sort-icon b-icon icon-sort-alpha-down"></span>
+                    </div>
+                    `;
+                }
+                var freezeBlock = '';
+                if (this.headerElements.freeze) {
+                    freezeBlock = `
+                    <div class="ag-locked-icon">
+                      <div class="pi-table-column-locked" >
+                          <label>
+                              <span class="checkbox-input">
+                                  <input id="ag-js-freeze" name="locked" type="checkbox" />
+                                  <span class="input-icon"></span>
+                              </span>
+                          </label>
+                      </div>
+                    </div>
+                    `;
+                }
                 headerCellRenderer = function() {
                     return `
                       <div class="b-content-center b-content-center_block ag-js-draghandler">
                           <div class="b-content-center_fluid_cell pi-clip">
-                              <span class='pi-ag-header-cell-text'>#{params.value}</span>
+                              <span class='pi-ag-header-cell-text'>${headerNameValue}</span>
                           </div>
                           <div class="b-content__cell">
-                              <div class="ag-locked-icon">
-                                  <div class="pi-table-column-locked" >
-                                      <label>
-                                          <span class="checkbox-input">
-                                              <input id="ag-js-freeze" name="locked" type="checkbox" />
-                                              <span class="input-icon"></span>
-                                          </span>
-                                      </label>
-                                  </div>
-                              </div>
-
+                              ${freezeBlock}    
                           </div>
-                          <div class="b-content__cell">
-                              <span class="ag-sort-icon b-icon icon-sort-arrow-up"></span>
-                              <span class="ag-sort-icon b-icon icon-sort-arrow-down"></span>
-                              <span class="ag-sort-icon b-icon icon-sort-alpha-up "></span>
-                              <span class="ag-sort-icon b-icon icon-sort-alpha-down"></span>
-                          </div>
+                          ${sortBlock}    
                       </div>                    
                     `;
                 }
             }
 
-            var headerNameValue = this.columnController.getDisplayNameForCol(this.column);
 
             if (headerCellRenderer) {
                 this.useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);
@@ -208,9 +216,9 @@ module ag.grid {
             if (this.headerElements.frame) {
                 this.eHeaderCell.appendChild(headerCellLabel);
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
-
             } else {
                 this.eHeaderCell = headerCellLabel;
+                this.eHeaderCell.setAttribute("colId", this.column.colId);
             }
 
             if (this.headerElements.drag) {
@@ -229,10 +237,14 @@ module ag.grid {
         }
 
         private isNogroupSamegroup(): boolean {
-            // debugger
-            var sourceColId = this.eRootRef.querySelector('.ag-dragging').getAttribute('colId');
+            // debugger;
+            var sourceColEl = this.eRootRef.querySelector('.ag-dragging')
+            var sourceColId = sourceColEl.getAttribute('colId');
             var sourceCol = this.columnController.getColumn(sourceColId);
             var targetCol = this.column;
+            if (!sourceCol || !targetCol) {
+                return false;
+            }
 
             if (
                 !sourceCol.colDef.headerGroup &&
@@ -245,7 +257,7 @@ module ag.grid {
 
         private setupDND(dragHandler: Element) {
             var that = this;
-            // start/storp dragging header
+            // start/stop dragging header
             dragHandler.setAttribute('draggable', 'true');
             dragHandler.addEventListener('dragstart', function(event: DragEvent) {
                 that.eHeaderCell.classList.add('ag-dragging');
@@ -253,11 +265,11 @@ module ag.grid {
             });
             dragHandler.addEventListener('dragover', function(event: DragEvent) {
                 event.preventDefault();
-                if (that.isNogroupSamegroup()) {
-                    event.dataTransfer.dropEffect = 'move';
-                } else {
-                    event.dataTransfer.dropEffect = 'none';
-                }
+                // if (that.isNogroupSamegroup()) {
+                //     event.dataTransfer.dropEffect = 'move';
+                // } else {
+                //     event.dataTransfer.dropEffect = 'none';
+                // }
             });
             dragHandler.addEventListener('dragend', function() {
                 that.eHeaderCell.classList.remove('ag-dragging');
@@ -281,7 +293,6 @@ module ag.grid {
             };
             var dragLeaveHandler = (event: Event) => {
                 if (lastenter === event.target) {
-                    // console.log('left');
                     that.eHeaderCell.classList.remove('ag-dragging-over');
                     lastenter = null;
                 }
@@ -291,13 +302,43 @@ module ag.grid {
 
             // swap columns on drop
             this.eHeaderCell.addEventListener('drop', function(event:DragEvent) {
+                // debugger;
+                var freezeIndex = that.columnController.getPinnedColumnCount();
+                var dragData = event.dataTransfer.getData('text/plain');
                 var sourceIndex = that.columnController.getAllColumns().indexOf(
-                    that.columnController.getColumn(event.dataTransfer.getData('text/plain'))
+                    that.columnController.getColumn(dragData)
                 );
+                var groupLength = 1;
+                var growIndex = 0;
+                var colsInGroup: Column[];
+                if (!~sourceIndex) {
+                    colsInGroup = that.columnController.getColumnGroup(dragData).allColumns
+                    sourceIndex = colsInGroup[0].index;
+                    groupLength = colsInGroup.length;
+                }
+                var direction = sourceIndex > destinationIndex ? +1 : -1;
                 var destinationIndex = that.columnController.getAllColumns().indexOf(
                     that.column
                 );
-                that.columnController.moveColumn(sourceIndex, destinationIndex);
+                for (var i = 0; i < groupLength; i++) {
+                    that.columnController.moveColumn(sourceIndex + growIndex, destinationIndex + growIndex);
+                    if (colsInGroup && sourceIndex > destinationIndex) {
+                        growIndex++;
+                    }
+                }
+                console.log(`FreezeIdx: ${freezeIndex}`);
+                console.log(`SourceIdx: ${sourceIndex}`);
+                console.log(`DestinationIdx: ${destinationIndex}`);
+                console.log(`Cross border? : ${Math.abs(sourceIndex - freezeIndex) + Math.abs(destinationIndex - freezeIndex) <= Math.abs(destinationIndex - sourceIndex)}`);
+                console.log(`Freeze zone grow: ${direction * (groupLength - 1)}`);
+
+                if (
+                    colsInGroup &&
+                    Math.abs(sourceIndex - freezeIndex) + Math.abs(destinationIndex - freezeIndex) <= Math.abs(destinationIndex - sourceIndex)
+                ) {
+                    freezeIndex += direction * (groupLength - 1);
+                    that.columnController.setPinnedColumnCount(freezeIndex);
+                }
 
                 event.stopPropagation();
                 event.preventDefault();
@@ -307,13 +348,23 @@ module ag.grid {
 
         private setupFreeze(freezeChecker: Element) {
             var that = this;
+            var columnsInGroup: Column[];
+            var lastColumnInGroup: Column;
+            if (that.column.colDef.columnGroup) {
+                columnsInGroup = that.column.colDef.columnGroup.displayedColumns
+                lastColumnInGroup = columnsInGroup[columnsInGroup.length - 1];
+            }
 
             freezeChecker.addEventListener('change', function(event) {
-                var clickedColumnPosition = that.columnController.getDisplayedColumns().indexOf(that.column);
+                var col = lastColumnInGroup ? lastColumnInGroup : that.column;
+                var clickedColumnPosition = that.columnController.getDisplayedColumns().indexOf(col);
                 if ((<HTMLInputElement>event.target).checked) {
                     clickedColumnPosition++;
+                } else if (lastColumnInGroup) {
+                    clickedColumnPosition = that.columnController.getDisplayedColumns().indexOf(columnsInGroup[0]);
                 }
                 that.columnController.setPinnedColumnCount(clickedColumnPosition);
+
                 event.preventDefault();
                 event.stopPropagation();
                 return false;
@@ -322,8 +373,8 @@ module ag.grid {
                 event.stopPropagation();
             });
 
-            if (this.column.index < this.columnController.getPinnedColumnCount()) {
-                     (<HTMLInputElement>this.eHeaderCell.querySelector('#ag-js-freeze')).checked = true;
+            if (lastColumnInGroup && lastColumnInGroup.pinned || this.column.index < this.columnController.getPinnedColumnCount()) {
+                (<HTMLInputElement>this.eHeaderCell.querySelector('#ag-js-freeze')).checked = true;
             }
         }
 

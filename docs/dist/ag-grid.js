@@ -6813,10 +6813,8 @@ var ag;
                 if (this.headerElements.frame) {
                     this.createScope();
                     this.addClasses();
-                    this.addAttributes();
                     this.addHeaderClassesFromCollDef();
-                }
-                else {
+                    this.addAttributes();
                 }
                 // add tooltip if exists
                 if (this.column.colDef.headerTooltip) {
@@ -6839,6 +6837,7 @@ var ag;
                 // _.addCssClass(this.eFilterIcon, 'ag-header-icon');
                 // headerCellLabel.appendChild(this.eFilterIcon);
                 // render the cell, use a renderer if one is provided
+                var headerNameValue = this.columnController.getDisplayNameForCol(this.column);
                 var headerCellRenderer;
                 if (this.column.colDef.headerCellRenderer) {
                     headerCellRenderer = this.column.colDef.headerCellRenderer;
@@ -6847,11 +6846,18 @@ var ag;
                     headerCellRenderer = this.gridOptionsWrapper.getHeaderCellRenderer();
                 }
                 else {
+                    var sortBlock = '';
+                    if (this.headerElements.sort) {
+                        sortBlock = "\n                    <div class=\"b-content__cell\">\n                      <span class=\"ag-sort-icon b-icon icon-sort-arrow-up\"></span>\n                      <span class=\"ag-sort-icon b-icon icon-sort-arrow-down\"></span>\n                      <span class=\"ag-sort-icon b-icon icon-sort-alpha-up \"></span>\n                      <span class=\"ag-sort-icon b-icon icon-sort-alpha-down\"></span>\n                    </div>\n                    ";
+                    }
+                    var freezeBlock = '';
+                    if (this.headerElements.freeze) {
+                        freezeBlock = "\n                    <div class=\"ag-locked-icon\">\n                      <div class=\"pi-table-column-locked\" >\n                          <label>\n                              <span class=\"checkbox-input\">\n                                  <input id=\"ag-js-freeze\" name=\"locked\" type=\"checkbox\" />\n                                  <span class=\"input-icon\"></span>\n                              </span>\n                          </label>\n                      </div>\n                    </div>\n                    ";
+                    }
                     headerCellRenderer = function () {
-                        return "\n                      <div class=\"b-content-center b-content-center_block ag-js-draghandler\">\n                          <div class=\"b-content-center_fluid_cell pi-clip\">\n                              <span class='pi-ag-header-cell-text'>#{params.value}</span>\n                          </div>\n                          <div class=\"b-content__cell\">\n                              <div class=\"ag-locked-icon\">\n                                  <div class=\"pi-table-column-locked\" >\n                                      <label>\n                                          <span class=\"checkbox-input\">\n                                              <input id=\"ag-js-freeze\" name=\"locked\" type=\"checkbox\" />\n                                              <span class=\"input-icon\"></span>\n                                          </span>\n                                      </label>\n                                  </div>\n                              </div>\n\n                          </div>\n                          <div class=\"b-content__cell\">\n                              <span class=\"ag-sort-icon b-icon icon-sort-arrow-up\"></span>\n                              <span class=\"ag-sort-icon b-icon icon-sort-arrow-down\"></span>\n                              <span class=\"ag-sort-icon b-icon icon-sort-alpha-up \"></span>\n                              <span class=\"ag-sort-icon b-icon icon-sort-alpha-down\"></span>\n                          </div>\n                      </div>                    \n                    ";
+                        return "\n                      <div class=\"b-content-center b-content-center_block ag-js-draghandler\">\n                          <div class=\"b-content-center_fluid_cell pi-clip\">\n                              <span class='pi-ag-header-cell-text'>" + headerNameValue + "</span>\n                          </div>\n                          <div class=\"b-content__cell\">\n                              " + freezeBlock + "    \n                          </div>\n                          " + sortBlock + "    \n                      </div>                    \n                    ";
                     };
                 }
-                var headerNameValue = this.columnController.getDisplayNameForCol(this.column);
                 if (headerCellRenderer) {
                     this.useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);
                 }
@@ -6868,6 +6874,7 @@ var ag;
                 }
                 else {
                     this.eHeaderCell = headerCellLabel;
+                    this.eHeaderCell.setAttribute("colId", this.column.colId);
                 }
                 if (this.headerElements.drag) {
                     var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
@@ -6884,10 +6891,14 @@ var ag;
                 }
             };
             RenderedHeaderCell.prototype.isNogroupSamegroup = function () {
-                // debugger
-                var sourceColId = this.eRootRef.querySelector('.ag-dragging').getAttribute('colId');
+                // debugger;
+                var sourceColEl = this.eRootRef.querySelector('.ag-dragging');
+                var sourceColId = sourceColEl.getAttribute('colId');
                 var sourceCol = this.columnController.getColumn(sourceColId);
                 var targetCol = this.column;
+                if (!sourceCol || !targetCol) {
+                    return false;
+                }
                 if (!sourceCol.colDef.headerGroup &&
                     !targetCol.colDef.headerGroup) {
                     return true;
@@ -6896,7 +6907,7 @@ var ag;
             };
             RenderedHeaderCell.prototype.setupDND = function (dragHandler) {
                 var that = this;
-                // start/storp dragging header
+                // start/stop dragging header
                 dragHandler.setAttribute('draggable', 'true');
                 dragHandler.addEventListener('dragstart', function (event) {
                     that.eHeaderCell.classList.add('ag-dragging');
@@ -6904,12 +6915,11 @@ var ag;
                 });
                 dragHandler.addEventListener('dragover', function (event) {
                     event.preventDefault();
-                    if (that.isNogroupSamegroup()) {
-                        event.dataTransfer.dropEffect = 'move';
-                    }
-                    else {
-                        event.dataTransfer.dropEffect = 'none';
-                    }
+                    // if (that.isNogroupSamegroup()) {
+                    //     event.dataTransfer.dropEffect = 'move';
+                    // } else {
+                    //     event.dataTransfer.dropEffect = 'none';
+                    // }
                 });
                 dragHandler.addEventListener('dragend', function () {
                     that.eHeaderCell.classList.remove('ag-dragging');
@@ -6928,7 +6938,6 @@ var ag;
                 };
                 var dragLeaveHandler = function (event) {
                     if (lastenter === event.target) {
-                        // console.log('left');
                         that.eHeaderCell.classList.remove('ag-dragging-over');
                         lastenter = null;
                     }
@@ -6937,9 +6946,36 @@ var ag;
                 this.eHeaderCell.addEventListener('dragleave', dragLeaveHandler);
                 // swap columns on drop
                 this.eHeaderCell.addEventListener('drop', function (event) {
-                    var sourceIndex = that.columnController.getAllColumns().indexOf(that.columnController.getColumn(event.dataTransfer.getData('text/plain')));
+                    // debugger;
+                    var freezeIndex = that.columnController.getPinnedColumnCount();
+                    var dragData = event.dataTransfer.getData('text/plain');
+                    var sourceIndex = that.columnController.getAllColumns().indexOf(that.columnController.getColumn(dragData));
+                    var groupLength = 1;
+                    var growIndex = 0;
+                    var colsInGroup;
+                    if (!~sourceIndex) {
+                        colsInGroup = that.columnController.getColumnGroup(dragData).allColumns;
+                        sourceIndex = colsInGroup[0].index;
+                        groupLength = colsInGroup.length;
+                    }
+                    var direction = sourceIndex > destinationIndex ? +1 : -1;
                     var destinationIndex = that.columnController.getAllColumns().indexOf(that.column);
-                    that.columnController.moveColumn(sourceIndex, destinationIndex);
+                    for (var i = 0; i < groupLength; i++) {
+                        that.columnController.moveColumn(sourceIndex + growIndex, destinationIndex + growIndex);
+                        if (colsInGroup && sourceIndex > destinationIndex) {
+                            growIndex++;
+                        }
+                    }
+                    console.log("FreezeIdx: " + freezeIndex);
+                    console.log("SourceIdx: " + sourceIndex);
+                    console.log("DestinationIdx: " + destinationIndex);
+                    console.log("Cross border? : " + (Math.abs(sourceIndex - freezeIndex) + Math.abs(destinationIndex - freezeIndex) <= Math.abs(destinationIndex - sourceIndex)));
+                    console.log("Freeze zone grow: " + direction * (groupLength - 1));
+                    if (colsInGroup &&
+                        Math.abs(sourceIndex - freezeIndex) + Math.abs(destinationIndex - freezeIndex) <= Math.abs(destinationIndex - sourceIndex)) {
+                        freezeIndex += direction * (groupLength - 1);
+                        that.columnController.setPinnedColumnCount(freezeIndex);
+                    }
                     event.stopPropagation();
                     event.preventDefault();
                     return false;
@@ -6947,10 +6983,20 @@ var ag;
             };
             RenderedHeaderCell.prototype.setupFreeze = function (freezeChecker) {
                 var that = this;
+                var columnsInGroup;
+                var lastColumnInGroup;
+                if (that.column.colDef.columnGroup) {
+                    columnsInGroup = that.column.colDef.columnGroup.displayedColumns;
+                    lastColumnInGroup = columnsInGroup[columnsInGroup.length - 1];
+                }
                 freezeChecker.addEventListener('change', function (event) {
-                    var clickedColumnPosition = that.columnController.getDisplayedColumns().indexOf(that.column);
+                    var col = lastColumnInGroup ? lastColumnInGroup : that.column;
+                    var clickedColumnPosition = that.columnController.getDisplayedColumns().indexOf(col);
                     if (event.target.checked) {
                         clickedColumnPosition++;
+                    }
+                    else if (lastColumnInGroup) {
+                        clickedColumnPosition = that.columnController.getDisplayedColumns().indexOf(columnsInGroup[0]);
                     }
                     that.columnController.setPinnedColumnCount(clickedColumnPosition);
                     event.preventDefault();
@@ -6960,7 +7006,7 @@ var ag;
                 this.eHeaderCell.querySelector('#ag-js-freeze').addEventListener('click', function (event) {
                     event.stopPropagation();
                 });
-                if (this.column.index < this.columnController.getPinnedColumnCount()) {
+                if (lastColumnInGroup && lastColumnInGroup.pinned || this.column.index < this.columnController.getPinnedColumnCount()) {
                     this.eHeaderCell.querySelector('#ag-js-freeze').checked = true;
                 }
             };
@@ -7437,7 +7483,11 @@ var ag;
                 var groupName = this.columnGroup.name;
                 if (groupName && groupName !== '') {
                     var eGroupCellLabel = document.createElement("div");
-                    var renderedBracketHeaderCell = new grid.RenderedHeaderCell(new grid.Column({ headerName: groupName + 'zzz...' }, this.columnGroup.actualWidth), {
+                    var renderedBracketHeaderCell = new grid.RenderedHeaderCell(new grid.Column({
+                        headerName: groupName,
+                        colId: groupName,
+                        columnGroup: this.columnGroup
+                    }, this.columnGroup.actualWidth), {
                         'frame': false,
                         'sort': false,
                         'freeze': true,
@@ -7464,7 +7514,7 @@ var ag;
                     var renderedHeaderCell = new headerCellRenderer(column, {
                         'frame': true,
                         'sort': true,
-                        'freeze': false,
+                        'freeze': !groupName || (groupName === ''),
                         'resize': true,
                         'drag': true
                     }, _this, _this.gridOptionsWrapper, _this.parentScope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.getERoot());
@@ -11197,6 +11247,7 @@ var ag;
                 this.rowRenderer.setListenMouseMove(false);
             };
             Grid.prototype.onColumnChanged = function (event) {
+                // debugger;
                 this.rowRenderer.countGridRows();
                 if (event.isPivotChanged()) {
                     this.inMemoryRowController.onPivotChanged();

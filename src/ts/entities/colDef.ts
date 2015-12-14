@@ -133,5 +133,7 @@ module ag.grid {
         /** Function callback, gets called when a cell is right clicked. */
         onCellContextMenu?: Function;
 
+        columnGroup?: any;
+
     }
 }
