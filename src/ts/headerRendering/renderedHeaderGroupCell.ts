@@ -100,8 +100,13 @@ module ag.grid {
 
             // no renderer, default text render
             var groupName = this.columnGroup.name;
-            if (groupName && groupName !== '') {
-                var eGroupCellLabel = document.createElement("div");
+            // if (groupName && groupName !== '') {
+
+
+            // upper with bracket content (text + freeze checker) and lower with N headers content (text + sort icon) for confinment
+            // only upper with header content (text + freeze checker + sort icon) taking the full height
+            if (!this.columnGroup.allColumns[0].colDef.checkboxSelection) {
+                // var eGroupCellLabel = document.createElement("div");
                 var renderedBracketHeaderCell = new RenderedHeaderCell(
                     new Column(<any>{
                         headerName: groupName,
@@ -119,19 +124,22 @@ module ag.grid {
                     this.parentScope, this.filterManager, this.columnController, this.$compile,
                     this.angularGrid, this.getERoot());
 
-                eGroupCellLabel.className = 'ag-header-group-cell-label';
-                this.eHeaderGroupCell.appendChild(eGroupCellLabel);
+                // eGroupCellLabel.className = 'ag-header-group-cell-label';
+                // this.eHeaderGroupCell.appendChild(eGroupCellLabel);
+                this.eHeaderGroupCell.appendChild(renderedBracketHeaderCell.getGui());
 
                 // var eInnerText = document.createElement("span");
                 // eInnerText.className = 'ag-header-group-text';
                 // eInnerText.innerHTML = groupName;
                 // eGroupCellLabel.appendChild(eInnerText);
-                eGroupCellLabel.appendChild(renderedBracketHeaderCell.getGui());
+                // eGroupCellLabel.appendChild(renderedBracketHeaderCell.getGui());
 
                 if (this.columnGroup.expandable) {
-                    this.addGroupExpandIcon(eGroupCellLabel);
+                    // this.addGroupExpandIcon(eGroupCellLabel);
+                    this.addGroupExpandIcon(renderedBracketHeaderCell.getGui());
                 }
             }
+            this.eHeaderGroupCell.setAttribute("colId", groupName);
             this.eHeaderGroup.appendChild(this.eHeaderGroupCell);
 
             this.columnGroup.displayedColumns.forEach( (column: Column) => {
@@ -142,7 +150,8 @@ module ag.grid {
                 var renderedHeaderCell = new headerCellRenderer(column, {
                         'frame': true,
                         'sort': true,
-                        'freeze': !groupName || (groupName === ''),
+                        // 'freeze': !groupName || (groupName === ''),
+                        'freeze': false,
                         'resize': true,
                         'drag': true
                     }, this, this.gridOptionsWrapper,

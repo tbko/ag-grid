@@ -1221,6 +1221,7 @@ declare module ag.grid {
         private addSortIcons(headerCellLabel);
         private setupComponents();
         private isNogroupSamegroup();
+        private getDragSource();
         private setupDND(dragHandler);
         private setupFreeze(freezeChecker);
         private useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);

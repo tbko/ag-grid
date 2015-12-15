@@ -164,7 +164,7 @@ module ag.grid {
                 var sortBlock = '';
                 if (this.headerElements.sort) {
                     sortBlock = `
-                    <div class="b-content__cell">
+                    <div class="icon-to-the-right">
                       <span class="ag-sort-icon b-icon icon-sort-arrow-up"></span>
                       <span class="ag-sort-icon b-icon icon-sort-arrow-down"></span>
                       <span class="ag-sort-icon b-icon icon-sort-alpha-up "></span>
@@ -174,7 +174,9 @@ module ag.grid {
                 }
                 var freezeBlock = '';
                 if (this.headerElements.freeze) {
+                    // <div class="b-content__cell">
                     freezeBlock = `
+                    <div class="icon-to-the-right">
                     <div class="ag-locked-icon">
                       <div class="pi-table-column-locked" >
                           <label>
@@ -185,19 +187,18 @@ module ag.grid {
                           </label>
                       </div>
                     </div>
+                    </div>
                     `;
                 }
                 headerCellRenderer = function() {
                     return `
-                      <div class="b-content-center b-content-center_block ag-js-draghandler">
-                          <div class="b-content-center_fluid_cell pi-clip">
-                              <span class='pi-ag-header-cell-text'>${headerNameValue}</span>
-                          </div>
-                          <div class="b-content__cell">
-                              ${freezeBlock}    
-                          </div>
-                          ${sortBlock}    
-                      </div>                    
+                    <div class="b-content-center b-content-center_block ag-js-draghandler">
+                      <div class="b-content-left_fluid_cell pi-clip">
+                          <span class='pi-ag-header-cell-text'>${headerNameValue || ''}</span>
+                      </div>
+                      ${freezeBlock}    
+                      ${sortBlock}    
+                    </div>                    
                     `;
                 }
             }
@@ -218,7 +219,6 @@ module ag.grid {
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
             } else {
                 this.eHeaderCell = headerCellLabel;
-                this.eHeaderCell.setAttribute("colId", this.column.colId);
             }
 
             if (this.headerElements.drag) {
@@ -237,11 +237,9 @@ module ag.grid {
         }
 
         private isNogroupSamegroup(): boolean {
-            // debugger;
-            var sourceColEl = this.eRootRef.querySelector('.ag-dragging')
-            var sourceColId = sourceColEl.getAttribute('colId');
-            var sourceCol = this.columnController.getColumn(sourceColId);
+            var sourceCol = this.getDragSource().sourceCol;
             var targetCol = this.column;
+
             if (!sourceCol || !targetCol) {
                 return false;
             }
@@ -255,14 +253,35 @@ module ag.grid {
             return sourceCol.colDef.headerGroup === targetCol.colDef.headerGroup;
         }
 
+        private getDragSource(): any {
+            // drag source is a single element with 'dragging' class
+            var sourceColEl = this.eRootRef.querySelector('.ag-dragging');
+            var sourceColId = sourceColEl.getAttribute('colId');
+            var sourceCol = this.columnController.getColumn(sourceColId);
+            var isBracket = !!sourceCol.columnGroup;
+            // distinctive types: bracket, free header, confined header
+            return {
+                sourceColEl: sourceColEl,
+                sourceColId: sourceColId,
+                sourceCol: sourceCol,
+                isBracket: isBracket,
+                isFree: false
+            }
+            
+        }
+
         private setupDND(dragHandler: Element) {
             var that = this;
-            // start/stop dragging header
             dragHandler.setAttribute('draggable', 'true');
+
+            console.log(this.eHeaderCell);
+
+            // start/stop dragging header
             dragHandler.addEventListener('dragstart', function(event: DragEvent) {
                 that.eHeaderCell.classList.add('ag-dragging');
                 event.dataTransfer.setData('text/plain', that.column.colId);
             });
+
             dragHandler.addEventListener('dragover', function(event: DragEvent) {
                 event.preventDefault();
                 // if (that.isNogroupSamegroup()) {

@@ -6848,14 +6848,15 @@ var ag;
                 else {
                     var sortBlock = '';
                     if (this.headerElements.sort) {
-                        sortBlock = "\n                    <div class=\"b-content__cell\">\n                      <span class=\"ag-sort-icon b-icon icon-sort-arrow-up\"></span>\n                      <span class=\"ag-sort-icon b-icon icon-sort-arrow-down\"></span>\n                      <span class=\"ag-sort-icon b-icon icon-sort-alpha-up \"></span>\n                      <span class=\"ag-sort-icon b-icon icon-sort-alpha-down\"></span>\n                    </div>\n                    ";
+                        sortBlock = "\n                    <div class=\"icon-to-the-right\">\n                      <span class=\"ag-sort-icon b-icon icon-sort-arrow-up\"></span>\n                      <span class=\"ag-sort-icon b-icon icon-sort-arrow-down\"></span>\n                      <span class=\"ag-sort-icon b-icon icon-sort-alpha-up \"></span>\n                      <span class=\"ag-sort-icon b-icon icon-sort-alpha-down\"></span>\n                    </div>\n                    ";
                     }
                     var freezeBlock = '';
                     if (this.headerElements.freeze) {
-                        freezeBlock = "\n                    <div class=\"ag-locked-icon\">\n                      <div class=\"pi-table-column-locked\" >\n                          <label>\n                              <span class=\"checkbox-input\">\n                                  <input id=\"ag-js-freeze\" name=\"locked\" type=\"checkbox\" />\n                                  <span class=\"input-icon\"></span>\n                              </span>\n                          </label>\n                      </div>\n                    </div>\n                    ";
+                        // <div class="b-content__cell">
+                        freezeBlock = "\n                    <div class=\"icon-to-the-right\">\n                    <div class=\"ag-locked-icon\">\n                      <div class=\"pi-table-column-locked\" >\n                          <label>\n                              <span class=\"checkbox-input\">\n                                  <input id=\"ag-js-freeze\" name=\"locked\" type=\"checkbox\" />\n                                  <span class=\"input-icon\"></span>\n                              </span>\n                          </label>\n                      </div>\n                    </div>\n                    </div>\n                    ";
                     }
                     headerCellRenderer = function () {
-                        return "\n                      <div class=\"b-content-center b-content-center_block ag-js-draghandler\">\n                          <div class=\"b-content-center_fluid_cell pi-clip\">\n                              <span class='pi-ag-header-cell-text'>" + headerNameValue + "</span>\n                          </div>\n                          <div class=\"b-content__cell\">\n                              " + freezeBlock + "    \n                          </div>\n                          " + sortBlock + "    \n                      </div>                    \n                    ";
+                        return "\n                    <div class=\"b-content-center b-content-center_block ag-js-draghandler\">\n                      <div class=\"b-content-left_fluid_cell pi-clip\">\n                          <span class='pi-ag-header-cell-text'>" + (headerNameValue || '') + "</span>\n                      </div>\n                      " + freezeBlock + "    \n                      " + sortBlock + "    \n                    </div>                    \n                    ";
                     };
                 }
                 if (headerCellRenderer) {
@@ -6874,7 +6875,6 @@ var ag;
                 }
                 else {
                     this.eHeaderCell = headerCellLabel;
-                    this.eHeaderCell.setAttribute("colId", this.column.colId);
                 }
                 if (this.headerElements.drag) {
                     var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
@@ -6891,10 +6891,7 @@ var ag;
                 }
             };
             RenderedHeaderCell.prototype.isNogroupSamegroup = function () {
-                // debugger;
-                var sourceColEl = this.eRootRef.querySelector('.ag-dragging');
-                var sourceColId = sourceColEl.getAttribute('colId');
-                var sourceCol = this.columnController.getColumn(sourceColId);
+                var sourceCol = this.getDragSource().sourceCol;
                 var targetCol = this.column;
                 if (!sourceCol || !targetCol) {
                     return false;
@@ -6905,10 +6902,26 @@ var ag;
                 }
                 return sourceCol.colDef.headerGroup === targetCol.colDef.headerGroup;
             };
+            RenderedHeaderCell.prototype.getDragSource = function () {
+                // drag source is a single element with 'dragging' class
+                var sourceColEl = this.eRootRef.querySelector('.ag-dragging');
+                var sourceColId = sourceColEl.getAttribute('colId');
+                var sourceCol = this.columnController.getColumn(sourceColId);
+                var isBracket = !!sourceCol.columnGroup;
+                // distinctive types: bracket, free header, confined header
+                return {
+                    sourceColEl: sourceColEl,
+                    sourceColId: sourceColId,
+                    sourceCol: sourceCol,
+                    isBracket: isBracket,
+                    isFree: false
+                };
+            };
             RenderedHeaderCell.prototype.setupDND = function (dragHandler) {
                 var that = this;
-                // start/stop dragging header
                 dragHandler.setAttribute('draggable', 'true');
+                console.log(this.eHeaderCell);
+                // start/stop dragging header
                 dragHandler.addEventListener('dragstart', function (event) {
                     that.eHeaderCell.classList.add('ag-dragging');
                     event.dataTransfer.setData('text/plain', that.column.colId);
@@ -7481,8 +7494,9 @@ var ag;
                 }
                 // no renderer, default text render
                 var groupName = this.columnGroup.name;
-                if (groupName && groupName !== '') {
-                    var eGroupCellLabel = document.createElement("div");
+                // if (groupName && groupName !== '') {
+                if (!this.columnGroup.allColumns[0].colDef.checkboxSelection) {
+                    // var eGroupCellLabel = document.createElement("div");
                     var renderedBracketHeaderCell = new grid.RenderedHeaderCell(new grid.Column({
                         headerName: groupName,
                         colId: groupName,
@@ -7494,17 +7508,20 @@ var ag;
                         'resize': false,
                         'drag': true
                     }, this, this.gridOptionsWrapper, this.parentScope, this.filterManager, this.columnController, this.$compile, this.angularGrid, this.getERoot());
-                    eGroupCellLabel.className = 'ag-header-group-cell-label';
-                    this.eHeaderGroupCell.appendChild(eGroupCellLabel);
+                    // eGroupCellLabel.className = 'ag-header-group-cell-label';
+                    // this.eHeaderGroupCell.appendChild(eGroupCellLabel);
+                    this.eHeaderGroupCell.appendChild(renderedBracketHeaderCell.getGui());
                     // var eInnerText = document.createElement("span");
                     // eInnerText.className = 'ag-header-group-text';
                     // eInnerText.innerHTML = groupName;
                     // eGroupCellLabel.appendChild(eInnerText);
-                    eGroupCellLabel.appendChild(renderedBracketHeaderCell.getGui());
+                    // eGroupCellLabel.appendChild(renderedBracketHeaderCell.getGui());
                     if (this.columnGroup.expandable) {
-                        this.addGroupExpandIcon(eGroupCellLabel);
+                        // this.addGroupExpandIcon(eGroupCellLabel);
+                        this.addGroupExpandIcon(renderedBracketHeaderCell.getGui());
                     }
                 }
+                this.eHeaderGroupCell.setAttribute("colId", groupName);
                 this.eHeaderGroup.appendChild(this.eHeaderGroupCell);
                 this.columnGroup.displayedColumns.forEach(function (column) {
                     var headerCellRenderer = grid.RenderedHeaderCell;
@@ -7514,7 +7531,8 @@ var ag;
                     var renderedHeaderCell = new headerCellRenderer(column, {
                         'frame': true,
                         'sort': true,
-                        'freeze': !groupName || (groupName === ''),
+                        // 'freeze': !groupName || (groupName === ''),
+                        'freeze': false,
                         'resize': true,
                         'drag': true
                     }, _this, _this.gridOptionsWrapper, _this.parentScope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.getERoot());
@@ -11247,7 +11265,6 @@ var ag;
                 this.rowRenderer.setListenMouseMove(false);
             };
             Grid.prototype.onColumnChanged = function (event) {
-                // debugger;
                 this.rowRenderer.countGridRows();
                 if (event.isPivotChanged()) {
                     this.inMemoryRowController.onPivotChanged();
