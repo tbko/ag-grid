@@ -53,6 +53,10 @@ module ag.grid {
             });
         }
 
+        public getVisibleColumnsCount(): number {
+            return this.columnGroup.getVisibleColumnsCount();
+        }
+
         public refreshFilterIcon(): void {
             this.children.forEach( (childElement: RenderedHeaderElement)=> {
                 childElement.refreshFilterIcon();
@@ -105,7 +109,7 @@ module ag.grid {
 
             // upper with bracket content (text + freeze checker) and lower with N headers content (text + sort icon) for confinment
             // only upper with header content (text + freeze checker + sort icon) taking the full height
-            if (!this.columnGroup.allColumns[0].colDef.checkboxSelection) {
+            if (!this.columnGroup.allColumns[0].colDef.checkboxSelection && this.columnGroup.displayedColumns.length > 1) {
                 // var eGroupCellLabel = document.createElement("div");
                 var renderedBracketHeaderCell = new RenderedHeaderCell(
                     new Column(<any>{
@@ -138,9 +142,10 @@ module ag.grid {
                     // this.addGroupExpandIcon(eGroupCellLabel);
                     this.addGroupExpandIcon(renderedBracketHeaderCell.getGui());
                 }
+
+                this.eHeaderGroupCell.setAttribute("colId", groupName);
+                this.eHeaderGroup.appendChild(this.eHeaderGroupCell);
             }
-            this.eHeaderGroupCell.setAttribute("colId", groupName);
-            this.eHeaderGroup.appendChild(this.eHeaderGroupCell);
 
             this.columnGroup.displayedColumns.forEach( (column: Column) => {
                 var headerCellRenderer: any = RenderedHeaderCell;
@@ -150,8 +155,8 @@ module ag.grid {
                 var renderedHeaderCell = new headerCellRenderer(column, {
                         'frame': true,
                         'sort': true,
-                        // 'freeze': !groupName || (groupName === ''),
-                        'freeze': false,
+                        'freeze': !groupName || (groupName === ''),
+                        // 'freeze': false,
                         'resize': true,
                         'drag': true
                     }, this, this.gridOptionsWrapper,
@@ -170,6 +175,7 @@ module ag.grid {
 
         private setWidthOfGroupHeaderCell() {
             this.eHeaderGroupCell.style.width = _.formatWidth(this.columnGroup.actualWidth);
+            this.eHeaderGroup.style.width = _.formatWidth(this.columnGroup.actualWidth);
         }
 
         private addGroupExpandIcon(eGroupCellLabel: HTMLElement) {

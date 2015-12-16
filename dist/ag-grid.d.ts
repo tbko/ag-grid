@@ -148,6 +148,7 @@ declare module ag.grid {
         constructor(pinned: any, name: any);
         getMinimumWidth(): number;
         addColumn(column: any): void;
+        getVisibleColumnsCount(): number;
         calculateExpandable(): void;
         calculateActualWidth(): void;
         calculateDisplayedColumns(): void;
@@ -1212,6 +1213,7 @@ declare module ag.grid {
         private eRootRef;
         private startWidth;
         private headerElements;
+        private lockedForResize;
         constructor(column: Column, headerElements: any, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement, popupService?: PopupService);
         getGui(): HTMLElement;
         destroy(): void;
@@ -1287,6 +1289,7 @@ declare module ag.grid {
         constructor(columnGroup: ColumnGroup, gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, eRoot: HTMLElement, angularGrid: Grid, parentScope: any, filterManager: FilterManager, $compile: any);
         getGui(): HTMLElement;
         destroy(): void;
+        getVisibleColumnsCount(): number;
         refreshFilterIcon(): void;
         refreshSortIcon(): void;
         onIndividualColumnResized(column: Column): void;

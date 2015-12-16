@@ -176,8 +176,8 @@ module ag.grid {
         }
 
         private addClasses(): void {
-            _.addCssClass(this.eHeaderCell, 'ag-header-cell');
-            if (this.gridOptionsWrapper.isGroupHeaders()) {
+            _.addCssClass(this.eHeaderCell, 'ag-header-cell');22
+            if (this.gridOptionsWrapper.isGroupHeaders() && this.parentGroup && this.parentGroup.getVisibleColumnsCount() > 1) {
                 _.addCssClass(this.eHeaderCell, 'ag-header-cell-grouped'); // this takes 50% height
             } else {
                 _.addCssClass(this.eHeaderCell, 'ag-header-cell-not-grouped'); // this takes 100% height

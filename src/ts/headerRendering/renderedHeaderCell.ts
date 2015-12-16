@@ -35,6 +35,7 @@ module ag.grid {
 
         private startWidth: number;
         private headerElements: any;
+        private lockedForResize: boolean;
 
         constructor(column: Column, headerElements: any,
                     parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper,
@@ -52,6 +53,7 @@ module ag.grid {
             this.angularGrid = angularGrid;
             this.popupService = popupService;
             this.headerElements = headerElements;
+            this.lockedForResize = false;
 
             this.setupComponents();
         }
@@ -82,7 +84,8 @@ module ag.grid {
 
         private addClasses(): void {
             _.addCssClass(this.eHeaderCell, 'ag-header-cell');
-            if (this.gridOptionsWrapper.isGroupHeaders()) {
+
+            if (this.gridOptionsWrapper.isGroupHeaders() && this.parentGroup && this.parentGroup.getVisibleColumnsCount() > 1) {
                 _.addCssClass(this.eHeaderCell, 'ag-header-cell-grouped'); // this takes 50% height
             } else {
                 _.addCssClass(this.eHeaderCell, 'ag-header-cell-not-grouped'); // this takes 100% height
@@ -164,7 +167,7 @@ module ag.grid {
                 var sortBlock = '';
                 if (this.headerElements.sort) {
                     sortBlock = `
-                    <div class="icon-to-the-right">
+                    <div class="ag-header-action-sort">
                       <span class="ag-sort-icon b-icon icon-sort-arrow-up"></span>
                       <span class="ag-sort-icon b-icon icon-sort-arrow-down"></span>
                       <span class="ag-sort-icon b-icon icon-sort-alpha-up "></span>
@@ -176,8 +179,7 @@ module ag.grid {
                 if (this.headerElements.freeze) {
                     // <div class="b-content__cell">
                     freezeBlock = `
-                    <div class="icon-to-the-right">
-                    <div class="ag-locked-icon">
+                    <div class="ag-header-action-lock ag-locked-icon">
                       <div class="pi-table-column-locked" >
                           <label>
                               <span class="checkbox-input">
@@ -187,17 +189,18 @@ module ag.grid {
                           </label>
                       </div>
                     </div>
-                    </div>
                     `;
                 }
                 headerCellRenderer = function() {
                     return `
-                    <div class="b-content-center b-content-center_block ag-js-draghandler">
-                      <div class="b-content-left_fluid_cell pi-clip">
-                          <span class='pi-ag-header-cell-text'>${headerNameValue || ''}</span>
+                    <div class="ag-header-cell-actionbox ag-js-draghandler">
+                      <div class="ag-header-text">
+                        ${headerNameValue || ''}
                       </div>
-                      ${freezeBlock}    
-                      ${sortBlock}    
+                      <div class="ag-header-action">
+                        ${freezeBlock}    
+                        ${sortBlock}    
+                      </div>
                     </div>                    
                     `;
                 }
@@ -274,7 +277,7 @@ module ag.grid {
             var that = this;
             dragHandler.setAttribute('draggable', 'true');
 
-            console.log(this.eHeaderCell);
+            // console.log(this.eHeaderCell);
 
             // start/stop dragging header
             dragHandler.addEventListener('dragstart', function(event: DragEvent) {
@@ -579,11 +582,51 @@ module ag.grid {
         }
 
         public onIndividualColumnResized(column: Column) {
-            if (this.column !== column) {
+            if (this.column !== column || this.lockedForResize) {
                 return;
             }
+            this.lockedForResize = true;
+
             var newWidthPx = column.actualWidth + "px";
             this.eHeaderCell.style.width = newWidthPx;
+
+            var elText = this.getGui().querySelector('.ag-header-text');
+            var allText = this.columnController.getDisplayNameForCol(this.column);
+            var words = allText.split(' ');
+            var overflown = false;
+
+            elText.innerHTML = words[0];
+
+            // find the word thab breaks last allowed line
+            for (var i = 1; i < words.length; i++) {
+                elText.innerHTML = elText.innerHTML + ' ' + words[i];
+                if (elText.scrollHeight !== elText.clientHeight) {
+                    overflown = true;
+                    break;
+                }
+            }
+
+            // bite out by one char until overflown is gone adding ellipsis to the tail
+            if (overflown) {
+                var displayText = elText.innerHTML + '…';
+
+                do {
+
+                    do {
+                        displayText = displayText.slice(0, -2) + '…';
+                    } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
+
+                    elText.innerHTML = displayText;
+
+                } while (
+                    displayText.length
+                    &&
+                    elText.scrollHeight !== elText.clientHeight
+                );
+            }
+
+
+            this.lockedForResize = false;
         }
 
         private addHeaderClassesFromCollDef() {

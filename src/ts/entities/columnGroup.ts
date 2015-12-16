@@ -27,6 +27,10 @@ module ag.grid {
             this.allColumns.push(column);
         }
 
+        public getVisibleColumnsCount(): number {
+            return this.displayedColumns.length;
+        }
+
         // need to check that this group has at least one col showing when both expanded and contracted.
         // if not, then we don't allow expanding and contracting on this group
         public calculateExpandable() {
