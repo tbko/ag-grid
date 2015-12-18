@@ -146,6 +146,9 @@ module ag.grid {
             // label div
             var headerCellLabel = document.createElement("div");
             headerCellLabel.className = "ag-header-cell-label";
+            if (this.gridOptionsWrapper.isGroupHeaders() && this.parentGroup && this.parentGroup.getVisibleColumnsCount() > 1) {
+                headerCellLabel.setAttribute('colId', this.column.colId);
+            }
 
             // add in sort icons
             // this.addSortIcons(headerCellLabel);
@@ -239,34 +242,64 @@ module ag.grid {
             }
         }
 
-        private isNogroupSamegroup(): boolean {
-            var sourceCol = this.getDragSource().sourceCol;
-            var targetCol = this.column;
+        private detectDragParty(column: Column):any {
+            var isBracket = false;
+            var isChildren = false;
+            var parentId: string;
+            var colStartIndex: number;
+            var colEndIndex: number;
+            var colId = column.colId;
+            var colGroup = this.columnController.getColumnGroup(colId);
 
-            if (!sourceCol || !targetCol) {
+            if (colGroup) {
+                        
+            }
+        } 
+
+
+        private isNogroupSamegroup(): boolean {
+            var source = this.getDragSource();
+            var sourceCols = source.sourceCols.displayedColumns;
+            var sourceColId = source.sourceColId;
+            var targetCol = this.column;
+            var targetCols = this.columnController.getColumnGroup(targetCol.colId);
+
+            if (!sourceCols.length || !targetCol) {
                 return false;
             }
 
-            if (
-                !sourceCol.colDef.headerGroup &&
-                !targetCol.colDef.headerGroup
-            ) {
-                return true;
+            if (sourceCols.length === 1) {
+                sourceCols = sourceCols[0];
+                if (!targetCol.colDef.headerGroup) {
+                    return true;
+                }
+            } else {
+                if (!targetCols && !targetCol.colDef.headerGroup || targetCol.colDef.headerGroup !== sourceColId) {
+                    return true;
+                }
+                return sourceColId === targetCol.colDef.headerGroup;
             }
-            return sourceCol.colDef.headerGroup === targetCol.colDef.headerGroup;
+
+            return sourceCols[0].colDef.headerGroup === targetCol.colDef.headerGroup;
         }
 
         private getDragSource(): any {
             // drag source is a single element with 'dragging' class
             var sourceColEl = this.eRootRef.querySelector('.ag-dragging');
             var sourceColId = sourceColEl.getAttribute('colId');
-            var sourceCol = this.columnController.getColumn(sourceColId);
-            var isBracket = !!sourceCol.columnGroup;
+            var sourceCols = this.columnController.getColumn(sourceColId);
+            var isBracket = false;
+            if (!sourceCols) {
+                sourceCols = this.columnController.getColumnGroup(sourceColId);
+            } else {
+                isBracket = true;
+                sourceCols = [sourceCols];
+            }
             // distinctive types: bracket, free header, confined header
             return {
                 sourceColEl: sourceColEl,
                 sourceColId: sourceColId,
-                sourceCol: sourceCol,
+                sourceCols: sourceCols,
                 isBracket: isBracket,
                 isFree: false
             }
@@ -287,11 +320,13 @@ module ag.grid {
 
             dragHandler.addEventListener('dragover', function(event: DragEvent) {
                 event.preventDefault();
-                // if (that.isNogroupSamegroup()) {
-                //     event.dataTransfer.dropEffect = 'move';
-                // } else {
-                //     event.dataTransfer.dropEffect = 'none';
-                // }
+                if (that.isNogroupSamegroup()) {
+                    console.log('ok');
+                    event.dataTransfer.dropEffect = 'move';
+                } else {
+                    console.log('stop');
+                    event.dataTransfer.dropEffect = 'none';
+                }
             });
             dragHandler.addEventListener('dragend', function() {
                 that.eHeaderCell.classList.remove('ag-dragging');
@@ -348,11 +383,11 @@ module ag.grid {
                         growIndex++;
                     }
                 }
-                console.log(`FreezeIdx: ${freezeIndex}`);
-                console.log(`SourceIdx: ${sourceIndex}`);
-                console.log(`DestinationIdx: ${destinationIndex}`);
-                console.log(`Cross border? : ${Math.abs(sourceIndex - freezeIndex) + Math.abs(destinationIndex - freezeIndex) <= Math.abs(destinationIndex - sourceIndex)}`);
-                console.log(`Freeze zone grow: ${direction * (groupLength - 1)}`);
+                // console.log(`FreezeIdx: ${freezeIndex}`);
+                // console.log(`SourceIdx: ${sourceIndex}`);
+                // console.log(`DestinationIdx: ${destinationIndex}`);
+                // console.log(`Cross border? : ${Math.abs(sourceIndex - freezeIndex) + Math.abs(destinationIndex - freezeIndex) <= Math.abs(destinationIndex - sourceIndex)}`);
+                // console.log(`Freeze zone grow: ${direction * (groupLength - 1)}`);
 
                 if (
                     colsInGroup &&
@@ -581,17 +616,14 @@ module ag.grid {
             this.columnController.setColumnWidth(this.column, newWidth, finished);
         }
 
-        public onIndividualColumnResized(column: Column) {
-            if (this.column !== column || this.lockedForResize) {
-                return;
-            }
-            this.lockedForResize = true;
-
-            var newWidthPx = column.actualWidth + "px";
-            this.eHeaderCell.style.width = newWidthPx;
-
-            var elText = this.getGui().querySelector('.ag-header-text');
-            var allText = this.columnController.getDisplayNameForCol(this.column);
+        public reflowText(elText: HTMLElement, allText: string) {
+            //cut text in element adding ellipsis. Element with CSS:
+            // text-overflow: ellipsis
+            // word-wrap: normal
+            // overflow: hidden
+            // white-space: normal
+            // max-height: 57px - total height
+            // line-height: 19px - single line height
             var words = allText.split(' ');
             var overflown = false;
 
@@ -624,6 +656,21 @@ module ag.grid {
                     elText.scrollHeight !== elText.clientHeight
                 );
             }
+
+        }
+
+        public onIndividualColumnResized(column: Column) {
+            if (this.column !== column || this.lockedForResize) {
+                return;
+            }
+            this.lockedForResize = true;
+
+            var newWidthPx = column.actualWidth + "px";
+            this.eHeaderCell.style.width = newWidthPx;
+
+            var elText = this.getGui().querySelector('.ag-header-text');
+            var allText = this.columnController.getDisplayNameForCol(this.column);
+
 
 
             this.lockedForResize = false;

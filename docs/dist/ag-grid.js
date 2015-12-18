@@ -6834,6 +6834,9 @@ var ag;
                 // label div
                 var headerCellLabel = document.createElement("div");
                 headerCellLabel.className = "ag-header-cell-label";
+                if (this.gridOptionsWrapper.isGroupHeaders() && this.parentGroup && this.parentGroup.getVisibleColumnsCount() > 1) {
+                    headerCellLabel.setAttribute('colId', this.column.colId);
+                }
                 // add in sort icons
                 // this.addSortIcons(headerCellLabel);
                 // add in filter icon
@@ -6894,29 +6897,58 @@ var ag;
                         this.setupFreeze(freezeChecker);
                 }
             };
+            RenderedHeaderCell.prototype.detectDragParty = function (column) {
+                var isBracket = false;
+                var isChildren = false;
+                var parentId;
+                var colStartIndex;
+                var colEndIndex;
+                var colId = column.colId;
+                var colGroup = this.columnController.getColumnGroup(colId);
+                if (colGroup) {
+                }
+            };
             RenderedHeaderCell.prototype.isNogroupSamegroup = function () {
-                var sourceCol = this.getDragSource().sourceCol;
+                var source = this.getDragSource();
+                var sourceCols = source.sourceCols.displayedColumns;
+                var sourceColId = source.sourceColId;
                 var targetCol = this.column;
-                if (!sourceCol || !targetCol) {
+                var targetCols = this.columnController.getColumnGroup(targetCol.colId);
+                if (!sourceCols.length || !targetCol) {
                     return false;
                 }
-                if (!sourceCol.colDef.headerGroup &&
-                    !targetCol.colDef.headerGroup) {
-                    return true;
+                if (sourceCols.length === 1) {
+                    sourceCols = sourceCols[0];
+                    if (!targetCol.colDef.headerGroup) {
+                        return true;
+                    }
                 }
-                return sourceCol.colDef.headerGroup === targetCol.colDef.headerGroup;
+                else {
+                    if (!targetCols && !targetCol.colDef.headerGroup || targetCol.colDef.headerGroup !== sourceColId) {
+                        return true;
+                    }
+                    return sourceColId === targetCol.colDef.headerGroup;
+                }
+                return sourceCols[0].colDef.headerGroup === targetCol.colDef.headerGroup;
             };
             RenderedHeaderCell.prototype.getDragSource = function () {
                 // drag source is a single element with 'dragging' class
                 var sourceColEl = this.eRootRef.querySelector('.ag-dragging');
                 var sourceColId = sourceColEl.getAttribute('colId');
-                var sourceCol = this.columnController.getColumn(sourceColId);
-                var isBracket = !!sourceCol.columnGroup;
+                var sourceCols = this.columnController.getColumn(sourceColId);
+                var isBracket = false;
+                if (!sourceCols) {
+                    sourceCols = this.columnController.getColumnGroup(sourceColId);
+                }
+                else {
+                    isBracket = true;
+                    sourceCols = [sourceCols];
+                }
                 // distinctive types: bracket, free header, confined header
                 return {
                     sourceColEl: sourceColEl,
                     sourceColId: sourceColId,
-                    sourceCol: sourceCol,
+                    sourceCols: sourceCols,
                     isBracket: isBracket,
                     isFree: false
                 };
@@ -6932,11 +6964,14 @@ var ag;
                 });
                 dragHandler.addEventListener('dragover', function (event) {
                     event.preventDefault();
-                    // if (that.isNogroupSamegroup()) {
-                    //     event.dataTransfer.dropEffect = 'move';
-                    // } else {
-                    //     event.dataTransfer.dropEffect = 'none';
-                    // }
+                    if (that.isNogroupSamegroup()) {
+                        console.log('ok');
+                        event.dataTransfer.dropEffect = 'move';
+                    }
+                    else {
+                        console.log('stop');
+                        event.dataTransfer.dropEffect = 'none';
+                    }
                 });
                 dragHandler.addEventListener('dragend', function () {
                     that.eHeaderCell.classList.remove('ag-dragging');
@@ -6983,11 +7018,11 @@ var ag;
                             growIndex++;
                         }
                     }
-                    console.log("FreezeIdx: " + freezeIndex);
-                    console.log("SourceIdx: " + sourceIndex);
-                    console.log("DestinationIdx: " + destinationIndex);
-                    console.log("Cross border? : " + (Math.abs(sourceIndex - freezeIndex) + Math.abs(destinationIndex - freezeIndex) <= Math.abs(destinationIndex - sourceIndex)));
-                    console.log("Freeze zone grow: " + direction * (groupLength - 1));
+                    // console.log(`FreezeIdx: ${freezeIndex}`);
+                    // console.log(`SourceIdx: ${sourceIndex}`);
+                    // console.log(`DestinationIdx: ${destinationIndex}`);
+                    // console.log(`Cross border? : ${Math.abs(sourceIndex - freezeIndex) + Math.abs(destinationIndex - freezeIndex) <= Math.abs(destinationIndex - sourceIndex)}`);
+                    // console.log(`Freeze zone grow: ${direction * (groupLength - 1)}`);
                     if (colsInGroup &&
                         Math.abs(sourceIndex - freezeIndex) + Math.abs(destinationIndex - freezeIndex) <= Math.abs(destinationIndex - sourceIndex)) {
                         freezeIndex += direction * (groupLength - 1);
@@ -7173,15 +7208,14 @@ var ag;
                 var newWidth = this.startWidth + dragChange;
                 this.columnController.setColumnWidth(this.column, newWidth, finished);
             };
-            RenderedHeaderCell.prototype.onIndividualColumnResized = function (column) {
-                if (this.column !== column || this.lockedForResize) {
-                    return;
-                }
-                this.lockedForResize = true;
-                var newWidthPx = column.actualWidth + "px";
-                this.eHeaderCell.style.width = newWidthPx;
-                var elText = this.getGui().querySelector('.ag-header-text');
-                var allText = this.columnController.getDisplayNameForCol(this.column);
+            RenderedHeaderCell.prototype.reflowText = function (elText, allText) {
+                //cut text in element adding ellipsis. Element with CSS:
+                // text-overflow: ellipsis
+                // word-wrap: normal
+                // overflow: hidden
+                // white-space: normal
+                // max-height: 57px - total height
+                // line-height: 19px - single line height
                 var words = allText.split(' ');
                 var overflown = false;
                 elText.innerHTML = words[0];
@@ -7205,6 +7239,16 @@ var ag;
                         &&
                             elText.scrollHeight !== elText.clientHeight);
                 }
+            };
+            RenderedHeaderCell.prototype.onIndividualColumnResized = function (column) {
+                if (this.column !== column || this.lockedForResize) {
+                    return;
+                }
+                this.lockedForResize = true;
+                var newWidthPx = column.actualWidth + "px";
+                this.eHeaderCell.style.width = newWidthPx;
+                var elText = this.getGui().querySelector('.ag-header-text');
+                var allText = this.columnController.getDisplayNameForCol(this.column);
                 this.lockedForResize = false;
             };
             RenderedHeaderCell.prototype.addHeaderClassesFromCollDef = function () {

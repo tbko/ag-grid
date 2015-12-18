@@ -1222,6 +1222,7 @@ declare module ag.grid {
         private addClasses();
         private addSortIcons(headerCellLabel);
         private setupComponents();
+        private detectDragParty(column);
         private isNogroupSamegroup();
         private getDragSource();
         private setupDND(dragHandler);
@@ -1233,6 +1234,7 @@ declare module ag.grid {
         private addSortHandling(headerCellLabel);
         onDragStart(): void;
         onDragging(dragChange: number, finished: boolean): void;
+        reflowText(elText: HTMLElement, allText: string): void;
         onIndividualColumnResized(column: Column): void;
         private addHeaderClassesFromCollDef();
     }
