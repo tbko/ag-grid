@@ -137,346 +137,6 @@ declare module ag.grid {
     }
 }
 declare module ag.grid {
-    class ColumnGroup {
-        pinned: any;
-        name: any;
-        allColumns: Column[];
-        displayedColumns: Column[];
-        expandable: boolean;
-        expanded: boolean;
-        actualWidth: number;
-        constructor(pinned: any, name: any);
-        getMinimumWidth(): number;
-        addColumn(column: any): void;
-        getVisibleColumnsCount(): number;
-        calculateExpandable(): void;
-        calculateActualWidth(): void;
-        calculateDisplayedColumns(): void;
-        addToVisibleColumns(colsToAdd: any): void;
-    }
-}
-declare module ag.grid {
-    class GridOptionsWrapper {
-        private gridOptions;
-        private groupHeaders;
-        private headerHeight;
-        private rowHeight;
-        private rowHeightExtra;
-        private floatingTopRowData;
-        private floatingBottomRowData;
-        init(gridOptions: GridOptions, eventService: EventService): void;
-        isRowSelection(): boolean;
-        isRowDeselection(): boolean;
-        isRowSelectionMulti(): boolean;
-        getContext(): any;
-        isVirtualPaging(): boolean;
-        isShowToolPanel(): boolean;
-        isToolPanelSuppressPivot(): boolean;
-        isToolPanelSuppressValues(): boolean;
-        isRowsAlreadyGrouped(): boolean;
-        isGroupSelectsChildren(): boolean;
-        isGroupHidePivotColumns(): boolean;
-        isGroupIncludeFooter(): boolean;
-        isGroupSuppressBlankHeader(): boolean;
-        isSuppressRowClickSelection(): boolean;
-        isSuppressCellSelection(): boolean;
-        isSuppressMultiSort(): boolean;
-        isGroupSuppressAutoColumn(): boolean;
-        isForPrint(): boolean;
-        isSuppressHorizontalScroll(): boolean;
-        isSuppressLoadingOverlay(): boolean;
-        isSuppressNoRowsOverlay(): boolean;
-        isUnSortIcon(): boolean;
-        isSuppressMenuHide(): boolean;
-        getRowStyle(): any;
-        getRowClass(): any;
-        getRowStyleFunc(): any;
-        getRowClassFunc(): any;
-        getBusinessKeyForNodeFunc(): (node: RowNode) => string;
-        getHeaderCellRenderer(): any;
-        getApi(): GridApi;
-        isEnableColResize(): boolean;
-        isSingleClickEdit(): boolean;
-        getGroupDefaultExpanded(): any;
-        getGroupKeys(): string[];
-        getGroupAggFunction(): (nodes: any[]) => any;
-        getGroupAggFields(): string[];
-        getRowData(): any[];
-        isGroupUseEntireRow(): boolean;
-        getGroupColumnDef(): any;
-        isGroupSuppressRow(): boolean;
-        isAngularCompileRows(): boolean;
-        isAngularCompileFilters(): boolean;
-        isAngularCompileHeaders(): boolean;
-        isDebug(): boolean;
-        getColumnDefs(): any[];
-        getDatasource(): any;
-        isEnableSorting(): boolean;
-        isEnableCellExpressions(): boolean;
-        isEnableServerSideSorting(): boolean;
-        isEnableFilter(): boolean;
-        isEnableServerSideFilter(): boolean;
-        isSuppressScrollLag(): boolean;
-        getIcons(): any;
-        getIsScrollLag(): () => boolean;
-        getSortingOrder(): string[];
-        getSlaveGrids(): GridOptions[];
-        getGroupRowRenderer(): Function | Object;
-        getRowHeight(): number;
-        getRowHeightExtra(): number;
-        getOverlayLoadingTemplate(): string;
-        getOverlayNoRowsTemplate(): string;
-        getFont(): string;
-        getGroupShiftWidth(): number;
-        getGroupControlWidth(): number;
-        getWidthGap(): number;
-        getMaxRows(): number;
-        getMinRows(): number;
-        setMetrics(metrics: any): void;
-        getFullRowHeight(): number;
-        getBaseRowHeight(): number;
-        getPaddingRowHeight(): number;
-        getFullHeaderHeight(): number;
-        getHeaderHeight(): number;
-        setHeaderHeight(headerHeight: number): void;
-        isGroupHeaders(): boolean;
-        setGroupHeaders(groupHeaders: boolean): void;
-        getFloatingTopRowData(): any[];
-        setFloatingTopRowData(rows: any[]): void;
-        getFloatingBottomRowData(): any[];
-        setFloatingBottomRowData(rows: any[]): void;
-        isExternalFilterPresent(): boolean;
-        doesExternalFilterPass(node: RowNode): boolean;
-        getGroupRowInnerRenderer(): (params: any) => void;
-        getColWidth(): number;
-        getRowBuffer(): number;
-        private checkForDeprecated();
-        getPinnedColCount(): number;
-        getLocaleTextFunc(): Function;
-        globalEventHandler(eventName: string, event?: any): void;
-        private getCallbackForEvent(eventName);
-    }
-}
-declare module ag.grid {
-    class LoggerFactory {
-        private logging;
-        init(gridOptionsWrapper: GridOptionsWrapper): void;
-        create(name: string): Logger;
-    }
-    class Logger {
-        private logging;
-        private name;
-        constructor(name: string, logging: boolean);
-        log(message: string): void;
-    }
-}
-declare module ag.grid {
-    class Events {
-        /** A new set of columns has been entered, everything has potentially changed. */
-        static EVENT_COLUMN_EVERYTHING_CHANGED: string;
-        /** A pivot column was added, removed or order changed. */
-        static EVENT_COLUMN_PIVOT_CHANGE: string;
-        /** A value column was added, removed or agg function was changed. */
-        static EVENT_COLUMN_VALUE_CHANGE: string;
-        /** A column was moved */
-        static EVENT_COLUMN_MOVED: string;
-        /** One or more columns was shown / hidden */
-        static EVENT_COLUMN_VISIBLE: string;
-        /** A column group was opened / closed */
-        static EVENT_COLUMN_GROUP_OPENED: string;
-        /** One or more columns was resized. If just one, the column in the event is set. */
-        static EVENT_COLUMN_RESIZED: string;
-        /** One or more columns was resized. If just one, the column in the event is set. */
-        static EVENT_COLUMN_PINNED_COUNT_CHANGED: string;
-        static EVENT_MODEL_UPDATED: string;
-        static EVENT_CELL_CLICKED: string;
-        static EVENT_CELL_DOUBLE_CLICKED: string;
-        static EVENT_CELL_CONTEXT_MENU: string;
-        static EVENT_CELL_VALUE_CHANGED: string;
-        static EVENT_CELL_FOCUSED: string;
-        static EVENT_ROW_SELECTED: string;
-        static EVENT_ROW_DESELECTED: string;
-        static EVENT_SELECTION_CHANGED: string;
-        static EVENT_BEFORE_FILTER_CHANGED: string;
-        static EVENT_AFTER_FILTER_CHANGED: string;
-        static EVENT_FILTER_MODIFIED: string;
-        static EVENT_BEFORE_SORT_CHANGED: string;
-        static EVENT_AFTER_SORT_CHANGED: string;
-        static EVENT_VIRTUAL_ROW_REMOVED: string;
-        static EVENT_ROW_CLICKED: string;
-        static EVENT_ROW_DOUBLE_CLICKED: string;
-        static EVENT_READY: string;
-        static EVENT_MULTITOOL_CLICK: string;
-        static EVENT_SELECTION_STATE_CHANGED: string;
-        static EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE: string;
-        static EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE: string;
-        static EVENT_DO_NOTHING: string;
-    }
-}
-declare module ag.grid {
-    class EventService {
-        private allListeners;
-        private globalListeners;
-        private logger;
-        init(loggerFactory: LoggerFactory): void;
-        private getListenerList(eventType);
-        addEventListener(eventType: string, listener: Function): void;
-        addGlobalListener(listener: Function): void;
-        removeEventListener(eventType: string, listener: Function): void;
-        removeGlobalListener(listener: Function): void;
-        dispatchEvent(eventType: string, event?: any): void;
-    }
-}
-declare module ag.grid {
-    class MasterSlaveService {
-        private gridOptionsWrapper;
-        private columnController;
-        private gridPanel;
-        private logger;
-        private eventService;
-        private consuming;
-        init(gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, gridPanel: GridPanel, loggerFactory: LoggerFactory, eventService: EventService): void;
-        private fireEvent(callback);
-        private onEvent(callback);
-        private fireColumnEvent(event);
-        fireHorizontalScrollEvent(horizontalScroll: number): void;
-        onScrollEvent(horizontalScroll: number): void;
-        onColumnEvent(event: ColumnChangeEvent): void;
-    }
-}
-declare module ag.grid {
-    class ColumnApi {
-        private _columnController;
-        constructor(_columnController: ColumnController);
-        sizeColumnsToFit(gridWidth: any): void;
-        hideColumns(colIds: any, hide: any): void;
-        columnGroupOpened(group: ColumnGroup, newValue: boolean): void;
-        getColumnGroup(name: string): ColumnGroup;
-        getDisplayNameForCol(column: any): string;
-        getColumn(key: any): Column;
-        setState(columnState: any): void;
-        getState(): [any];
-        isPinning(): boolean;
-        getVisibleColAfter(col: Column): Column;
-        getVisibleColBefore(col: Column): Column;
-        setColumnVisible(column: Column, visible: boolean): void;
-        getAllColumns(): Column[];
-        getDisplayedColumns(): Column[];
-        getPivotedColumns(): Column[];
-        getValueColumns(): Column[];
-        moveColumn(fromIndex: number, toIndex: number): void;
-        movePivotColumn(fromIndex: number, toIndex: number): void;
-        setColumnAggFunction(column: Column, aggFunc: string): void;
-        setColumnWidth(column: Column, newWidth: number, finished?: boolean): void;
-        removeValueColumn(column: Column): void;
-        addValueColumn(column: Column): void;
-        removePivotColumn(column: Column): void;
-        setPinnedColumnCount(count: number): void;
-        getPinnedColumnCount(): number;
-        addPivotColumn(column: Column): void;
-        getHeaderGroups(): ColumnGroup[];
-        hideColumn(colId: any, hide: any): void;
-    }
-    class ColumnController {
-        private gridOptionsWrapper;
-        private angularGrid;
-        private selectionRendererFactory;
-        private expressionService;
-        private masterSlaveController;
-        private allColumns;
-        private visibleColumns;
-        private displayedColumns;
-        private pivotColumns;
-        private valueColumns;
-        private columnGroups;
-        private setupComplete;
-        private valueService;
-        private pinnedColumnCount;
-        private eventService;
-        constructor();
-        init(angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, gridOptionsWrapper: GridOptionsWrapper, expressionService: ExpressionService, valueService: ValueService, masterSlaveController: MasterSlaveService, eventService: EventService): void;
-        getColumnApi(): ColumnApi;
-        isSetupComplete(): boolean;
-        getHeaderGroups(): ColumnGroup[];
-        getPinnedContainerWidth(): number;
-        addPivotColumn(column: Column): void;
-        getPinnedColumnCount(): number;
-        setPinnedColumnCount(count: number): void;
-        removePivotColumn(column: Column): void;
-        addValueColumn(column: Column): void;
-        removeValueColumn(column: Column): void;
-        private doesColumnExistInGrid(column);
-        setColumnWidth(column: Column, newWidth: number, finished: boolean): void;
-        private updateGroupWidthsAfterColumnResize(column);
-        setColumnAggFunction(column: Column, aggFunc: string): void;
-        movePivotColumn(fromIndex: number, toIndex: number): void;
-        moveColumn(fromIndex: number, toIndex: number): void;
-        getBodyContainerWidth(): number;
-        getValueColumns(): Column[];
-        getPivotedColumns(): Column[];
-        getDisplayedColumns(): Column[];
-        getAllColumns(): Column[];
-        setColumnVisible(column: Column, visible: boolean): void;
-        getVisibleColBefore(col: any): Column;
-        getVisibleColAfter(col: Column): Column;
-        isPinning(): boolean;
-        getState(): [any];
-        setState(columnState: any): void;
-        getColumns(keys: any[]): Column[];
-        getColumn(key: any): Column;
-        getDisplayNameForCol(column: any): string;
-        getColumnGroup(name: string): ColumnGroup;
-        onColumnsChanged(): void;
-        private checkForDeprecatedItems(columnDefs);
-        columnGroupOpened(group: ColumnGroup, newValue: boolean): void;
-        hideColumns(colIds: any, hide: any): void;
-        private updateModel();
-        private updateDisplayedColumns();
-        sizeColumnsToFit(gridWidth: any): void;
-        private buildGroups();
-        private updateGroups();
-        private updateVisibleColumns();
-        private updatePinnedColumns();
-        private createColumns(colDefs);
-        private createPivotColumns();
-        private createValueColumns();
-        private createDummyColumn(field);
-        private calculateColInitialWidth(colDef);
-        private getTotalColWidth(includePinned);
-    }
-}
-declare module ag.grid {
-    interface CsvExportParams {
-        skipHeader?: boolean;
-        skipFooters?: boolean;
-        skipGroups?: boolean;
-        fileName?: string;
-        customHeader?: string;
-        customFooter?: string;
-    }
-    class CsvCreator {
-        private rowController;
-        private columnController;
-        private grid;
-        private valueService;
-        constructor(rowController: InMemoryRowController, columnController: ColumnController, grid: Grid, valueService: ValueService);
-        exportDataAsCsv(params?: CsvExportParams): void;
-        getDataAsCsv(params?: CsvExportParams): string;
-        private createValueForGroupNode(node);
-        private escape(value);
-    }
-}
-declare module ag.grid {
-    class ExpressionService {
-        private expressionToFunctionCache;
-        private logger;
-        init(loggerFactory: LoggerFactory): void;
-        evaluate(expression: string, params: any): any;
-        private createExpressionFunction(expression);
-        private createFunctionBody(expression);
-    }
-}
-declare module ag.grid {
     interface TextAndNumberFilterParameters {
         /** What to do when new rows are loaded. The default is to reset the filter, to keep it in line with 'set' filters. If you want to keep the selection, then set this value to 'keep'. */
         newRowsAction?: string;
@@ -754,92 +414,115 @@ declare module ag.grid {
     }
 }
 declare module ag.grid {
-    interface RowNode {
-        /** Unique ID for the node. Can be though of as the index of the row in the original list,
-         * however exceptions apply so don't depend on uniqueness. */
-        id?: number;
-        /** The user provided data */
-        data?: any;
-        /** Height of data row in number of lines */
-        gridHeight?: number;
-        /** The parent node to this node, or empty if top level */
-        parent?: RowNode;
-        /** How many levels this node is from the top */
-        level?: number;
-        /** True if this node is a group node (ie has children) */
-        group?: boolean;
-        /** True if this is the first child in this group */
-        firstChild?: boolean;
-        /** True if this is the last child in this group */
-        lastChild?: boolean;
-        /** The index of this node in the group */
-        childIndex?: number;
-        /** True if this row is a floating row */
-        floating?: boolean;
-        /** True if this row is a floating top row */
-        floatingTop?: boolean;
-        /** True if this row is a floating bottom row */
-        floatingBottom?: boolean;
-        /** If using quick filter, stores a string representation of the row for searching against */
-        quickFilterAggregateText?: string;
-        /** Groups only - True if row is a footer. Footers  have group = true and footer = true */
-        footer?: boolean;
-        /** Groups only - Children of this group */
-        children?: RowNode[];
-        /** Groups only - The field we are pivoting on eg Country*/
-        field?: string;
-        /** Groups only - The key for the pivot eg Ireland, UK, USA */
-        key?: any;
-        /** Groups only - Filtered children of this group */
-        childrenAfterFilter?: RowNode[];
-        /** Groups only - Sorted children of this group */
-        childrenAfterSort?: RowNode[];
-        /** Groups only - Number of children and grand children */
-        allChildrenCount?: number;
-        /** Groups only - True if group is expanded, otherwise false */
-        expanded?: boolean;
-        /** Groups only - If doing footers, reference to the footer node for this group */
-        sibling?: RowNode;
-        /** Not to be used, internal temporary map used by the grid when creating groups */
-        _childrenMap?: {};
+    class GridOptionsWrapper {
+        private gridOptions;
+        private groupHeaders;
+        private headerHeight;
+        private rowHeight;
+        private rowHeightExtra;
+        private floatingTopRowData;
+        private floatingBottomRowData;
+        init(gridOptions: GridOptions, eventService: EventService): void;
+        isRowSelection(): boolean;
+        isRowDeselection(): boolean;
+        isRowSelectionMulti(): boolean;
+        getContext(): any;
+        isVirtualPaging(): boolean;
+        isShowToolPanel(): boolean;
+        isToolPanelSuppressPivot(): boolean;
+        isToolPanelSuppressValues(): boolean;
+        isRowsAlreadyGrouped(): boolean;
+        isGroupSelectsChildren(): boolean;
+        isGroupHidePivotColumns(): boolean;
+        isGroupIncludeFooter(): boolean;
+        isGroupSuppressBlankHeader(): boolean;
+        isSuppressRowClickSelection(): boolean;
+        isSuppressCellSelection(): boolean;
+        isSuppressMultiSort(): boolean;
+        isGroupSuppressAutoColumn(): boolean;
+        isForPrint(): boolean;
+        isSuppressHorizontalScroll(): boolean;
+        isSuppressLoadingOverlay(): boolean;
+        isSuppressNoRowsOverlay(): boolean;
+        isUnSortIcon(): boolean;
+        isSuppressMenuHide(): boolean;
+        getRowStyle(): any;
+        getRowClass(): any;
+        getRowStyleFunc(): any;
+        getRowClassFunc(): any;
+        getBusinessKeyForNodeFunc(): (node: RowNode) => string;
+        getHeaderCellRenderer(): any;
+        getApi(): GridApi;
+        isEnableColResize(): boolean;
+        isSingleClickEdit(): boolean;
+        getGroupDefaultExpanded(): any;
+        getGroupKeys(): string[];
+        getGroupAggFunction(): (nodes: any[]) => any;
+        getGroupAggFields(): string[];
+        getRowData(): any[];
+        isGroupUseEntireRow(): boolean;
+        getGroupColumnDef(): any;
+        isGroupSuppressRow(): boolean;
+        isAngularCompileRows(): boolean;
+        isAngularCompileFilters(): boolean;
+        isAngularCompileHeaders(): boolean;
+        isDebug(): boolean;
+        getColumnDefs(): any[];
+        getDatasource(): any;
+        isEnableSorting(): boolean;
+        isEnableCellExpressions(): boolean;
+        isEnableServerSideSorting(): boolean;
+        isEnableFilter(): boolean;
+        isEnableServerSideFilter(): boolean;
+        isSuppressScrollLag(): boolean;
+        getIcons(): any;
+        getIsScrollLag(): () => boolean;
+        getSortingOrder(): string[];
+        getSlaveGrids(): GridOptions[];
+        getGroupRowRenderer(): Function | Object;
+        getRowHeight(): number;
+        getRowHeightExtra(): number;
+        getOverlayLoadingTemplate(): string;
+        getOverlayNoRowsTemplate(): string;
+        getFont(): string;
+        getGroupShiftWidth(): number;
+        getGroupControlWidth(): number;
+        getWidthGap(): number;
+        getMaxRows(): number;
+        getMinRows(): number;
+        setMetrics(metrics: any): void;
+        getFullRowHeight(): number;
+        getBaseRowHeight(): number;
+        getPaddingRowHeight(): number;
+        getFullHeaderHeight(): number;
+        getHeaderHeight(): number;
+        setHeaderHeight(headerHeight: number): void;
+        isGroupHeaders(): boolean;
+        setGroupHeaders(groupHeaders: boolean): void;
+        getFloatingTopRowData(): any[];
+        setFloatingTopRowData(rows: any[]): void;
+        getFloatingBottomRowData(): any[];
+        setFloatingBottomRowData(rows: any[]): void;
+        isExternalFilterPresent(): boolean;
+        doesExternalFilterPass(node: RowNode): boolean;
+        getGroupRowInnerRenderer(): (params: any) => void;
+        getColWidth(): number;
+        getRowBuffer(): number;
+        private checkForDeprecated();
+        getPinnedColCount(): number;
+        getLocaleTextFunc(): Function;
+        globalEventHandler(eventName: string, event?: any): void;
+        private getCallbackForEvent(eventName);
     }
 }
 declare module ag.grid {
-    class FilterManager {
-        private $compile;
-        private $scope;
-        private gridOptionsWrapper;
-        private grid;
-        private allFilters;
-        private rowModel;
-        private popupService;
-        private valueService;
-        private columnController;
-        private quickFilter;
-        private advancedFilterPresent;
-        private externalFilterPresent;
-        init(grid: Grid, gridOptionsWrapper: GridOptionsWrapper, $compile: any, $scope: any, columnController: ColumnController, popupService: PopupService, valueService: ValueService): void;
-        setFilterModel(model: any): void;
-        private setModelOnFilterWrapper(filter, newModel);
-        getFilterModel(): any;
-        setRowModel(rowModel: any): void;
-        isAdvancedFilterPresent(): boolean;
-        isAnyFilterPresent(): boolean;
-        isFilterPresentForCol(colId: any): any;
-        private doesFilterPass(node, filterToSkip?);
-        setQuickFilter(newFilter: any): boolean;
-        onFilterChanged(): void;
-        isQuickFilterPresent(): boolean;
-        doesRowPassOtherFilters(filterToSkip: any, node: any): boolean;
-        doesRowPassFilter(node: any, filterToSkip?: any): boolean;
-        private aggregateRowForQuickFilter(node);
-        onNewRowsLoaded(): void;
-        private createValueGetter(column);
-        getFilterApi(column: Column): any;
-        private getOrCreateFilterWrapper(column);
-        private createFilterWrapper(column);
-        private assertMethodHasNoParameters(theMethod);
-        showFilter(column: Column, eventSource: any): void;
+    class ExpressionService {
+        private expressionToFunctionCache;
+        private logger;
+        init(loggerFactory: LoggerFactory): void;
+        evaluate(expression: string, params: any): any;
+        private createExpressionFunction(expression);
+        private createFunctionBody(expression);
     }
 }
 declare module ag.grid {
@@ -1067,6 +750,57 @@ declare module ag.grid {
     function groupHeaderFactory(gridOptionsWrapper: GridOptionsWrapper, selectionRendererFactory: SelectionRendererFactory, expressionService: ExpressionService): (params: any) => string;
 }
 declare module ag.grid {
+    interface RowNode {
+        /** Unique ID for the node. Can be though of as the index of the row in the original list,
+         * however exceptions apply so don't depend on uniqueness. */
+        id?: number;
+        /** The user provided data */
+        data?: any;
+        /** Height of data row in number of lines */
+        gridHeight?: number;
+        /** The parent node to this node, or empty if top level */
+        parent?: RowNode;
+        /** How many levels this node is from the top */
+        level?: number;
+        /** True if this node is a group node (ie has children) */
+        group?: boolean;
+        /** True if this is the first child in this group */
+        firstChild?: boolean;
+        /** True if this is the last child in this group */
+        lastChild?: boolean;
+        /** The index of this node in the group */
+        childIndex?: number;
+        /** True if this row is a floating row */
+        floating?: boolean;
+        /** True if this row is a floating top row */
+        floatingTop?: boolean;
+        /** True if this row is a floating bottom row */
+        floatingBottom?: boolean;
+        /** If using quick filter, stores a string representation of the row for searching against */
+        quickFilterAggregateText?: string;
+        /** Groups only - True if row is a footer. Footers  have group = true and footer = true */
+        footer?: boolean;
+        /** Groups only - Children of this group */
+        children?: RowNode[];
+        /** Groups only - The field we are pivoting on eg Country*/
+        field?: string;
+        /** Groups only - The key for the pivot eg Ireland, UK, USA */
+        key?: any;
+        /** Groups only - Filtered children of this group */
+        childrenAfterFilter?: RowNode[];
+        /** Groups only - Sorted children of this group */
+        childrenAfterSort?: RowNode[];
+        /** Groups only - Number of children and grand children */
+        allChildrenCount?: number;
+        /** Groups only - True if group is expanded, otherwise false */
+        expanded?: boolean;
+        /** Groups only - If doing footers, reference to the footer node for this group */
+        sibling?: RowNode;
+        /** Not to be used, internal temporary map used by the grid when creating groups */
+        _childrenMap?: {};
+    }
+}
+declare module ag.grid {
     class RowRenderer {
         private columnModel;
         private gridOptionsWrapper;
@@ -1190,53 +924,6 @@ declare module ag.grid {
         onIndividualColumnResized(column: Column): void;
         addDragHandler(eDraggableElement: any): void;
         stopDragging(listenersToRemove: any, dragChange: number): void;
-    }
-}
-declare module ag.grid {
-    class RenderedHeaderCell extends RenderedHeaderElement {
-        private static DEFAULT_SORTING_ORDER;
-        private eHeaderCell;
-        private eSortAsc;
-        private eSortDesc;
-        private eSortNone;
-        private eFilterIcon;
-        private column;
-        private gridOptionsWrapper;
-        private parentScope;
-        private childScope;
-        private filterManager;
-        private columnController;
-        private $compile;
-        private angularGrid;
-        private parentGroup;
-        private popupService;
-        private eRootRef;
-        private startWidth;
-        private headerElements;
-        private lockedForResize;
-        constructor(column: Column, headerElements: any, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement, popupService?: PopupService);
-        getGui(): HTMLElement;
-        destroy(): void;
-        private createScope();
-        private addAttributes();
-        private addClasses();
-        private addSortIcons(headerCellLabel);
-        private setupComponents();
-        private detectDragParty(column);
-        private isNogroupSamegroup();
-        private getDragSource();
-        private setupDND(dragHandler);
-        private setupFreeze(freezeChecker);
-        private useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);
-        refreshFilterIcon(): void;
-        refreshSortIcon(): void;
-        private getNextSortDirection();
-        private addSortHandling(headerCellLabel);
-        onDragStart(): void;
-        onDragging(dragChange: number, finished: boolean): void;
-        reflowText(elText: HTMLElement, allText: string): void;
-        onIndividualColumnResized(column: Column): void;
-        private addHeaderClassesFromCollDef();
     }
 }
 declare module ag.grid {
@@ -1565,6 +1252,20 @@ declare module ag.grid {
     }
 }
 declare module ag.grid {
+    class EventService {
+        private allListeners;
+        private globalListeners;
+        private logger;
+        init(loggerFactory: LoggerFactory): void;
+        private getListenerList(eventType);
+        addEventListener(eventType: string, listener: Function): void;
+        addGlobalListener(listener: Function): void;
+        removeEventListener(eventType: string, listener: Function): void;
+        removeGlobalListener(listener: Function): void;
+        dispatchEvent(eventType: string, event?: any): void;
+    }
+}
+declare module ag.grid {
     class GridPanel {
         private masterSlaveService;
         private eventService;
@@ -1890,6 +1591,27 @@ declare module ag.grid {
     }
 }
 declare module ag.grid {
+    interface CsvExportParams {
+        skipHeader?: boolean;
+        skipFooters?: boolean;
+        skipGroups?: boolean;
+        fileName?: string;
+        customHeader?: string;
+        customFooter?: string;
+    }
+    class CsvCreator {
+        private rowController;
+        private columnController;
+        private grid;
+        private valueService;
+        constructor(rowController: InMemoryRowController, columnController: ColumnController, grid: Grid, valueService: ValueService);
+        exportDataAsCsv(params?: CsvExportParams): void;
+        getDataAsCsv(params?: CsvExportParams): string;
+        private createValueForGroupNode(node);
+        private escape(value);
+    }
+}
+declare module ag.grid {
     class GridApi {
         private grid;
         private rowRenderer;
@@ -2004,6 +1726,79 @@ declare module ag.grid {
     }
 }
 declare module ag.grid {
+    class LoggerFactory {
+        private logging;
+        init(gridOptionsWrapper: GridOptionsWrapper): void;
+        create(name: string): Logger;
+    }
+    class Logger {
+        private logging;
+        private name;
+        constructor(name: string, logging: boolean);
+        log(message: string): void;
+    }
+}
+declare module ag.grid {
+    class Events {
+        /** A new set of columns has been entered, everything has potentially changed. */
+        static EVENT_COLUMN_EVERYTHING_CHANGED: string;
+        /** A pivot column was added, removed or order changed. */
+        static EVENT_COLUMN_PIVOT_CHANGE: string;
+        /** A value column was added, removed or agg function was changed. */
+        static EVENT_COLUMN_VALUE_CHANGE: string;
+        /** A column was moved */
+        static EVENT_COLUMN_MOVED: string;
+        /** One or more columns was shown / hidden */
+        static EVENT_COLUMN_VISIBLE: string;
+        /** A column group was opened / closed */
+        static EVENT_COLUMN_GROUP_OPENED: string;
+        /** One or more columns was resized. If just one, the column in the event is set. */
+        static EVENT_COLUMN_RESIZED: string;
+        /** One or more columns was resized. If just one, the column in the event is set. */
+        static EVENT_COLUMN_PINNED_COUNT_CHANGED: string;
+        static EVENT_MODEL_UPDATED: string;
+        static EVENT_CELL_CLICKED: string;
+        static EVENT_CELL_DOUBLE_CLICKED: string;
+        static EVENT_CELL_CONTEXT_MENU: string;
+        static EVENT_CELL_VALUE_CHANGED: string;
+        static EVENT_CELL_FOCUSED: string;
+        static EVENT_ROW_SELECTED: string;
+        static EVENT_ROW_DESELECTED: string;
+        static EVENT_SELECTION_CHANGED: string;
+        static EVENT_BEFORE_FILTER_CHANGED: string;
+        static EVENT_AFTER_FILTER_CHANGED: string;
+        static EVENT_FILTER_MODIFIED: string;
+        static EVENT_BEFORE_SORT_CHANGED: string;
+        static EVENT_AFTER_SORT_CHANGED: string;
+        static EVENT_VIRTUAL_ROW_REMOVED: string;
+        static EVENT_ROW_CLICKED: string;
+        static EVENT_ROW_DOUBLE_CLICKED: string;
+        static EVENT_READY: string;
+        static EVENT_MULTITOOL_CLICK: string;
+        static EVENT_SELECTION_STATE_CHANGED: string;
+        static EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE: string;
+        static EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE: string;
+        static EVENT_DO_NOTHING: string;
+    }
+}
+declare module ag.grid {
+    class MasterSlaveService {
+        private gridOptionsWrapper;
+        private columnController;
+        private gridPanel;
+        private logger;
+        private eventService;
+        private consuming;
+        init(gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, gridPanel: GridPanel, loggerFactory: LoggerFactory, eventService: EventService): void;
+        private fireEvent(callback);
+        private onEvent(callback);
+        private fireColumnEvent(event);
+        fireHorizontalScrollEvent(horizontalScroll: number): void;
+        onScrollEvent(horizontalScroll: number): void;
+        onColumnEvent(event: ColumnChangeEvent): void;
+    }
+}
+declare module ag.grid {
     class Grid {
         private virtualRowCallbacks;
         private gridOptions;
@@ -2076,6 +1871,215 @@ declare module ag.grid {
         updateBodyContainerWidthAfterColResize(): void;
         updatePinnedColContainerWidthAfterColResize(): void;
         doLayout(): void;
+    }
+}
+declare module ag.grid {
+    class FilterManager {
+        private $compile;
+        private $scope;
+        private gridOptionsWrapper;
+        private grid;
+        private allFilters;
+        private rowModel;
+        private popupService;
+        private valueService;
+        private columnController;
+        private quickFilter;
+        private advancedFilterPresent;
+        private externalFilterPresent;
+        init(grid: Grid, gridOptionsWrapper: GridOptionsWrapper, $compile: any, $scope: any, columnController: ColumnController, popupService: PopupService, valueService: ValueService): void;
+        setFilterModel(model: any): void;
+        private setModelOnFilterWrapper(filter, newModel);
+        getFilterModel(): any;
+        setRowModel(rowModel: any): void;
+        isAdvancedFilterPresent(): boolean;
+        isAnyFilterPresent(): boolean;
+        isFilterPresentForCol(colId: any): any;
+        private doesFilterPass(node, filterToSkip?);
+        setQuickFilter(newFilter: any): boolean;
+        onFilterChanged(): void;
+        isQuickFilterPresent(): boolean;
+        doesRowPassOtherFilters(filterToSkip: any, node: any): boolean;
+        doesRowPassFilter(node: any, filterToSkip?: any): boolean;
+        private aggregateRowForQuickFilter(node);
+        onNewRowsLoaded(): void;
+        private createValueGetter(column);
+        getFilterApi(column: Column): any;
+        private getOrCreateFilterWrapper(column);
+        private createFilterWrapper(column);
+        private assertMethodHasNoParameters(theMethod);
+        showFilter(column: Column, eventSource: any): void;
+    }
+}
+declare module ag.grid {
+    class RenderedHeaderCell extends RenderedHeaderElement {
+        private static DEFAULT_SORTING_ORDER;
+        private eHeaderCell;
+        private eSortAsc;
+        private eSortDesc;
+        private eSortNone;
+        private eFilterIcon;
+        private column;
+        private gridOptionsWrapper;
+        private parentScope;
+        private childScope;
+        private filterManager;
+        private columnController;
+        private $compile;
+        private angularGrid;
+        private parentGroup;
+        private popupService;
+        private eRootRef;
+        private startWidth;
+        private headerElements;
+        private lockedForResize;
+        constructor(column: Column, headerElements: any, parentGroup: RenderedHeaderGroupCell, gridOptionsWrapper: GridOptionsWrapper, parentScope: any, filterManager: FilterManager, columnController: ColumnController, $compile: any, angularGrid: Grid, eRoot: HTMLElement, popupService?: PopupService);
+        getGui(): HTMLElement;
+        destroy(): void;
+        private createScope();
+        private addAttributes();
+        private addClasses();
+        private addSortIcons(headerCellLabel);
+        private setupComponents();
+        private detectDragParties();
+        private canDrop(providedAttrs?);
+        private detectDragParty(columnOrGroup);
+        private getDragSource();
+        private setupDND(dragHandler);
+        private setupFreeze(freezeChecker);
+        private useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);
+        refreshFilterIcon(): void;
+        refreshSortIcon(): void;
+        private getNextSortDirection();
+        private addSortHandling(headerCellLabel);
+        onDragStart(): void;
+        onDragging(dragChange: number, finished: boolean): void;
+        reflowText(elText: HTMLElement, allText: string): void;
+        onIndividualColumnResized(column: Column): void;
+        private addHeaderClassesFromCollDef();
+    }
+}
+declare module ag.grid {
+    class ColumnGroup {
+        pinned: any;
+        name: any;
+        allColumns: Column[];
+        displayedColumns: Column[];
+        expandable: boolean;
+        expanded: boolean;
+        actualWidth: number;
+        bracketHeader: RenderedHeaderCell;
+        constructor(pinned: any, name: any);
+        getMinimumWidth(): number;
+        addColumn(column: any): void;
+        setBracketHeader(header: RenderedHeaderCell): void;
+        getBracketHeader(): RenderedHeaderCell;
+        getVisibleColumnsCount(): number;
+        calculateExpandable(): void;
+        calculateActualWidth(): void;
+        calculateDisplayedColumns(): void;
+        addToVisibleColumns(colsToAdd: any): void;
+    }
+}
+declare module ag.grid {
+    class ColumnApi {
+        private _columnController;
+        constructor(_columnController: ColumnController);
+        sizeColumnsToFit(gridWidth: any): void;
+        hideColumns(colIds: any, hide: any): void;
+        columnGroupOpened(group: ColumnGroup, newValue: boolean): void;
+        getColumnGroup(name: string): ColumnGroup;
+        getDisplayNameForCol(column: any): string;
+        getColumn(key: any): Column;
+        setState(columnState: any): void;
+        getState(): [any];
+        isPinning(): boolean;
+        getVisibleColAfter(col: Column): Column;
+        getVisibleColBefore(col: Column): Column;
+        setColumnVisible(column: Column, visible: boolean): void;
+        getAllColumns(): Column[];
+        getDisplayedColumns(): Column[];
+        getPivotedColumns(): Column[];
+        getValueColumns(): Column[];
+        moveColumn(fromIndex: number, toIndex: number): void;
+        movePivotColumn(fromIndex: number, toIndex: number): void;
+        setColumnAggFunction(column: Column, aggFunc: string): void;
+        setColumnWidth(column: Column, newWidth: number, finished?: boolean): void;
+        removeValueColumn(column: Column): void;
+        addValueColumn(column: Column): void;
+        removePivotColumn(column: Column): void;
+        setPinnedColumnCount(count: number): void;
+        getPinnedColumnCount(): number;
+        addPivotColumn(column: Column): void;
+        getHeaderGroups(): ColumnGroup[];
+        hideColumn(colId: any, hide: any): void;
+    }
+    class ColumnController {
+        private gridOptionsWrapper;
+        private angularGrid;
+        private selectionRendererFactory;
+        private expressionService;
+        private masterSlaveController;
+        private allColumns;
+        private visibleColumns;
+        private displayedColumns;
+        private pivotColumns;
+        private valueColumns;
+        private columnGroups;
+        private setupComplete;
+        private valueService;
+        private pinnedColumnCount;
+        private eventService;
+        constructor();
+        init(angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, gridOptionsWrapper: GridOptionsWrapper, expressionService: ExpressionService, valueService: ValueService, masterSlaveController: MasterSlaveService, eventService: EventService): void;
+        getColumnApi(): ColumnApi;
+        isSetupComplete(): boolean;
+        getHeaderGroups(): ColumnGroup[];
+        getPinnedContainerWidth(): number;
+        addPivotColumn(column: Column): void;
+        getPinnedColumnCount(): number;
+        setPinnedColumnCount(count: number): void;
+        removePivotColumn(column: Column): void;
+        addValueColumn(column: Column): void;
+        removeValueColumn(column: Column): void;
+        private doesColumnExistInGrid(column);
+        setColumnWidth(column: Column, newWidth: number, finished: boolean): void;
+        private updateGroupWidthsAfterColumnResize(column);
+        setColumnAggFunction(column: Column, aggFunc: string): void;
+        movePivotColumn(fromIndex: number, toIndex: number): void;
+        moveColumn(fromIndex: number, toIndex: number): void;
+        getBodyContainerWidth(): number;
+        getValueColumns(): Column[];
+        getPivotedColumns(): Column[];
+        getDisplayedColumns(): Column[];
+        getAllColumns(): Column[];
+        setColumnVisible(column: Column, visible: boolean): void;
+        getVisibleColBefore(col: any): Column;
+        getVisibleColAfter(col: Column): Column;
+        isPinning(): boolean;
+        getState(): [any];
+        setState(columnState: any): void;
+        getColumns(keys: any[]): Column[];
+        getColumn(key: any): Column;
+        getDisplayNameForCol(column: any): string;
+        getColumnGroup(name: string): ColumnGroup;
+        onColumnsChanged(): void;
+        private checkForDeprecatedItems(columnDefs);
+        columnGroupOpened(group: ColumnGroup, newValue: boolean): void;
+        hideColumns(colIds: any, hide: any): void;
+        private updateModel();
+        private updateDisplayedColumns();
+        sizeColumnsToFit(gridWidth: any): void;
+        private buildGroups();
+        private updateGroups();
+        private updateVisibleColumns();
+        private updatePinnedColumns();
+        private createColumns(colDefs);
+        private createPivotColumns();
+        private createValueColumns();
+        private createDummyColumn(field);
+        private calculateColInitialWidth(colDef);
+        private getTotalColWidth(includePinned);
     }
 }
 declare module ag.grid {

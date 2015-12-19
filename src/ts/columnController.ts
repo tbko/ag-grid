@@ -289,6 +289,21 @@ module ag.grid {
             this.updateModel();
             var event = new ColumnChangeEvent(Events.EVENT_COLUMN_VISIBLE).withColumn(column);
             this.eventService.dispatchEvent(Events.EVENT_COLUMN_VISIBLE, event);
+            // debugger;
+            if (column.colDef.headerGroup) {
+
+                var groupGolumns: Column[] = [];
+                this.allColumns.forEach(function(el) {
+                    if (el.colDef.headerGroup === column.colDef.headerGroup) {
+                        groupGolumns.push(el);
+                    }
+                });
+                for (var idx = 0; idx < groupGolumns.length; idx++) {
+                    if (groupGolumns[idx].visible !== visible) {
+                        this.setColumnVisible(groupGolumns[idx], visible);
+                    }
+                }
+            }
         }
 
         public getVisibleColBefore(col: any): Column {

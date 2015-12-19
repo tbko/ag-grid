@@ -131,6 +131,7 @@ module ag.grid {
                 // eGroupCellLabel.className = 'ag-header-group-cell-label';
                 // this.eHeaderGroupCell.appendChild(eGroupCellLabel);
                 this.eHeaderGroupCell.appendChild(renderedBracketHeaderCell.getGui());
+                this.columnGroup.setBracketHeader(renderedBracketHeaderCell);
 
                 // var eInnerText = document.createElement("span");
                 // eInnerText.className = 'ag-header-group-text';

@@ -1,3 +1,5 @@
+/// <reference path='../headerRendering/renderedHeaderCell.ts' />
+
 module ag.grid {
 
     export class ColumnGroup {
@@ -9,6 +11,7 @@ module ag.grid {
         expandable = false;
         expanded = false;
         actualWidth: number;
+        bracketHeader: RenderedHeaderCell;
 
         constructor(pinned: any, name: any) {
             this.pinned = pinned;
@@ -25,6 +28,14 @@ module ag.grid {
 
         public addColumn(column: any) {
             this.allColumns.push(column);
+        }
+
+        public setBracketHeader(header: RenderedHeaderCell) {
+            this.bracketHeader = header;
+        }
+
+        public getBracketHeader() {
+            return this.bracketHeader;
         }
 
         public getVisibleColumnsCount(): number {

@@ -312,6 +312,15 @@ module ag.grid {
                 this.refreshHeaderAndBody();
             }
 
+            var freezeIdx = this.columnController.getPinnedColumnCount();
+            var showColumns = this.columnController.getDisplayedColumns();
+            var showColumnsCount = showColumns.length;
+            var lastColumn = showColumns[showColumnsCount - 1];
+            var lastColumnSize = lastColumn.colDef.headerGroup ? this.columnController.getColumnGroup(lastColumn.colDef.headerGroup).displayedColumns.length - 1 : 0;
+            if (freezeIdx >= showColumnsCount) {
+                this.columnController.setPinnedColumnCount(showColumnsCount - 1 - lastColumnSize);
+            }
+
             this.gridPanel.showPinnedColContainersIfNeeded();
         }
 
