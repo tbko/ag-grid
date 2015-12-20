@@ -10590,6 +10590,9 @@ var ag;
                 // drag source is a single element with 'dragging' class
                 var sourceColEl = this.eRootRef.querySelector('.ag-dragging');
                 var sourceColId = sourceColEl.getAttribute('colId');
+                if (!sourceColId) {
+                    sourceColId = sourceColEl.querySelector('.ag-header-group-cell').getAttribute('colId');
+                }
                 var draggingColumnObject = this.columnController.getColumn(sourceColId);
                 if (!draggingColumnObject) {
                     draggingColumnObject = this.columnController.getColumnGroup(sourceColId).getBracketHeader().column;
@@ -10597,11 +10600,18 @@ var ag;
                 return draggingColumnObject;
             };
             RenderedHeaderCell.prototype.setupDND = function (dragHandler) {
+                var _this = this;
                 var that = this;
                 dragHandler.setAttribute('draggable', 'true');
                 // start/stop dragging header
                 dragHandler.addEventListener('dragstart', function (event) {
-                    that.eHeaderCell.classList.add('ag-dragging');
+                    // debugger;
+                    if (that.eHeaderCell.parentElement.classList.contains('ag-header-group-cell-with-group')) {
+                        that.eHeaderCell.parentElement.parentElement.classList.add('ag-dragging');
+                    }
+                    else {
+                        that.eHeaderCell.classList.add('ag-dragging');
+                    }
                     event.dataTransfer.setData('text/plain', that.column.colId);
                 });
                 dragHandler.addEventListener('dragover', function (event) {
@@ -10614,26 +10624,57 @@ var ag;
                     }
                 });
                 dragHandler.addEventListener('dragend', function () {
-                    that.eHeaderCell.classList.remove('ag-dragging');
+                    var draggingElement = that.eRootRef.querySelector('.ag-dragging');
+                    if (draggingElement) {
+                        draggingElement.classList.remove('ag-dragging');
+                    }
+                    clearAllDragStyles();
                 });
                 // react to drag header over header
                 var lastenter;
+                var clearAllDragStyles = function () {
+                    var stylesToClear = ['ag-dragging-over', 'ag-dragging-over-right', 'ag-dragging-over-left'];
+                    stylesToClear.forEach(function (styleName) {
+                        Array.prototype.forEach.call(_this.eRootRef.querySelectorAll('.' + styleName), function (element) {
+                            element.classList.remove(styleName);
+                        });
+                    });
+                };
                 var dragEnterHandler = function (event) {
                     var attrs = that.detectDragParties();
                     var canDrop = that.canDrop(attrs);
                     var isDirectionRight = attrs.sourceAttrs.colStartIndex < attrs.destAttrs.colStartIndex;
+                    var host;
                     var neighbour;
-                    // if (attrs.sourceAttrs.colId !== attrs.destAttrs.colId) {
-                    //     debugger;
-                    // }
                     if (!lastenter &&
                         !that.eHeaderCell.classList.contains('ag-dragging-over') &&
                         canDrop) {
-                        that.eHeaderCell.classList.add('ag-dragging-over');
-                        that.eHeaderCell.classList.add(isDirectionRight ? 'ag-dragging-over-right' : 'ag-dragging-over-left');
-                        neighbour = isDirectionRight ? that.eHeaderCell.parentElement.nextElementSibling : that.eHeaderCell.parentElement.previousElementSibling;
+                        // debugger;
+                        clearAllDragStyles();
+                        // console.log(that.eHeaderCell);
+                        if (that.eHeaderCell.parentElement.classList.contains('ag-header-group-cell-with-group')) {
+                            host = that.eHeaderCell.parentElement.parentElement;
+                            neighbour = isDirectionRight ? that.eHeaderCell.parentElement.parentElement.nextElementSibling : that.eHeaderCell.parentElement.parentElement.previousElementSibling;
+                        }
+                        else if (that.eHeaderCell.classList.contains('ag-header-cell-grouped')) {
+                            host = that.eHeaderCell;
+                            neighbour = isDirectionRight ? that.eHeaderCell.parentElement.nextElementSibling : that.eHeaderCell.parentElement.previousElementSibling;
+                        }
+                        else {
+                            host = that.eHeaderCell;
+                            neighbour = isDirectionRight ? that.eHeaderCell.parentElement.nextElementSibling : that.eHeaderCell.parentElement.previousElementSibling;
+                        }
+                        host.classList.add('ag-dragging-over');
+                        host.classList.add(isDirectionRight ? 'ag-dragging-over-right' : 'ag-dragging-over-left');
                         if (neighbour) {
-                            neighbour.firstElementChild.classList.add(!isDirectionRight ? 'ag-dragging-over-right' : 'ag-dragging-over-left');
+                            if (neighbour.firstElementChild.classList.contains('ag-header-group-cell-with-group')) {
+                                // console.log('bracket neighbour');
+                                neighbour.classList.add(!isDirectionRight ? 'ag-dragging-over-right' : 'ag-dragging-over-left');
+                            }
+                            else {
+                                // console.log('header neighbour');
+                                neighbour.firstElementChild.classList.add(!isDirectionRight ? 'ag-dragging-over-right' : 'ag-dragging-over-left');
+                            }
                         }
                     }
                     lastenter = event.target;
@@ -10642,20 +10683,17 @@ var ag;
                     return false;
                 };
                 var dragLeaveHandler = function (event) {
-                    var neighbour;
+                    var styleName = 'ag-dragging-over';
+                    var hostId = that.getGui().getAttribute('colId');
+                    if (!hostId) {
+                        hostId = that.getGui().querySelector('.ag-header-group-cell-with-group').getAttribute('colId');
+                    }
                     if (lastenter === event.target) {
-                        that.eHeaderCell.classList.remove('ag-dragging-over');
-                        that.eHeaderCell.classList.remove('ag-dragging-over-right');
-                        that.eHeaderCell.classList.remove('ag-dragging-over-left');
-                        neighbour = that.eHeaderCell.parentElement.nextElementSibling;
-                        if (neighbour && !neighbour.firstElementChild.classList.contains('ag-dragging-over')) {
-                            neighbour.firstElementChild.classList.remove('ag-dragging-over-right');
-                            neighbour.firstElementChild.classList.remove('ag-dragging-over-left');
-                        }
-                        neighbour = that.eHeaderCell.parentElement.previousElementSibling;
-                        if (neighbour && !neighbour.firstElementChild.classList.contains('ag-dragging-over')) {
-                            neighbour.firstElementChild.classList.remove('ag-dragging-over-right');
-                            neighbour.firstElementChild.classList.remove('ag-dragging-over-left');
+                        var othersDragging = Array.prototype.filter.call(_this.eRootRef.querySelectorAll('.' + styleName), function (element) {
+                            return element.getAttribute('colId') !== hostId;
+                        });
+                        if (!othersDragging.length) {
+                            clearAllDragStyles();
                         }
                         lastenter = null;
                     }
@@ -10681,6 +10719,18 @@ var ag;
                     var dSrcDest = Math.abs(destColumnAttrs.colStartIndex - srcColumnAttrs.colStartIndex) + 1;
                     var srcBracketSize = srcColumn.colDef.columnGroup ? srcColumn.colDef.columnGroup.displayedColumns.length - 1 : 0;
                     var isCrossBorder = dSrc + dDest == dSrcDest;
+                    var bracketShiftCompensation = 0;
+                    if (isCrossBorder) {
+                        var lastInFridge = that.eRootRef.querySelector('.ag-pinned-header').lastElementChild;
+                        if (!directionRight && lastInFridge.firstElementChild.classList.contains('ag-header-group-cell')) {
+                            bracketShiftCompensation = -lastInFridge.querySelectorAll('.ag-header-cell').length + 1;
+                        }
+                        var firstInRiver = that.eRootRef.querySelector('.ag-header-container').firstElementChild;
+                        if (directionRight && firstInRiver.firstElementChild.classList.contains('ag-header-group-cell')) {
+                            bracketShiftCompensation = firstInRiver.querySelectorAll('.ag-header-cell').length - 1;
+                        }
+                        that.columnController.setPinnedColumnCount(freezeIndex + srcBracketSize * (directionRight ? -1 : 1) + bracketShiftCompensation);
+                    }
                     for (var idx = 0; idx < srcColumnAttrs.colEndIndex - srcColumnAttrs.colStartIndex + 1; idx++) {
                         that.columnController.moveColumn(fromIdx, toIdx);
                         if (!directionRight) {
@@ -10688,9 +10738,7 @@ var ag;
                             fromIdx++;
                         }
                     }
-                    if (isCrossBorder) {
-                        that.columnController.setPinnedColumnCount(freezeIndex + srcBracketSize * (directionRight ? -1 : 1));
-                    }
+                    console.log(freezeIndex, srcBracketSize, bracketShiftCompensation);
                     event.stopPropagation();
                     event.preventDefault();
                     return false;
