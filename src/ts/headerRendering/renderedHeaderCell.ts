@@ -240,6 +240,7 @@ module ag.grid {
                 var freezeChecker = this.eHeaderCell.querySelector('#ag-js-freeze');
                 if (freezeChecker) this.setupFreeze(freezeChecker);
             }
+
         }
 
         private detectDragParties() {
@@ -490,8 +491,6 @@ module ag.grid {
                         fromIdx++;
                     }
                 }
-                console.log(freezeIndex, srcBracketSize, bracketShiftCompensation);
-
 
                 event.stopPropagation();
                 event.preventDefault();
@@ -722,21 +721,26 @@ module ag.grid {
             // line-height: 19px - single line height
             var words = allText.split(' ');
             var overflown = false;
-
             elText.innerHTML = words[0];
 
             // find the word thab breaks last allowed line
             for (var i = 1; i < words.length; i++) {
                 elText.innerHTML = elText.innerHTML + ' ' + words[i];
+                // if (this.column.colId === 'agreementNumber') {
+                //     debugger;
+                // }
                 if (elText.scrollHeight !== elText.clientHeight) {
                     overflown = true;
                     break;
+                    // console.log(`broke on ${i} word`);
                 }
             }
 
             // bite out by one char until overflown is gone adding ellipsis to the tail
             if (overflown) {
+                // debugger;
                 var displayText = elText.innerHTML + '…';
+                // console.log(displayText);
 
                 do {
 
@@ -745,12 +749,15 @@ module ag.grid {
                     } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
 
                     elText.innerHTML = displayText;
+                    // console.log(displayText);
 
                 } while (
-                    displayText.length
+                    displayText.length > 1
                     &&
                     elText.scrollHeight !== elText.clientHeight
                 );
+            } else {
+                // console.log('not overflown');
             }
 
         }
@@ -766,8 +773,7 @@ module ag.grid {
 
             var elText = this.getGui().querySelector('.ag-header-text');
             var allText = this.columnController.getDisplayNameForCol(this.column);
-
-
+            this.reflowText(elText, allText);
 
             this.lockedForResize = false;
         }

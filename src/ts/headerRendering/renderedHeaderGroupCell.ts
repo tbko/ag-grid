@@ -131,6 +131,11 @@ module ag.grid {
                 // eGroupCellLabel.className = 'ag-header-group-cell-label';
                 // this.eHeaderGroupCell.appendChild(eGroupCellLabel);
                 this.eHeaderGroupCell.appendChild(renderedBracketHeaderCell.getGui());
+                // var elText = renderedBracketHeaderCell.getGui().querySelector('.ag-header-text');
+                // console.log(elText.clientHeight);
+                // var allText = this.columnController.getDisplayNameForCol(renderedBracketHeaderCell.column);
+                // renderedBracketHeaderCell.reflowText(elText, allText);
+
                 this.columnGroup.setBracketHeader(renderedBracketHeaderCell);
 
                 // var eInnerText = document.createElement("span");
@@ -165,6 +170,11 @@ module ag.grid {
                     this.angularGrid, this.getERoot());
                 this.children.push(renderedHeaderCell);
                 this.eHeaderGroup.appendChild(renderedHeaderCell.getGui());
+                // if (!column.colDef.checkboxSelection) {
+                //     var elText = renderedHeaderCell.getGui().querySelector('.ag-header-text');
+                //     var allText = this.columnController.getDisplayNameForCol(renderedHeaderCell.column);
+                //     renderedHeaderCell.reflowText(elText, allText);
+                // }
             });
 
             this.setWidthOfGroupHeaderCell();

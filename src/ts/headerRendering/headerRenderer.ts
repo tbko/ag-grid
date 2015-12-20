@@ -162,6 +162,16 @@ module ag.grid {
                 this.headerElements.push(renderedHeaderGroup);
                 var eContainerToAddTo = columnGroup.pinned ? this.ePinnedHeader : this.eHeaderContainer;
                 eContainerToAddTo.appendChild(renderedHeaderGroup.getGui());
+                // renderedHeaderGroup.children.forEach((headerRenderer: RenderedHeaderCell) => {
+                //     // debugger;
+                //     if (headerRenderer.column.colId !== 'checkbox') {
+                //         console.log(headerRenderer.getGui().querySelector('.ag-header-text').clientHeight);
+                //         headerRenderer.reflowText(
+                //             headerRenderer.getGui().querySelector('.ag-header-text'),
+                //             this.columnController.getDisplayNameForCol(headerRenderer.column)
+                //         );
+                //     }
+                // });
             });
         }
 
@@ -200,7 +210,9 @@ module ag.grid {
                 this.headerElements.push(renderedHeaderCell);
                 var eContainerToAddTo = column.pinned ? this.ePinnedHeader : this.eHeaderContainer;
                 eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
-
+                // var elText = renderedHeaderCell.getGui().querySelector('.ag-header-text');
+                // var allText = this.columnController.getDisplayNameForCol(renderedHeaderCell.column);
+                // renderedHeaderCell.reflowText(elText, allText);
             });
         }
 

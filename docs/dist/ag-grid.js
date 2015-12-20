@@ -5470,6 +5470,10 @@ var ag;
                     // eGroupCellLabel.className = 'ag-header-group-cell-label';
                     // this.eHeaderGroupCell.appendChild(eGroupCellLabel);
                     this.eHeaderGroupCell.appendChild(renderedBracketHeaderCell.getGui());
+                    // var elText = renderedBracketHeaderCell.getGui().querySelector('.ag-header-text');
+                    // console.log(elText.clientHeight);
+                    // var allText = this.columnController.getDisplayNameForCol(renderedBracketHeaderCell.column);
+                    // renderedBracketHeaderCell.reflowText(elText, allText);
                     this.columnGroup.setBracketHeader(renderedBracketHeaderCell);
                     // var eInnerText = document.createElement("span");
                     // eInnerText.className = 'ag-header-group-text';
@@ -5498,6 +5502,11 @@ var ag;
                     }, _this, _this.gridOptionsWrapper, _this.parentScope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.getERoot());
                     _this.children.push(renderedHeaderCell);
                     _this.eHeaderGroup.appendChild(renderedHeaderCell.getGui());
+                    // if (!column.colDef.checkboxSelection) {
+                    //     var elText = renderedHeaderCell.getGui().querySelector('.ag-header-text');
+                    //     var allText = this.columnController.getDisplayNameForCol(renderedHeaderCell.column);
+                    //     renderedHeaderCell.reflowText(elText, allText);
+                    // }
                 });
                 this.setWidthOfGroupHeaderCell();
             };
@@ -5798,6 +5807,16 @@ var ag;
                     _this.headerElements.push(renderedHeaderGroup);
                     var eContainerToAddTo = columnGroup.pinned ? _this.ePinnedHeader : _this.eHeaderContainer;
                     eContainerToAddTo.appendChild(renderedHeaderGroup.getGui());
+                    // renderedHeaderGroup.children.forEach((headerRenderer: RenderedHeaderCell) => {
+                    //     // debugger;
+                    //     if (headerRenderer.column.colId !== 'checkbox') {
+                    //         console.log(headerRenderer.getGui().querySelector('.ag-header-text').clientHeight);
+                    //         headerRenderer.reflowText(
+                    //             headerRenderer.getGui().querySelector('.ag-header-text'),
+                    //             this.columnController.getDisplayNameForCol(headerRenderer.column)
+                    //         );
+                    //     }
+                    // });
                 });
             };
             HeaderRenderer.prototype.toggleSelectAll = function (pamparams) {
@@ -5833,6 +5852,9 @@ var ag;
                     _this.headerElements.push(renderedHeaderCell);
                     var eContainerToAddTo = column.pinned ? _this.ePinnedHeader : _this.eHeaderContainer;
                     eContainerToAddTo.appendChild(renderedHeaderCell.getGui());
+                    // var elText = renderedHeaderCell.getGui().querySelector('.ag-header-text');
+                    // var allText = this.columnController.getDisplayNameForCol(renderedHeaderCell.column);
+                    // renderedHeaderCell.reflowText(elText, allText);
                 });
             };
             HeaderRenderer.prototype.updateSortIcons = function () {
@@ -9448,6 +9470,7 @@ var ag;
                 this.eventService.dispatchEvent(grid.Events.EVENT_READY, readyParams);
                 this.gridPanel.initRowOverlay();
                 this.logger.log('initialised');
+                debugger;
             }
             Grid.prototype.decideStartingOverlay = function () {
                 // if not virtual paging, then we might need to show an overlay if no data
@@ -9613,6 +9636,7 @@ var ag;
                 this.rowRenderer.setListenMouseMove(false);
             };
             Grid.prototype.onColumnChanged = function (event) {
+                console.log('init');
                 this.rowRenderer.countGridRows();
                 if (event.isPivotChanged()) {
                     this.inMemoryRowController.onPivotChanged();
@@ -10738,7 +10762,6 @@ var ag;
                             fromIdx++;
                         }
                     }
-                    console.log(freezeIndex, srcBracketSize, bracketShiftCompensation);
                     event.stopPropagation();
                     event.preventDefault();
                     return false;
@@ -10933,6 +10956,9 @@ var ag;
                 // find the word thab breaks last allowed line
                 for (var i = 1; i < words.length; i++) {
                     elText.innerHTML = elText.innerHTML + ' ' + words[i];
+                    // if (this.column.colId === 'agreementNumber') {
+                    //     debugger;
+                    // }
                     if (elText.scrollHeight !== elText.clientHeight) {
                         overflown = true;
                         break;
@@ -10940,15 +10966,19 @@ var ag;
                 }
                 // bite out by one char until overflown is gone adding ellipsis to the tail
                 if (overflown) {
+                    // debugger;
                     var displayText = elText.innerHTML + '…';
+                    // console.log(displayText);
                     do {
                         do {
                             displayText = displayText.slice(0, -2) + '…';
                         } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
                         elText.innerHTML = displayText;
-                    } while (displayText.length
+                    } while (displayText.length > 1
                         &&
                             elText.scrollHeight !== elText.clientHeight);
+                }
+                else {
                 }
             };
             RenderedHeaderCell.prototype.onIndividualColumnResized = function (column) {
@@ -10960,6 +10990,7 @@ var ag;
                 this.eHeaderCell.style.width = newWidthPx;
                 var elText = this.getGui().querySelector('.ag-header-text');
                 var allText = this.columnController.getDisplayNameForCol(this.column);
+                this.reflowText(elText, allText);
                 this.lockedForResize = false;
             };
             RenderedHeaderCell.prototype.addHeaderClassesFromCollDef = function () {
