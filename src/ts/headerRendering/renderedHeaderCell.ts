@@ -657,11 +657,12 @@ module ag.grid {
         private addSortHandling(headerCellLabel: HTMLElement) {
             var that = this;
 
-            headerCellLabel.addEventListener("click", function (event: any) {
+            headerCellLabel.querySelector('.ag-js-draghandler').addEventListener("click", function (event: any) {
                 var sortDirectionMap: { [s: string]: string; } = {
                     'asc': 'up',
                     'desc': 'down'
                 }
+                debugger;
 
                 // update sort on current col
                 that.column.sort = that.getNextSortDirection();
@@ -773,7 +774,7 @@ module ag.grid {
 
             var elText = this.getGui().querySelector('.ag-header-text');
             var allText = this.columnController.getDisplayNameForCol(this.column);
-            this.reflowText(elText, allText);
+            this.reflowText(<HTMLElement>elText, allText);
 
             this.lockedForResize = false;
         }

@@ -9470,7 +9470,6 @@ var ag;
                 this.eventService.dispatchEvent(grid.Events.EVENT_READY, readyParams);
                 this.gridPanel.initRowOverlay();
                 this.logger.log('initialised');
-                debugger;
             }
             Grid.prototype.decideStartingOverlay = function () {
                 // if not virtual paging, then we might need to show an overlay if no data
@@ -10897,11 +10896,12 @@ var ag;
             };
             RenderedHeaderCell.prototype.addSortHandling = function (headerCellLabel) {
                 var that = this;
-                headerCellLabel.addEventListener("click", function (event) {
+                headerCellLabel.querySelector('.ag-js-draghandler').addEventListener("click", function (event) {
                     var sortDirectionMap = {
                         'asc': 'up',
                         'desc': 'down'
                     };
+                    debugger;
                     // update sort on current col
                     that.column.sort = that.getNextSortDirection();
                     if (that.column.sort) {

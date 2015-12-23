@@ -77,13 +77,14 @@ function tsDebugTask() {
             //experimentalDecorators: true,
             //emitDecoratorMetadata: true,
             target: 'es5',
-            //module: 'commonjs',
+            module: 'commonjs',
             out: 'ag-grid.js'
         }));
 
     return tsResult.js
         .pipe(sourcemaps.write()) // for sourcemaps only
         .pipe(rename('ag-grid.js'))
+        .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid'))
         .pipe(gulp.dest('./docs/dist'));
 
 }
@@ -98,15 +99,19 @@ function tsReleaseTask() {
             //experimentalDecorators: true,
             //emitDecoratorMetadata: true,
             target: 'es5',
-            //module: 'commonjs',
+            module: 'commonjs',
             declarationFiles: true,
             out: 'ag-grid.js'
         }));
+
+    var jsPlain = gulp.src('src/ts/**/*.js');
 
     return merge([
         tsResult.dts
             .pipe(header(dtsHeaderTemplate, { pkg : pkg }))
             .pipe(gulp.dest('dist')),
+        jsPlain
+            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid')),
         tsResult.js
             .pipe(rename('ag-grid.js'))
             .pipe(header(headerTemplate, { pkg : pkg }))
