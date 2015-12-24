@@ -118,6 +118,9 @@ module ag.grid {
         }
 
         private setupComponents() {
+            if (document.querySelector('.ag-body .ag-cell[colid="order"]') && this.column.colId === 'order') {
+                // debugger;
+            }
             this.vGridCell = new ag.vdom.VHtmlElement("div");
             this.vGridCell.setAttribute("col", (this.column.index !== undefined && this.column.index !== null) ? this.column.index.toString() : '');
 
@@ -153,6 +156,7 @@ module ag.grid {
             if (this.eCheckbox) {
                 this.setSelected(this.selectionController.isNodeSelected(this.node));
             }
+
 
         }
 
@@ -633,6 +637,7 @@ module ag.grid {
         private putDataIntoCell() {
             // template gets preference, then cellRenderer, then do it ourselves
             var colDef = this.column.colDef;
+            var resultCellRenderer: any;
             if (colDef.template) {
                 this.vParentOfValue.setInnerHtml(colDef.template);
             } else if (colDef.templateUrl) {
@@ -641,9 +646,9 @@ module ag.grid {
                     this.vParentOfValue.setInnerHtml(template);
                 }
             } else if (colDef.floatingCellRenderer && this.node.floating) {
-                this.useCellRenderer(colDef.floatingCellRenderer);
+                resultCellRenderer = this.useCellRenderer(colDef.floatingCellRenderer);
             } else if (colDef.cellRenderer) {
-                this.useCellRenderer(colDef.cellRenderer);
+                resultCellRenderer = this.useCellRenderer(colDef.cellRenderer);
             } else {
                 // if we insert undefined, then it displays as the string 'undefined', ugly!
                 if (this.value !== undefined && this.value !== null && this.value !== '') {
@@ -652,16 +657,17 @@ module ag.grid {
             }
 
             if (colDef.wrapped) {
-                this.useCellRenderer({renderer: 'multiline'});
+                console.log(this.vParentOfValue.getElement());
+                this.useCellRenderer({renderer: 'multiline'}, resultCellRenderer);
                 return;
             }
         }
 
-        private useCellRenderer(cellRenderer: Function | {}) {
+        private useCellRenderer(cellRenderer: Function | {}, preValue?:any): any {
             var colDef = this.column.colDef;
 
             var rendererParams = {
-                value: this.value,
+                value: preValue || this.value,
                 valueGetter: this.getValue,
                 data: this.node.data,
                 node: this.node,
@@ -698,6 +704,7 @@ module ag.grid {
                 // otherwise assume it was html, so just insert
                 this.vParentOfValue.setInnerHtml(resultFromRenderer);
             }
+            return resultFromRenderer;
         }
 
         private addClasses() {

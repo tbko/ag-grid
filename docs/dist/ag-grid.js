@@ -2515,6 +2515,8 @@ var ag;
                 }
             };
             RenderedCell.prototype.setupComponents = function () {
+                if (document.querySelector('.ag-body .ag-cell[colid="order"]') && this.column.colId === 'order') {
+                }
                 this.vGridCell = new ag.vdom.VHtmlElement("div");
                 this.vGridCell.setAttribute("col", (this.column.index !== undefined && this.column.index !== null) ? this.column.index.toString() : '');
                 this.vGridCell.setAttribute("colId", this.column.colId);
@@ -2968,6 +2970,7 @@ var ag;
             RenderedCell.prototype.putDataIntoCell = function () {
                 // template gets preference, then cellRenderer, then do it ourselves
                 var colDef = this.column.colDef;
+                var resultCellRenderer;
                 if (colDef.template) {
                     this.vParentOfValue.setInnerHtml(colDef.template);
                 }
@@ -2978,10 +2981,10 @@ var ag;
                     }
                 }
                 else if (colDef.floatingCellRenderer && this.node.floating) {
-                    this.useCellRenderer(colDef.floatingCellRenderer);
+                    resultCellRenderer = this.useCellRenderer(colDef.floatingCellRenderer);
                 }
                 else if (colDef.cellRenderer) {
-                    this.useCellRenderer(colDef.cellRenderer);
+                    resultCellRenderer = this.useCellRenderer(colDef.cellRenderer);
                 }
                 else {
                     // if we insert undefined, then it displays as the string 'undefined', ugly!
@@ -2990,14 +2993,15 @@ var ag;
                     }
                 }
                 if (colDef.wrapped) {
-                    this.useCellRenderer({ renderer: 'multiline' });
+                    console.log(this.vParentOfValue.getElement());
+                    this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
                     return;
                 }
             };
-            RenderedCell.prototype.useCellRenderer = function (cellRenderer) {
+            RenderedCell.prototype.useCellRenderer = function (cellRenderer, preValue) {
                 var colDef = this.column.colDef;
                 var rendererParams = {
-                    value: this.value,
+                    value: preValue || this.value,
                     valueGetter: this.getValue,
                     data: this.node.data,
                     node: this.node,
@@ -3037,6 +3041,7 @@ var ag;
                     // otherwise assume it was html, so just insert
                     this.vParentOfValue.setInnerHtml(resultFromRenderer);
                 }
+                return resultFromRenderer;
             };
             RenderedCell.prototype.addClasses = function () {
                 this.vGridCell.addClass('ag-cell');

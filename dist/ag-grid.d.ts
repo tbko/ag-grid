@@ -656,7 +656,7 @@ declare module ag.grid {
         isVolatile(): boolean;
         refreshCell(): void;
         private putDataIntoCell();
-        private useCellRenderer(cellRenderer);
+        private useCellRenderer(cellRenderer, preValue?);
         private addClasses();
     }
 }
