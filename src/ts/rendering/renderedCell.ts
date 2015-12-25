@@ -657,7 +657,6 @@ module ag.grid {
             }
 
             if (colDef.wrapped) {
-                console.log(this.vParentOfValue.getElement());
                 this.useCellRenderer({renderer: 'multiline'}, resultCellRenderer);
                 return;
             }

@@ -2993,7 +2993,6 @@ var ag;
                     }
                 }
                 if (colDef.wrapped) {
-                    console.log(this.vParentOfValue.getElement());
                     this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
                     return;
                 }
@@ -3651,6 +3650,7 @@ var ag;
         var constants = grid.Constants;
         function groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService) {
             return function groupCellRenderer(params) {
+                console.log('group cell rendered');
                 var eGroupCell = document.createElement('span');
                 var node = params.node;
                 var cellExpandable = node.group && !node.footer;
@@ -4444,9 +4444,11 @@ var ag;
                     // count how many grid rows take lines above current
                     if (node) {
                         if (!node.group) {
+                            // debugger;
                             delta = node.gridHeight;
                         }
                         else {
+                            // console.log('group row rendered');
                             delta = 1;
                         }
                     }
@@ -6520,12 +6522,16 @@ var ag;
                         mappedData.push(node);
                     }
                     if (node.group && node.expanded) {
+                        // debugger;
                         this.addToMap(mappedData, node.childrenAfterSort);
                         // put a footer in if user is looking for it
                         if (this.gridOptionsWrapper.isGroupIncludeFooter()) {
                             var footerNode = this.createFooterNode(node);
                             mappedData.push(footerNode);
                         }
+                    }
+                    if (groupSuppressRow && node.group && !node.expanded) {
+                        this.addToMap(mappedData, [node.childrenAfterSort[0]]);
                     }
                 }
             };
@@ -9640,7 +9646,6 @@ var ag;
                 this.rowRenderer.setListenMouseMove(false);
             };
             Grid.prototype.onColumnChanged = function (event) {
-                console.log('init');
                 this.rowRenderer.countGridRows();
                 if (event.isPivotChanged()) {
                     this.inMemoryRowController.onPivotChanged();

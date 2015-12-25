@@ -459,8 +459,10 @@ module ag.grid {
                 // count how many grid rows take lines above current
                 if (node) {
                     if (!node.group) {
+                        // debugger;
                         delta = node.gridHeight;
                     } else {
+                        // console.log('group row rendered');
                         delta = 1;
                     }
                 }
