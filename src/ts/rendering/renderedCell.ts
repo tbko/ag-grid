@@ -597,6 +597,7 @@ module ag.grid {
                 this.vCellWrapper.addClass('ag-cell-wrapper');
                 this.vGridCell.appendChild(this.vCellWrapper);
 
+                debugger
                 this.createSelectionCheckbox();
                 this.vCellWrapper.appendChild(new ag.vdom.VWrapperElement(this.eCheckboxOutter));
 

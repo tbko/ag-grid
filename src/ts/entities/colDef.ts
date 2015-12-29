@@ -7,6 +7,7 @@ module ag.grid {
 
         /** If sorting by default, set it here. Set to 'asc' or 'desc' */
         sort?: string;
+        sortNumeric: boolean;
 
         /** If sorting more than one column by default, the milliseconds when this column was sorted, so we know what order to sort the columns in. */
         sortedAt?: number;

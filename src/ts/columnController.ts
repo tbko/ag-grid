@@ -284,12 +284,12 @@ module ag.grid {
         }
 
         public setColumnVisible(column: Column, visible: boolean): void {
+            // debugger;
             column.visible = visible;
 
             this.updateModel();
             var event = new ColumnChangeEvent(Events.EVENT_COLUMN_VISIBLE).withColumn(column);
             this.eventService.dispatchEvent(Events.EVENT_COLUMN_VISIBLE, event);
-            // debugger;
             if (column.colDef.headerGroup) {
 
                 var groupGolumns: Column[] = [];
@@ -517,6 +517,7 @@ module ag.grid {
 
         // called from API
         public hideColumns(colIds: any, hide: any) {
+            // debugger;
             var updatedCols: Column[] = [];
             this.allColumns.forEach( (column: Column) => {
                 var idThisCol = column.colId;
@@ -646,6 +647,8 @@ module ag.grid {
                 this.columnGroups = null;
                 return;
             }
+
+            // debugger;
 
             // split the columns into groups
             var currentGroup = <any> null;

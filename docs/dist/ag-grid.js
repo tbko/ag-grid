@@ -2939,6 +2939,7 @@ var ag;
                     this.vCellWrapper = new ag.vdom.VHtmlElement('span');
                     this.vCellWrapper.addClass('ag-cell-wrapper');
                     this.vGridCell.appendChild(this.vCellWrapper);
+                    debugger;
                     this.createSelectionCheckbox();
                     this.vCellWrapper.appendChild(new ag.vdom.VWrapperElement(this.eCheckboxOutter));
                     // eventually we call eSpanWithValue.innerHTML = xxx, so cannot include the checkbox (above) in this span
@@ -9646,6 +9647,7 @@ var ag;
                 this.rowRenderer.setListenMouseMove(false);
             };
             Grid.prototype.onColumnChanged = function (event) {
+                // debugger;
                 this.rowRenderer.countGridRows();
                 if (event.isPivotChanged()) {
                     this.inMemoryRowController.onPivotChanged();
@@ -10907,18 +10909,21 @@ var ag;
             RenderedHeaderCell.prototype.addSortHandling = function (headerCellLabel) {
                 var that = this;
                 headerCellLabel.querySelector('.ag-js-draghandler').addEventListener("click", function (event) {
+                    if (!that.gridOptionsWrapper.isEnableSorting()) {
+                        return;
+                    }
                     var sortDirectionMap = {
                         'asc': 'up',
                         'desc': 'down'
                     };
-                    debugger;
                     // update sort on current col
                     that.column.sort = that.getNextSortDirection();
                     if (that.column.sort) {
+                        var sortTypeIcon = that.column.colDef.sortNumeric ? 'arrow' : 'alpha';
                         Array.prototype.slice.call(that.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function (el) {
                             el.classList.remove('active');
                         });
-                        that.eHeaderCell.querySelector(".icon-sort-alpha-" + sortDirectionMap[that.column.sort]).classList.add('active');
+                        that.eHeaderCell.querySelector(".icon-sort-" + sortTypeIcon + "-" + sortDirectionMap[that.column.sort]).classList.add('active');
                     }
                     // sortedAt used for knowing order of cols when multi-col sort
                     if (that.column.sort) {
@@ -11386,11 +11391,11 @@ var ag;
                 return this.allColumns;
             };
             ColumnController.prototype.setColumnVisible = function (column, visible) {
+                // debugger;
                 column.visible = visible;
                 this.updateModel();
                 var event = new grid.ColumnChangeEvent(grid.Events.EVENT_COLUMN_VISIBLE).withColumn(column);
                 this.eventService.dispatchEvent(grid.Events.EVENT_COLUMN_VISIBLE, event);
-                // debugger;
                 if (column.colDef.headerGroup) {
                     var groupGolumns = [];
                     this.allColumns.forEach(function (el) {
@@ -11605,6 +11610,7 @@ var ag;
             // called from API
             ColumnController.prototype.hideColumns = function (colIds, hide) {
                 var _this = this;
+                // debugger;
                 var updatedCols = [];
                 this.allColumns.forEach(function (column) {
                     var idThisCol = column.colId;
@@ -11727,6 +11733,7 @@ var ag;
                     this.columnGroups = null;
                     return;
                 }
+                // debugger;
                 // split the columns into groups
                 var currentGroup = null;
                 this.columnGroups = [];

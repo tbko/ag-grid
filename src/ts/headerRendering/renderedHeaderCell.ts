@@ -658,19 +658,22 @@ module ag.grid {
             var that = this;
 
             headerCellLabel.querySelector('.ag-js-draghandler').addEventListener("click", function (event: any) {
+                if (!that.gridOptionsWrapper.isEnableSorting()) {
+                    return;
+                }
                 var sortDirectionMap: { [s: string]: string; } = {
                     'asc': 'up',
                     'desc': 'down'
                 }
-                debugger;
 
                 // update sort on current col
                 that.column.sort = that.getNextSortDirection();
                 if (that.column.sort) {
+                    var sortTypeIcon = that.column.colDef.sortNumeric ? 'arrow' : 'alpha'
                     Array.prototype.slice.call(that.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function(el: HTMLElement) {
                         el.classList.remove('active');
                     });
-                    that.eHeaderCell.querySelector(`.icon-sort-alpha-${sortDirectionMap[that.column.sort]}`).classList.add('active');
+                    that.eHeaderCell.querySelector(`.icon-sort-${sortTypeIcon}-${sortDirectionMap[that.column.sort]}`).classList.add('active');
                 }
 
 
