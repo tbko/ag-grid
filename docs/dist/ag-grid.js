@@ -2939,7 +2939,6 @@ var ag;
                     this.vCellWrapper = new ag.vdom.VHtmlElement('span');
                     this.vCellWrapper.addClass('ag-cell-wrapper');
                     this.vGridCell.appendChild(this.vCellWrapper);
-                    debugger;
                     this.createSelectionCheckbox();
                     this.vCellWrapper.appendChild(new ag.vdom.VWrapperElement(this.eCheckboxOutter));
                     // eventually we call eSpanWithValue.innerHTML = xxx, so cannot include the checkbox (above) in this span
