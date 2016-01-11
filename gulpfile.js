@@ -84,7 +84,7 @@ function tsDebugTask() {
     return tsResult.js
         .pipe(sourcemaps.write()) // for sourcemaps only
         .pipe(rename('ag-grid.js'))
-        .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid'))
+        .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
         .pipe(gulp.dest('./docs/dist'));
 
 }
@@ -111,18 +111,18 @@ function tsReleaseTask() {
             .pipe(header(dtsHeaderTemplate, { pkg : pkg }))
             .pipe(gulp.dest('dist')),
         jsPlain
-            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid')),
+            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/')),
         tsResult.js
             .pipe(rename('ag-grid.js'))
             .pipe(header(headerTemplate, { pkg : pkg }))
             // .pipe(gulp.dest('./dist'))
-            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid'))
+            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
             .pipe(gulp.dest('./docs/dist'))
             .pipe(buffer())
             .pipe(uglify())
             .pipe(rename('ag-grid.min.js'))
             // .pipe(gulp.dest('./dist'))
-            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid'))
+            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
             .pipe(gulp.dest('./docs/dist'))
     ]);
 }
@@ -138,7 +138,7 @@ function stylusTask() {
                     compress: false
                 }))
                 .pipe(gulp.dest('./docs/dist/'))
-                .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/'));
+                .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'));
         }));
 
     // Compressed
@@ -155,7 +155,7 @@ function stylusTask() {
                     name = name.substring(0, dot) + '.min.css';
                     return name;
                 })()))
-                .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/'))
+                .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
                 .pipe(gulp.dest('./docs/dist/'));
         }));
 }
