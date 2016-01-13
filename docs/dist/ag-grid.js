@@ -1726,7 +1726,7 @@ var ag;
 (function (ag) {
     var grid;
     (function (grid) {
-        var DEFAULT_ROW_HEIGHT = 25;
+        var DEFAULT_ROW_HEIGHT = 30;
         var constants = grid.Constants;
         function isTrue(value) {
             return value === true || value === 'true';

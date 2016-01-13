@@ -2,7 +2,7 @@
 
 module ag.grid {
 
-    var DEFAULT_ROW_HEIGHT = 25;
+    var DEFAULT_ROW_HEIGHT = 30;
     var constants = Constants;
 
     function isTrue(value: any) {

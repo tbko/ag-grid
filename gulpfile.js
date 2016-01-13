@@ -62,7 +62,7 @@ gulp.task('es6', function (callback) {
 
     return tsResult.js
         .pipe(sourcemaps.write()) // for sourcemaps only
-        .pipe(gulp.dest('./docs/dist'));
+        .pipe(gulp.dest('./dist'));
 });
 
 // does TS compiling, sourcemaps = yes, minification = no, distFolder = no
@@ -85,7 +85,7 @@ function tsDebugTask() {
         .pipe(sourcemaps.write()) // for sourcemaps only
         .pipe(rename('ag-grid.js'))
         .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
-        .pipe(gulp.dest('./docs/dist'));
+        .pipe(gulp.dest('./dist'));
 
 }
 
@@ -117,13 +117,13 @@ function tsReleaseTask() {
             .pipe(header(headerTemplate, { pkg : pkg }))
             // .pipe(gulp.dest('./dist'))
             .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
-            .pipe(gulp.dest('./docs/dist'))
+            .pipe(gulp.dest('./dist'))
             .pipe(buffer())
             .pipe(uglify())
             .pipe(rename('ag-grid.min.js'))
             // .pipe(gulp.dest('./dist'))
             .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
-            .pipe(gulp.dest('./docs/dist'))
+            .pipe(gulp.dest('./dist'))
     ]);
 }
 
@@ -137,7 +137,7 @@ function stylusTask() {
                     use: nib(),
                     compress: false
                 }))
-                .pipe(gulp.dest('./docs/dist/'))
+                .pipe(gulp.dest('./dist/'))
                 .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'));
         }));
 
@@ -156,7 +156,7 @@ function stylusTask() {
                     return name;
                 })()))
                 .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
-                .pipe(gulp.dest('./docs/dist/'));
+                .pipe(gulp.dest('./dist/'));
         }));
 }
 
