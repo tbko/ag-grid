@@ -6329,13 +6329,16 @@ var ag;
                 function compare(nodeA, nodeB, column, isInverted) {
                     var valueA = that.valueService.getValue(column.colDef, nodeA.data, nodeA);
                     var valueB = that.valueService.getValue(column.colDef, nodeB.data, nodeB);
+                    var temp;
                     if (column.colDef.comparator) {
                         //if comparator provided, use it
                         return column.colDef.comparator(valueA, valueB, nodeA, nodeB, isInverted);
                     }
                     else {
                         //otherwise do our own comparison
-                        return _.defaultComparator(valueA, valueB);
+                        temp = _.defaultComparator(valueA, valueB);
+                        console.log(temp);
+                        return temp;
                     }
                 }
                 nodes.sort(function (nodeA, nodeB) {
@@ -7226,7 +7229,7 @@ var ag;
                 var rowOverlayOffset = headerHeight - offsetTopY;
                 var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
                 var rightGap = this.gridPanel.getRightGap();
-                var rightPosition = rightGap > 0 ? rightGap : 15;
+                var rightPosition = rightGap > 0 ? rightGap : 0;
                 this.setRowOverlayTop(rowOverlayOffset);
                 this.setRowOverlayRowHeight(rowOverlayHeight);
                 this.setRowOverlayRight(rightPosition);
@@ -10908,7 +10911,7 @@ var ag;
             RenderedHeaderCell.prototype.addSortHandling = function (headerCellLabel) {
                 var that = this;
                 headerCellLabel.querySelector('.ag-js-draghandler').addEventListener("click", function (event) {
-                    debugger;
+                    // debugger
                     if (!that.gridOptionsWrapper.isEnableSorting()) {
                         return;
                     }

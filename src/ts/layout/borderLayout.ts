@@ -189,7 +189,7 @@ module ag.grid {
             var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
 
             var rightGap = this.gridPanel.getRightGap();
-            var rightPosition = rightGap > 0 ? rightGap : 15;
+            var rightPosition = rightGap > 0 ? rightGap : 0;
 
             this.setRowOverlayTop(rowOverlayOffset);
             this.setRowOverlayRowHeight(rowOverlayHeight);            
@@ -391,8 +391,8 @@ module ag.grid {
 
         private createOverlayRowTemplate(): string {
             var tmpl = `
-                <a class="k-icon k-edit" title="Редактировать" href="#" id="ag-action-row-edit"><span class="i-edit" style="pointer-events:all;"></span></a>
-                <a class="k-icon k-delete" title="Удалить" href="#" id="ag-action-row-delete"><span class="i-delete" style="pointer-events:all;"></span></a>
+                <a title="Редактировать" href="#" id="ag-action-row-edit"><span class="i-edit" style="pointer-events:all;"></span></a>
+                <a title="Удалить" href="#" id="ag-action-row-delete"><span class="i-delete" style="pointer-events:all;"></span></a>
             `;
             return this.getOverlayRowWrapper(tmpl);
         }
