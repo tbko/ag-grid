@@ -41,7 +41,7 @@ module ag.grid {
 
                 out += '<div style="overflow: hidden; text-overflow: ellipsis; width: ' + width + 'px;">' + outputLines[outputLines.length - 1] + '</div>'
 
-                if (params.column.index === 0 && width >= 10) {
+                if (params.column.index === 0 && width > 48) {
                     var shifter = getShifter(params.node.level || 0, true);
                     out = '<div class="pi-table-cell_top pi-table-cell_fluid">' + out + '</div>'
                     out = '<div class="pi-table">' + shifter + out + '</div>'
