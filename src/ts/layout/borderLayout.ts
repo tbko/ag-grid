@@ -404,8 +404,8 @@ module ag.grid {
             this.eOverlayRowWrapper.appendChild(
                 _.loadTemplate(this.createOverlayRowTemplate().trim())
             );
-            this.eOverlayRowWrapper.querySelector('#ag-action-row-edit > span').addEventListener('click', this.rowEditListener);
-            this.eOverlayRowWrapper.querySelector('#ag-action-row-delete > span').addEventListener('click', this.rowDeleteListener);
+            this.eOverlayRowWrapper.querySelector('#ag-action-row-edit > span.i-edit').addEventListener('click', this.rowEditListener);
+            this.eOverlayRowWrapper.querySelector('#ag-action-row-delete > span.i-delete').addEventListener('click', this.rowDeleteListener);
         }
 
         public showOverlay(key: string) {
