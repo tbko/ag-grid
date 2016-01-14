@@ -2536,9 +2536,9 @@ var ag;
                 this.createParentOfValue();
                 this.populateCell();
                 // Add cell value as tooltip to show long content if option set
-                if (this.value && this.column.colDef.showCellTooltip) {
-                    this.vGridCell.setAttribute("title", this.value);
-                }
+                // if (this.value && this.column.colDef.showCellTooltip) {
+                //     this.vGridCell.setAttribute("title", this.value);
+                // }
                 if (this.eCheckbox) {
                     this.setSelected(this.selectionController.isNodeSelected(this.node));
                 }
@@ -10908,6 +10908,7 @@ var ag;
             RenderedHeaderCell.prototype.addSortHandling = function (headerCellLabel) {
                 var that = this;
                 headerCellLabel.querySelector('.ag-js-draghandler').addEventListener("click", function (event) {
+                    debugger;
                     if (!that.gridOptionsWrapper.isEnableSorting()) {
                         return;
                     }

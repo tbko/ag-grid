@@ -149,9 +149,9 @@ module ag.grid {
             this.populateCell();
 
             // Add cell value as tooltip to show long content if option set
-            if (this.value && this.column.colDef.showCellTooltip) {
-                this.vGridCell.setAttribute("title", this.value);
-            }
+            // if (this.value && this.column.colDef.showCellTooltip) {
+            //     this.vGridCell.setAttribute("title", this.value);
+            // }
 
             if (this.eCheckbox) {
                 this.setSelected(this.selectionController.isNodeSelected(this.node));

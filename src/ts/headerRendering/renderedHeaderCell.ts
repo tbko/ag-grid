@@ -658,6 +658,7 @@ module ag.grid {
             var that = this;
 
             headerCellLabel.querySelector('.ag-js-draghandler').addEventListener("click", function (event: any) {
+                // debugger
                 if (!that.gridOptionsWrapper.isEnableSorting()) {
                     return;
                 }
