@@ -6329,16 +6329,13 @@ var ag;
                 function compare(nodeA, nodeB, column, isInverted) {
                     var valueA = that.valueService.getValue(column.colDef, nodeA.data, nodeA);
                     var valueB = that.valueService.getValue(column.colDef, nodeB.data, nodeB);
-                    var temp;
                     if (column.colDef.comparator) {
                         //if comparator provided, use it
                         return column.colDef.comparator(valueA, valueB, nodeA, nodeB, isInverted);
                     }
                     else {
                         //otherwise do our own comparison
-                        temp = _.defaultComparator(valueA, valueB);
-                        console.log(temp);
-                        return temp;
+                        return _.defaultComparator(valueA, valueB);
                     }
                 }
                 nodes.sort(function (nodeA, nodeB) {
@@ -7401,7 +7398,7 @@ var ag;
                 return tmpl;
             };
             BorderLayout.prototype.createOverlayRowTemplate = function () {
-                var tmpl = "\n                <a class=\"k-icon k-edit\" title=\"\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C\" href=\"#\" id=\"ag-action-row-edit\"><span class=\"i-edit\" style=\"pointer-events:all;\"></span></a>\n                <a class=\"k-icon k-delete\" title=\"\u0423\u0434\u0430\u043B\u0438\u0442\u044C\" href=\"#\" id=\"ag-action-row-delete\"><span class=\"i-delete\" style=\"pointer-events:all;\"></span></a>\n            ";
+                var tmpl = "\n                <a title=\"\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C\" href=\"#\" id=\"ag-action-row-edit\"><span class=\"i-edit\" style=\"pointer-events:all;\"></span></a>\n                <a title=\"\u0423\u0434\u0430\u043B\u0438\u0442\u044C\" href=\"#\" id=\"ag-action-row-delete\"><span class=\"i-delete\" style=\"pointer-events:all;\"></span></a>\n            ";
                 return this.getOverlayRowWrapper(tmpl);
             };
             BorderLayout.prototype.showOverlayRow = function () {
