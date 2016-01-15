@@ -7253,6 +7253,13 @@ var ag;
                 return;
             };
             BorderLayout.prototype.rowOverlayEnterListener = function (event) {
+                event.target.style.display = 'none';
+                var underEl = document.elementFromPoint(event.clientX, event.clientY);
+                var emptySpaceUnder = underEl.classList.contains('ag-body-viewport');
+                event.target.style.display = '';
+                if (emptySpaceUnder) {
+                    return;
+                }
                 // start processing overlay when move into zone
                 this.eOverlayRowWrapper.style.display = '';
                 this.eventService.dispatchEvent(grid.Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
@@ -7398,17 +7405,30 @@ var ag;
                 return tmpl;
             };
             BorderLayout.prototype.createOverlayRowTemplate = function () {
-                var tmpl = "\n                <a title=\"\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C\" href=\"#\" id=\"ag-action-row-edit\"><span class=\"i-edit\" style=\"pointer-events:all;\"></span></a>\n                <a title=\"\u0423\u0434\u0430\u043B\u0438\u0442\u044C\" href=\"#\" id=\"ag-action-row-delete\"><span class=\"i-delete\" style=\"pointer-events:all;\"></span></a>\n            ";
+                var tmpl = "\n                <a title=\"\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C\" href=\"#\"><span id=\"ag-action-row-edit\" class=\"i-edit\" style=\"pointer-events:all;\"></span></a>\n                <a title=\"\u0423\u0434\u0430\u043B\u0438\u0442\u044C\" href=\"#\"><span id=\"ag-action-row-delete\" class=\"i-delete\" style=\"pointer-events:all;\"></span></a>\n            ";
                 return this.getOverlayRowWrapper(tmpl);
             };
             BorderLayout.prototype.showOverlayRow = function () {
+                var _this = this;
                 if (this.eOverlayRowZoneWrapper === void 0)
                     return;
                 document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
                 this.eOverlayRowWrapper.style.display = 'none';
                 this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
-                this.eOverlayRowWrapper.querySelector('#ag-action-row-edit > span.i-edit').addEventListener('click', this.rowEditListener);
-                this.eOverlayRowWrapper.querySelector('#ag-action-row-delete > span.i-delete').addEventListener('click', this.rowDeleteListener);
+                console.log(this.eOverlayRowWrapper.querySelector('#ag-action-row-edit'));
+                console.log(this.eOverlayRowWrapper.querySelector('#ag-action-row-delete'));
+                this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    _this.rowEditListener(event);
+                    return false;
+                });
+                this.eOverlayRowWrapper.querySelector('#ag-action-row-delete').addEventListener('click', function (event) {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    _this.rowDeleteListener(event);
+                    return false;
+                });
             };
             BorderLayout.prototype.showOverlay = function (key) {
                 var overlay = this.overlays ? this.overlays[key] : null;

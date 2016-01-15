@@ -219,6 +219,13 @@ module ag.grid {
         }
 
         private rowOverlayEnterListener(event: any): boolean {
+            (<HTMLElement>event.target).style.display = 'none';
+            var underEl = document.elementFromPoint(event.clientX, event.clientY);
+            var emptySpaceUnder = underEl.classList.contains('ag-body-viewport'));
+            (<HTMLElement>event.target).style.display = '';
+            if (emptySpaceUnder) {
+                return;
+            }
             // start processing overlay when move into zone
             this.eOverlayRowWrapper.style.display = '';
             this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
@@ -391,8 +398,8 @@ module ag.grid {
 
         private createOverlayRowTemplate(): string {
             var tmpl = `
-                <a title="Редактировать" href="#" id="ag-action-row-edit"><span class="i-edit" style="pointer-events:all;"></span></a>
-                <a title="Удалить" href="#" id="ag-action-row-delete"><span class="i-delete" style="pointer-events:all;"></span></a>
+                <a title="Редактировать" href="#"><span id="ag-action-row-edit" class="i-edit" style="pointer-events:all;"></span></a>
+                <a title="Удалить" href="#"><span id="ag-action-row-delete" class="i-delete" style="pointer-events:all;"></span></a>
             `;
             return this.getOverlayRowWrapper(tmpl);
         }
@@ -404,8 +411,20 @@ module ag.grid {
             this.eOverlayRowWrapper.appendChild(
                 _.loadTemplate(this.createOverlayRowTemplate().trim())
             );
-            this.eOverlayRowWrapper.querySelector('#ag-action-row-edit > span.i-edit').addEventListener('click', this.rowEditListener);
-            this.eOverlayRowWrapper.querySelector('#ag-action-row-delete > span.i-delete').addEventListener('click', this.rowDeleteListener);
+            console.log(this.eOverlayRowWrapper.querySelector('#ag-action-row-edit'));
+            console.log(this.eOverlayRowWrapper.querySelector('#ag-action-row-delete'));
+            this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                this.rowEditListener(event);
+                return false; 
+            });
+            this.eOverlayRowWrapper.querySelector('#ag-action-row-delete').addEventListener('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                this.rowDeleteListener(event);
+                return false; 
+            });
         }
 
         public showOverlay(key: string) {
