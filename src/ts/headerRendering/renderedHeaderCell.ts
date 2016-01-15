@@ -726,6 +726,9 @@ module ag.grid {
             // line-height: 19px - single line height
             var words = allText.split(' ');
             var overflown = false;
+            if (!elText) {
+                return;
+            }
             elText.innerHTML = words[0];
 
             // find the word thab breaks last allowed line
