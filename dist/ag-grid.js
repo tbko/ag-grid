@@ -7221,7 +7221,7 @@ var ag;
                 this.eOverlayRowZoneWrapper = rowOverlayZone;
             };
             BorderLayout.prototype.positionOverlayRowZone = function (offsetTopY) {
-                var eBodyViewport = this.gridPanel.getBodyViewport();
+                var eBodyViewport = this.gridPanel.getBodyContainer();
                 var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
                 var rowOverlayOffset = headerHeight - offsetTopY;
                 var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
@@ -7253,6 +7253,7 @@ var ag;
                 return;
             };
             BorderLayout.prototype.rowOverlayEnterListener = function (event) {
+                console.log(event);
                 event.target.style.display = 'none';
                 var underEl = document.elementFromPoint(event.clientX, event.clientY);
                 var emptySpaceUnder = underEl.classList.contains('ag-body-viewport');

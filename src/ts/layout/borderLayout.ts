@@ -183,7 +183,7 @@ module ag.grid {
         }
 
         public positionOverlayRowZone(offsetTopY: number) {
-            var eBodyViewport = this.gridPanel.getBodyViewport();
+            var eBodyViewport = this.gridPanel.getBodyContainer();
             var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
             var rowOverlayOffset = headerHeight - offsetTopY;
             var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
@@ -219,9 +219,10 @@ module ag.grid {
         }
 
         private rowOverlayEnterListener(event: any): boolean {
+            console.log(event);
             (<HTMLElement>event.target).style.display = 'none';
             var underEl = document.elementFromPoint(event.clientX, event.clientY);
-            var emptySpaceUnder = underEl.classList.contains('ag-body-viewport'));
+            var emptySpaceUnder = underEl.classList.contains('ag-body-viewport');
             (<HTMLElement>event.target).style.display = '';
             if (emptySpaceUnder) {
                 return;
