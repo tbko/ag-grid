@@ -111,6 +111,11 @@ module ag.grid {
 
             this.overlays = params.overlays;
             this.setupOverlays();
+
+            
+            // this.eGui.style.width = '1630px';
+            // document.getElementsByClassName('work-space-content-body')[0].offsetWidth + 'px';
+            // console.log(document.getElementsByClassName('work-space-content-body')[0].offsetWidth + 'px');
         }
 
         public getOverlays() {
@@ -177,6 +182,7 @@ module ag.grid {
             rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
             rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
 
+            rowOverlay.style.display = 'none';
             this.eOverlayRowWrapper = rowOverlay;
             this.eOverlayRowZoneWrapper = rowOverlayZone;
 
@@ -219,12 +225,13 @@ module ag.grid {
         }
 
         private rowOverlayEnterListener(event: any): boolean {
-            console.log(event);
             (<HTMLElement>event.target).style.display = 'none';
             var underEl = document.elementFromPoint(event.clientX, event.clientY);
+            console.log(underEl);
             var emptySpaceUnder = underEl.classList.contains('ag-body-viewport');
             (<HTMLElement>event.target).style.display = '';
             if (emptySpaceUnder) {
+                console.log('empty');
                 return;
             }
             // start processing overlay when move into zone
@@ -292,6 +299,12 @@ module ag.grid {
             if (atLeastOneChanged) {
                 this.fireSizeChanged();
             }
+
+            var rootWidth = document.getElementsByClassName('b-content-center')[0].offsetWidth + 'px';
+            this.eGui.style.width = rootWidth;
+            // this.eGui.style.width = '1300px';
+            // this.eGui.style.width = '1620px';
+            // debugger;
 
             return atLeastOneChanged;
         }
@@ -361,6 +374,9 @@ module ag.grid {
                 centerWidth = 0;
             }
 
+            // console.log(this.eGui);
+            // console.log(totalWidth);
+
             this.eCenterWrapper.style.width = centerWidth + 'px';
         }
 
@@ -385,7 +401,7 @@ module ag.grid {
 
         public hideOverlay() {
             _.removeAllChildren(this.eOverlayWrapper);
-            this.eOverlayWrapper.style.display = 'none';
+            // this.eOverlayWrapper.style.display = 'none';
         }
 
         private getOverlayRowWrapper(content: string = '') {
@@ -408,12 +424,10 @@ module ag.grid {
         public showOverlayRow() {
             if (this.eOverlayRowZoneWrapper === void 0) return;
             document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
-            this.eOverlayRowWrapper.style.display = 'none';
+            // this.eOverlayRowWrapper.style.display = 'none';
             this.eOverlayRowWrapper.appendChild(
                 _.loadTemplate(this.createOverlayRowTemplate().trim())
             );
-            console.log(this.eOverlayRowWrapper.querySelector('#ag-action-row-edit'));
-            console.log(this.eOverlayRowWrapper.querySelector('#ag-action-row-delete'));
             this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
                 event.stopPropagation();
                 event.preventDefault();

@@ -322,6 +322,17 @@ var ag;
                 }
                 if (!eventType)
                     throw new SyntaxError('Only HTMLEvents and MouseEvents interfaces are supported');
+                if (typeof MouseEvent !== 'function') {
+                    (function () {
+                        var _MouseEvent = window.MouseEvent;
+                        window.MouseEvent = function (type, dict) {
+                            dict = dict | {};
+                            var event = document.createEvent('MouseEvents');
+                            event.initMouseEvent(type, (typeof dict.bubbles == 'undefined') ? true : !!dict.bubbles, (typeof dict.cancelable == 'undefined') ? false : !!dict.cancelable, dict.view || window, dict.detail | 0, dict.screenX | 0, dict.screenY | 0, dict.clientX | 0, dict.clientY | 0, !!dict.ctrlKey, !!dict.altKey, !!dict.shiftKey, !!dict.metaKey, dict.button | 0, dict.relatedTarget || null);
+                            return event;
+                        };
+                    })();
+                }
                 if (document.createEvent) {
                     oEvent = document.createEvent(eventType);
                     if (eventType == 'HTMLEvents') {
@@ -3391,7 +3402,6 @@ var ag;
                 function listenMove(event) {
                     var eRoot = _.findParentWithClass(that.eBodyContainer, 'ag-root');
                     var eRowOverlay = document.querySelector('#ag-overlay-row');
-                    // debugger;
                     that.rowRenderer.setHoveredOn(null);
                     if (that.node) {
                         if (that.node.group) {
@@ -7169,6 +7179,9 @@ var ag;
                 }
                 this.overlays = params.overlays;
                 this.setupOverlays();
+                // this.eGui.style.width = '1630px';
+                // document.getElementsByClassName('work-space-content-body')[0].offsetWidth + 'px';
+                // console.log(document.getElementsByClassName('work-space-content-body')[0].offsetWidth + 'px');
             }
             BorderLayout.prototype.getOverlays = function () {
                 return this.overlays;
@@ -7217,6 +7230,7 @@ var ag;
                 rowOverlayZone.addEventListener('mousewheel', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
                 rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
+                rowOverlay.style.display = 'none';
                 this.eOverlayRowWrapper = rowOverlay;
                 this.eOverlayRowZoneWrapper = rowOverlayZone;
             };
@@ -7253,16 +7267,18 @@ var ag;
                 return;
             };
             BorderLayout.prototype.rowOverlayEnterListener = function (event) {
-                console.log(event);
                 event.target.style.display = 'none';
                 var underEl = document.elementFromPoint(event.clientX, event.clientY);
+                console.log(underEl);
                 var emptySpaceUnder = underEl.classList.contains('ag-body-viewport');
                 event.target.style.display = '';
                 if (emptySpaceUnder) {
+                    console.log('empty');
                     return;
                 }
                 // start processing overlay when move into zone
                 this.eOverlayRowWrapper.style.display = '';
+                console.log('move');
                 this.eventService.dispatchEvent(grid.Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
                 return;
             };
@@ -7317,6 +7333,11 @@ var ag;
                 if (atLeastOneChanged) {
                     this.fireSizeChanged();
                 }
+                var rootWidth = document.getElementsByClassName('b-content-center')[0].offsetWidth + 'px';
+                this.eGui.style.width = rootWidth;
+                // this.eGui.style.width = '1300px';
+                // this.eGui.style.width = '1620px';
+                // debugger;
                 return atLeastOneChanged;
             };
             BorderLayout.prototype.layoutChild = function (childPanel) {
@@ -7378,6 +7399,8 @@ var ag;
                 if (centerWidth < 0) {
                     centerWidth = 0;
                 }
+                // console.log(this.eGui);
+                // console.log(totalWidth);
                 this.eCenterWrapper.style.width = centerWidth + 'px';
             };
             BorderLayout.prototype.setEastVisible = function (visible) {
@@ -7398,7 +7421,7 @@ var ag;
             };
             BorderLayout.prototype.hideOverlay = function () {
                 _.removeAllChildren(this.eOverlayWrapper);
-                this.eOverlayWrapper.style.display = 'none';
+                // this.eOverlayWrapper.style.display = 'none';
             };
             BorderLayout.prototype.getOverlayRowWrapper = function (content) {
                 if (content === void 0) { content = ''; }
@@ -7414,10 +7437,8 @@ var ag;
                 if (this.eOverlayRowZoneWrapper === void 0)
                     return;
                 document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
-                this.eOverlayRowWrapper.style.display = 'none';
+                // this.eOverlayRowWrapper.style.display = 'none';
                 this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
-                console.log(this.eOverlayRowWrapper.querySelector('#ag-action-row-edit'));
-                console.log(this.eOverlayRowWrapper.querySelector('#ag-action-row-delete'));
                 this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', function (event) {
                     event.stopPropagation();
                     event.preventDefault();
@@ -9525,7 +9546,6 @@ var ag;
                 // sure what 'bind' does to the function reference, if it's safe
                 // the result from 'bind').
                 this.windowResizeListener = function resizeListener(ev) {
-                    // console.log(ev.timeStamp);
                     that.doLayout();
                     that.gridPanel.initRowOverlay();
                 };
@@ -9645,6 +9665,7 @@ var ag;
                 this.showToolPanel(gridOptionsWrapper.isShowToolPanel());
                 eUserProvidedDiv.appendChild(this.eRootPanel.getGui());
                 this.logger.log('grid DOM added');
+                this.eRootPanel.getGui().style.width = this.eRootPanel.getGui().offsetWidth + 'px';
                 this.eventService.addEventListener('selectionStateChanged', function (pamparams) {
                     // relay "selection change" message to header
                     headerRenderer.toggleSelectAll(pamparams);
@@ -9661,6 +9682,7 @@ var ag;
                 eventService.addEventListener(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.onRowsStopListenMouseMove.bind(this));
             };
             Grid.prototype.onRowsListenMouseMove = function () {
+                debugger;
                 this.rowRenderer.setListenMouseMove();
             };
             Grid.prototype.onRowsStopListenMouseMove = function () {

@@ -128,7 +128,6 @@ module ag.grid {
             // sure what 'bind' does to the function reference, if it's safe
             // the result from 'bind').
             this.windowResizeListener = function resizeListener(ev) {
-                // console.log(ev.timeStamp);
                 that.doLayout();
                 that.gridPanel.initRowOverlay();
             };
@@ -262,6 +261,7 @@ module ag.grid {
             });
             popupService.init(this.eRootPanel.getGui());
 
+
             // default is we don't show paging panel, this is set to true when datasource is set
             this.eRootPanel.setSouthVisible(false);
 
@@ -270,7 +270,7 @@ module ag.grid {
 
             eUserProvidedDiv.appendChild(this.eRootPanel.getGui());
             this.logger.log('grid DOM added');
-
+            this.eRootPanel.getGui().style.width = this.eRootPanel.getGui().offsetWidth + 'px';
 
             this.eventService.addEventListener('selectionStateChanged', function(pamparams: any) {
                 // relay "selection change" message to header
@@ -290,6 +290,7 @@ module ag.grid {
         }
 
         private onRowsListenMouseMove() {
+            debugger;
             this.rowRenderer.setListenMouseMove();
         }
 
