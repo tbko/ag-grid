@@ -37,6 +37,7 @@ module ag.grid {
         private deleteListener: any;
         private rowEditListener: any;
         private rowDeleteListener: any;
+        private rowSplitListener: any;
         private eventService: EventService;
         private gridOptionsWrapper: GridOptionsWrapper;
         private gridPanel: GridPanel;
@@ -49,6 +50,7 @@ module ag.grid {
             this.deleteListener = params.deleteListener;
             this.rowEditListener = params.rowEditListener;
             this.rowDeleteListener = params.rowDeleteListener;
+            this.rowSplitListener = params.rowSplitListener;
             this.eventService = params.eventService;
             this.gridOptionsWrapper = params.gridOptionsWrapper;
             this.gridPanel = params.gridPanel;
@@ -213,6 +215,7 @@ module ag.grid {
                 }
             }
             var underEl = document.elementFromPoint(event.clientX, event.clientY);
+            // console.log(underEl);
             if (underEl) _.simulateEvent((<HTMLElement>underEl), event.type, coordinates);
             (<HTMLElement>event.target).style.display = '';
         }
@@ -227,7 +230,6 @@ module ag.grid {
         private rowOverlayEnterListener(event: any): boolean {
             (<HTMLElement>event.target).style.display = 'none';
             var underEl = document.elementFromPoint(event.clientX, event.clientY);
-            console.log(underEl);
             var emptySpaceUnder = underEl.classList.contains('ag-body-viewport');
             (<HTMLElement>event.target).style.display = '';
             if (emptySpaceUnder) {
@@ -417,6 +419,7 @@ module ag.grid {
             var tmpl = `
                 <a title="Редактировать" href="#"><span id="ag-action-row-edit" class="i-edit" style="pointer-events:all;"></span></a>
                 <a title="Удалить" href="#"><span id="ag-action-row-delete" class="i-delete" style="pointer-events:all;"></span></a>
+                <a title="Разделить" href="#"><span id="ag-action-row-split" class="i-split" style="pointer-events:all;"></span></a>
             `;
             return this.getOverlayRowWrapper(tmpl);
         }
@@ -438,6 +441,12 @@ module ag.grid {
                 event.stopPropagation();
                 event.preventDefault();
                 this.rowDeleteListener(event);
+                return false; 
+            });
+            this.eOverlayRowWrapper.querySelector('#ag-action-row-split').addEventListener('click', (event) => {
+                event.stopPropagation();
+                event.preventDefault();
+                this.rowSplitListener(event);
                 return false; 
             });
         }

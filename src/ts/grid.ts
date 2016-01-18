@@ -290,7 +290,6 @@ module ag.grid {
         }
 
         private onRowsListenMouseMove() {
-            debugger;
             this.rowRenderer.setListenMouseMove();
         }
 

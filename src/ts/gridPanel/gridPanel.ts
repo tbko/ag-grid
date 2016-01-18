@@ -162,6 +162,16 @@ module ag.grid {
                     }
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                 },
+                rowSplitListener: function(ev: Event) {
+                    ev.preventDefault();
+
+                    var selected = [that.rowRenderer.getHoveredOn()];
+                    var multitoolParams = {
+                        name: 'split',
+                        items: selected
+                    }
+                    that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                },
                 eventService: that.eventService,
                 gridOptionsWrapper: that.gridOptionsWrapper,
                 gridPanel: this

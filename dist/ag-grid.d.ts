@@ -1214,6 +1214,7 @@ declare module ag.grid {
         private deleteListener;
         private rowEditListener;
         private rowDeleteListener;
+        private rowSplitListener;
         private eventService;
         private gridOptionsWrapper;
         private gridPanel;
