@@ -191,13 +191,19 @@ module ag.grid {
         }
 
         public positionOverlayRowZone(offsetTopY: number) {
+
             var eBodyViewport = this.gridPanel.getBodyContainer();
             var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
-            var rowOverlayOffset = headerHeight - offsetTopY;
+            // var rowOverlayOffset = headerHeight + offsetTopY;
+            var rowOverlayOffset = headerHeight;
             var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
+            console.log(offsetTopY);
+            console.log(eBodyViewport.clientHeight);
+            console.log(offsetTopY + eBodyViewport.clientHeight);
+            console.log('***');
 
             var rightGap = this.gridPanel.getRightGap();
-            var rightPosition = rightGap > 0 ? rightGap : 0;
+            var rightPosition = rightGap > 0 ? rightGap : 18;
 
             this.setRowOverlayTop(rowOverlayOffset);
             this.setRowOverlayRowHeight(rowOverlayHeight);            
