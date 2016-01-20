@@ -96,7 +96,7 @@ module ag.grid {
                             }
                             return acc;
                         }, 0);
-                        return realRowsCount + fillinRowsCount;
+                        return realRowsCount + (fillinRowsCount || 0);
 
                     } else {
                         return 0;

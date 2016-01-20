@@ -47,6 +47,7 @@ module ag.grid {
         private eParentsOfRows: HTMLElement[];
 
         private hoveredOn: any;
+        private isSingleRow: boolean;
 
         public init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel,
                     angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any,
@@ -66,6 +67,7 @@ module ag.grid {
             this.findAllElements(gridPanel);
             this.eventService = eventService;
             this.hoveredOn = undefined;
+            this.isSingleRow = true;
 
             this.cellRendererMap = {
                 'group': groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
@@ -181,6 +183,7 @@ module ag.grid {
         public refreshView(refreshFromIndex?: any) {
             if (!this.gridOptionsWrapper.isForPrint()) {
                 var rowCount = this.rowModel.getGridRowCount();
+                console.log(rowCount);
                 var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
 
                 // debugger;
@@ -328,6 +331,8 @@ module ag.grid {
                 var delta = 0;
                 var preparedRows:any = {};
                 var rowEl: any;
+
+                // if (this.isSingleRow == )
                 
                 for (var k = 0; k < rowCount; k++) {
                     row = this.rowModel.getVirtualRow(k)

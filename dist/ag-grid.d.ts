@@ -834,6 +834,7 @@ declare module ag.grid {
         private eFloatingBottomPinnedContainer;
         private eParentsOfRows;
         private hoveredOn;
+        private isSingleRow;
         init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel, angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any, selectionController: SelectionController, expressionService: ExpressionService, templateService: TemplateService, valueService: ValueService, eventService: EventService): void;
         setRowModel(rowModel: any): void;
         onIndividualColumnResized(column: Column): void;

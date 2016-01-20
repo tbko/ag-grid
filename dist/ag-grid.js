@@ -4136,6 +4136,7 @@ var ag;
                 this.findAllElements(gridPanel);
                 this.eventService = eventService;
                 this.hoveredOn = undefined;
+                this.isSingleRow = true;
                 this.cellRendererMap = {
                     'group': grid.groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
                     'groupHeader': grid.groupHeaderFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
@@ -4219,6 +4220,7 @@ var ag;
             RowRenderer.prototype.refreshView = function (refreshFromIndex) {
                 if (!this.gridOptionsWrapper.isForPrint()) {
                     var rowCount = this.rowModel.getGridRowCount();
+                    console.log(rowCount);
                     var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
                     // debugger;
                     this.eBodyContainer.style.height = containerHeight + "px";
@@ -4349,6 +4351,7 @@ var ag;
                     var delta = 0;
                     var preparedRows = {};
                     var rowEl;
+                    // if (this.isSingleRow == )
                     for (var k = 0; k < rowCount; k++) {
                         row = this.rowModel.getVirtualRow(k);
                         if (!row) {
@@ -6066,9 +6069,11 @@ var ag;
                                 }
                                 return acc;
                             }, 0);
-                            return realRowsCount + fillinRowsCount;
+                            console.log("row count: " + (realRowsCount + (fillinRowsCount || 0)));
+                            return realRowsCount + (fillinRowsCount || 0);
                         }
                         else {
+                            console.log('row count: 0');
                             return 0;
                         }
                     },
@@ -7239,13 +7244,13 @@ var ag;
             BorderLayout.prototype.positionOverlayRowZone = function (offsetTopY) {
                 var eBodyViewport = this.gridPanel.getBodyContainer();
                 var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
-                // var rowOverlayOffset = headerHeight + offsetTopY;
-                var rowOverlayOffset = headerHeight;
+                var rowOverlayOffset = headerHeight - offsetTopY;
+                // var rowOverlayOffset = headerHeight;
                 var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
-                console.log(offsetTopY);
-                console.log(eBodyViewport.clientHeight);
-                console.log(offsetTopY + eBodyViewport.clientHeight);
-                console.log('***');
+                // console.log(offsetTopY);
+                // console.log(eBodyViewport.clientHeight);
+                // console.log(offsetTopY + eBodyViewport.clientHeight);
+                // console.log('***');
                 var rightGap = this.gridPanel.getRightGap();
                 var rightPosition = rightGap > 0 ? rightGap : 18;
                 this.setRowOverlayTop(rowOverlayOffset);
@@ -9709,7 +9714,6 @@ var ag;
                 this.rowRenderer.setListenMouseMove(false);
             };
             Grid.prototype.onColumnChanged = function (event) {
-                // debugger;
                 this.rowRenderer.countGridRows();
                 if (event.isPivotChanged()) {
                     this.inMemoryRowController.onPivotChanged();

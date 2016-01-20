@@ -194,13 +194,13 @@ module ag.grid {
 
             var eBodyViewport = this.gridPanel.getBodyContainer();
             var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
-            // var rowOverlayOffset = headerHeight + offsetTopY;
-            var rowOverlayOffset = headerHeight;
+            var rowOverlayOffset = headerHeight - offsetTopY;
+            // var rowOverlayOffset = headerHeight;
             var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
-            console.log(offsetTopY);
-            console.log(eBodyViewport.clientHeight);
-            console.log(offsetTopY + eBodyViewport.clientHeight);
-            console.log('***');
+            // console.log(offsetTopY);
+            // console.log(eBodyViewport.clientHeight);
+            // console.log(offsetTopY + eBodyViewport.clientHeight);
+            // console.log('***');
 
             var rightGap = this.gridPanel.getRightGap();
             var rightPosition = rightGap > 0 ? rightGap : 18;
