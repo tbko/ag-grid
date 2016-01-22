@@ -183,7 +183,6 @@ module ag.grid {
         public refreshView(refreshFromIndex?: any) {
             if (!this.gridOptionsWrapper.isForPrint()) {
                 var rowCount = this.rowModel.getGridRowCount();
-                console.log(rowCount);
                 var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
 
                 // debugger;

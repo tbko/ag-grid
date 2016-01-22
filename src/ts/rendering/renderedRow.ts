@@ -425,7 +425,6 @@ module ag.grid {
             var that = this;
 
             function listenMove(event: any) {
-                console.log(event);
                 var eRoot:HTMLElement = _.findParentWithClass(that.eBodyContainer, 'ag-root');
                 var eRowOverlay:HTMLElement = <HTMLElement>document.querySelector('#ag-overlay-row');
 

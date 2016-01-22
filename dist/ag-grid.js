@@ -3400,7 +3400,6 @@ var ag;
                 var vRow = new ag.vdom.VHtmlElement('div');
                 var that = this;
                 function listenMove(event) {
-                    console.log(event);
                     var eRoot = _.findParentWithClass(that.eBodyContainer, 'ag-root');
                     var eRowOverlay = document.querySelector('#ag-overlay-row');
                     that.rowRenderer.setHoveredOn(null);
@@ -4220,7 +4219,6 @@ var ag;
             RowRenderer.prototype.refreshView = function (refreshFromIndex) {
                 if (!this.gridOptionsWrapper.isForPrint()) {
                     var rowCount = this.rowModel.getGridRowCount();
-                    console.log(rowCount);
                     var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
                     // debugger;
                     this.eBodyContainer.style.height = containerHeight + "px";
@@ -6069,11 +6067,9 @@ var ag;
                                 }
                                 return acc;
                             }, 0);
-                            console.log("row count: " + (realRowsCount + (fillinRowsCount || 0)));
                             return realRowsCount + (fillinRowsCount || 0);
                         }
                         else {
-                            console.log('row count: 0');
                             return 0;
                         }
                     },
