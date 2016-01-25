@@ -9710,9 +9710,16 @@ var ag;
                 this.rowRenderer.setListenMouseMove(false);
             };
             Grid.prototype.onColumnChanged = function (event) {
+                var rootEl = this.eRootPanel.eGui.getElementsByClassName('ag-root')[0];
                 this.rowRenderer.countGridRows();
                 if (event.isPivotChanged()) {
                     this.inMemoryRowController.onPivotChanged();
+                    if (this.columnController.getPivotedColumns().length) {
+                        rootEl.classList.add('ag-root-group');
+                    }
+                    else {
+                        rootEl.classList.remove('ag-root-group');
+                    }
                 }
                 if (event.isValueChanged()) {
                     this.inMemoryRowController.doAggregate();
