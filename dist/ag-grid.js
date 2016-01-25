@@ -11559,6 +11559,7 @@ var ag;
                     }
                     // if pivot
                     if (typeof stateItem.pivotIndex === 'number' && stateItem.pivotIndex >= 0) {
+                        oldColumn.pivotIndex = stateItem.pivotIndex;
                         that.pivotColumns.push(oldColumn);
                     }
                     that.allColumns.push(oldColumn);

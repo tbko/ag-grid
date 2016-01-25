@@ -377,6 +377,7 @@ module ag.grid {
                 }
                 // if pivot
                 if (typeof stateItem.pivotIndex === 'number' && stateItem.pivotIndex >= 0) {
+                    oldColumn.pivotIndex = stateItem.pivotIndex;
                     that.pivotColumns.push(oldColumn);
                 }
                 that.allColumns.push(oldColumn);
@@ -389,6 +390,7 @@ module ag.grid {
                 oldColumn.aggFunc = null;
                 that.allColumns.push(oldColumn);
             });
+
 
             this.pivotColumns.sort(function (colA: any, colB: any): number {
                 return colA.pivotIndex - colB.pivotIndex;
