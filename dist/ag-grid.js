@@ -10473,6 +10473,10 @@ var ag;
             __extends(RenderedHeaderCell, _super);
             function RenderedHeaderCell(column, headerElements, parentGroup, gridOptionsWrapper, parentScope, filterManager, columnController, $compile, angularGrid, eRoot, popupService) {
                 _super.call(this, eRoot);
+                this.sortDirectionMap = {
+                    'asc': 'up',
+                    'desc': 'down'
+                };
                 this.eRootRef = eRoot;
                 this.column = column;
                 this.parentGroup = parentGroup;
@@ -10924,6 +10928,13 @@ var ag;
                 var sortAscending = this.column.sort === constants.ASC;
                 var sortDescending = this.column.sort === constants.DESC;
                 var unSort = this.column.sort !== constants.DESC && this.column.sort !== constants.ASC;
+                var sortTypeIcon = this.column.colDef.sortNumeric ? 'arrow' : 'alpha';
+                if (unSort)
+                    return;
+                Array.prototype.slice.call(this.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function (el) {
+                    el.classList.remove('active');
+                });
+                this.eHeaderCell.querySelector(".icon-sort-" + sortTypeIcon + "-" + this.sortDirectionMap[this.column.sort]).classList.add('active');
                 if (sortAscending)
                     _.querySelectorAll_replaceCssClass(this.getGui(), '.pi-ag-header-cell-sort-icon', 'pi-ag-header-cell-sort-icon-up', 'pi-ag-header-cell-sort-icon-down');
                 if (sortDescending)
@@ -10982,10 +10993,6 @@ var ag;
                     if (!that.gridOptionsWrapper.isEnableSorting()) {
                         return;
                     }
-                    var sortDirectionMap = {
-                        'asc': 'up',
-                        'desc': 'down'
-                    };
                     // update sort on current col
                     that.column.sort = that.getNextSortDirection();
                     if (that.column.sort) {
@@ -10993,7 +11000,7 @@ var ag;
                         Array.prototype.slice.call(that.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function (el) {
                             el.classList.remove('active');
                         });
-                        that.eHeaderCell.querySelector(".icon-sort-" + sortTypeIcon + "-" + sortDirectionMap[that.column.sort]).classList.add('active');
+                        that.eHeaderCell.querySelector(".icon-sort-" + sortTypeIcon + "-" + that.sortDirectionMap[that.column.sort]).classList.add('active');
                     }
                     // sortedAt used for knowing order of cols when multi-col sort
                     if (that.column.sort) {

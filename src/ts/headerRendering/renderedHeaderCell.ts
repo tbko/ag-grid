@@ -573,11 +573,26 @@ module ag.grid {
             }
         }
 
+        sortDirectionMap: { [s: string]: string; } = {
+            'asc': 'up',
+            'desc': 'down'
+        }
+
         public refreshSortIcon(): void {
             // update visibility of icons
             var sortAscending = this.column.sort === constants.ASC;
             var sortDescending = this.column.sort === constants.DESC;
             var unSort = this.column.sort !== constants.DESC && this.column.sort !== constants.ASC;
+
+            
+            var sortTypeIcon = this.column.colDef.sortNumeric ? 'arrow' : 'alpha'
+            
+            if (unSort) return;
+
+            Array.prototype.slice.call(this.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function(el: HTMLElement) {
+                el.classList.remove('active');
+            });
+            this.eHeaderCell.querySelector(`.icon-sort-${sortTypeIcon}-${this.sortDirectionMap[this.column.sort]}`).classList.add('active');
 
             if (sortAscending) _.querySelectorAll_replaceCssClass(
                 this.getGui(),
@@ -662,10 +677,6 @@ module ag.grid {
                 if (!that.gridOptionsWrapper.isEnableSorting()) {
                     return;
                 }
-                var sortDirectionMap: { [s: string]: string; } = {
-                    'asc': 'up',
-                    'desc': 'down'
-                }
 
                 // update sort on current col
                 that.column.sort = that.getNextSortDirection();
@@ -674,7 +685,7 @@ module ag.grid {
                     Array.prototype.slice.call(that.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function(el: HTMLElement) {
                         el.classList.remove('active');
                     });
-                    that.eHeaderCell.querySelector(`.icon-sort-${sortTypeIcon}-${sortDirectionMap[that.column.sort]}`).classList.add('active');
+                    that.eHeaderCell.querySelector(`.icon-sort-${sortTypeIcon}-${that.sortDirectionMap[that.column.sort]}`).classList.add('active');
                 }
 
 

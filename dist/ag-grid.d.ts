@@ -1952,6 +1952,9 @@ declare module ag.grid {
         private setupFreeze(freezeChecker);
         private useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);
         refreshFilterIcon(): void;
+        sortDirectionMap: {
+            [s: string]: string;
+        };
         refreshSortIcon(): void;
         private getNextSortDirection();
         private addSortHandling(headerCellLabel);
