@@ -3859,6 +3859,7 @@ var ag;
                 if (width < 10) {
                     width = 9;
                 }
+                console.log($('<div>').html(params.value).find('span').text() || params.value);
                 if (!(params.value === null || params.value === undefined)) {
                     var lines = _.getWidthHeight(params.value, width, font, gridOptionsWrapper.getMaxRows());
                     var outputLines = lines.outputLines;
