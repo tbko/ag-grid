@@ -4217,6 +4217,7 @@ var ag;
                 }
             };
             RowRenderer.prototype.refreshView = function (refreshFromIndex) {
+                this.refreshAllVirtualRows(refreshFromIndex);
                 if (!this.gridOptionsWrapper.isForPrint()) {
                     var rowCount = this.rowModel.getGridRowCount();
                     var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
@@ -4225,7 +4226,6 @@ var ag;
                     // this.gridPanel.getLayout().setRowOverlayRowHeight(this.eBodyContainer.style.height);
                     this.ePinnedColsContainer.style.height = containerHeight + "px";
                 }
-                this.refreshAllVirtualRows(refreshFromIndex);
                 this.refreshAllFloatingRows();
                 this.selectionController.refreshSelection();
             };
@@ -4329,33 +4329,57 @@ var ag;
                 this.angularGrid.onVirtualRowRemoved(indexToRemove);
                 delete this.renderedRows[indexToRemove];
             };
+            /***********************************************
+            * START of ROW RENDERING
+            ************************************************/
             RowRenderer.prototype.drawVirtualRows = function () {
                 var first;
                 var last;
-                var fillinRowsCount = 0;
+                // var fillinRowsCount = 0;
                 var rowCount = this.rowModel.getVirtualRowCount();
-                var renderer = this.cellRendererMap['multiline'];
-                var mainRowWidth = this.columnModel.getBodyContainerWidth();
+                // var renderer = this.cellRendererMap['multiline'];
+                // var mainRowWidth = this.columnModel.getBodyContainerWidth();
                 var baseHeight = this.gridOptionsWrapper.getRowHeight();
+                // debugger
+                var maxRows = this.gridOptionsWrapper.gridOptions.maxRows;
+                var minRows = this.gridOptionsWrapper.gridOptions.minRows;
+                var topPixel = this.eBodyViewport.scrollTop;
+                var bottomPixel = topPixel + this.eBodyViewport.offsetHeight;
+                var buffer = this.gridOptionsWrapper.getRowBuffer();
+                var groupKeys = this.gridOptionsWrapper.getGroupKeys();
+                var isGroup = groupKeys ? groupKeys.length : groupKeys;
                 if (this.gridOptionsWrapper.isForPrint()) {
                     first = 0;
                     last = rowCount;
                 }
+                else if (maxRows === void 0 || minRows === void 0) {
+                    first = 0;
+                    last = rowCount;
+                }
+                else if (maxRows === minRows && !isGroup) {
+                    first = Math.trunc(topPixel / (baseHeight * maxRows));
+                    last = Math.trunc(bottomPixel / (baseHeight * maxRows));
+                    ;
+                    first = first - buffer;
+                    last = last + buffer;
+                    if (first < 0) {
+                        first = 0;
+                    }
+                    if (last > rowCount - 1) {
+                        last = rowCount - 1;
+                    }
+                }
                 else {
-                    var topPixel = this.eBodyViewport.scrollTop;
-                    var bottomPixel = topPixel + this.eBodyViewport.offsetHeight;
                     var row;
                     var countRowsBefore = 0;
                     var delta = 0;
                     var preparedRows = {};
                     var rowEl;
-                    // if (this.isSingleRow == )
                     for (var k = 0; k < rowCount; k++) {
                         row = this.rowModel.getVirtualRow(k);
                         if (!row) {
                             break;
                         }
-                        // console.log(row);
                         if (!row.group) {
                             delta = row.gridHeight;
                         }
@@ -4385,7 +4409,6 @@ var ag;
                     }
                     last = k;
                     //add in buffer
-                    var buffer = this.gridOptionsWrapper.getRowBuffer();
                     first = first - buffer;
                     last = last + buffer;
                     // adjust, in case buffer extended actual size
@@ -4414,13 +4437,14 @@ var ag;
                 var rowCount = this.rowModel.getVirtualRowCount();
                 var row;
                 var rowEl;
+                var maxRows = this.gridOptionsWrapper.gridOptions.maxRows;
                 for (var k = 0; k < rowCount; k++) {
                     row = this.rowModel.getVirtualRow(k);
                     if (!row.group) {
-                        rowEl = this.insertRow(row, k, mainRowWidth, 0, false);
-                        if (rowEl === void 0)
-                            throw 'Row is not rendered with id: ' + row.id;
-                        row.gridHeight = rowEl.maxRowsNeeded;
+                        // rowEl = this.insertRow(row, k, mainRowWidth, 0, false);
+                        // if (rowEl === void 0) throw 'Row is not rendered with id: ' + row.id
+                        // row.gridHeight = rowEl.maxRowsNeeded;
+                        row.gridHeight = maxRows;
                     }
                     else {
                         row.gridHeight = 1;
@@ -4484,8 +4508,6 @@ var ag;
                         that.$scope.$apply();
                     }, 0);
                 }
-                //var end = new Date().getTime();
-                //console.log(end-start);
             };
             RowRenderer.prototype.insertRow = function (node, rowIndex, mainRowWidth, rowsBefore, realDraw) {
                 if (realDraw === void 0) { realDraw = true; }
@@ -4510,6 +4532,9 @@ var ag;
             RowRenderer.prototype.getRenderedRows = function () {
                 return this.renderedRows;
             };
+            /***********************************************
+            * END of ROW RENDERING
+            ************************************************/
             RowRenderer.prototype.setListenMouseMove = function (toAllSet) {
                 if (toAllSet === void 0) { toAllSet = true; }
                 var eventAction;

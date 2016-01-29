@@ -851,6 +851,9 @@ declare module ag.grid {
         refreshGroupRows(): void;
         private removeVirtualRow(rowsToRemove, fromIndex?);
         private unbindVirtualRow(indexToRemove);
+        /***********************************************
+        * START of ROW RENDERING
+        ************************************************/
         drawVirtualRows(): void;
         getFirstVirtualRenderedRow(): number;
         getLastVirtualRenderedRow(): number;
@@ -861,6 +864,9 @@ declare module ag.grid {
         getRenderedRows(): {
             [key: string]: RenderedRow;
         };
+        /***********************************************
+        * END of ROW RENDERING
+        ************************************************/
         setListenMouseMove(toAllSet?: boolean): void;
         setHoveredOn(rowNode: any): void;
         getHoveredOn(): any;

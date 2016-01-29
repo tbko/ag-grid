@@ -181,6 +181,7 @@ module ag.grid {
         }
 
         public refreshView(refreshFromIndex?: any) {
+            this.refreshAllVirtualRows(refreshFromIndex);
             if (!this.gridOptionsWrapper.isForPrint()) {
                 var rowCount = this.rowModel.getGridRowCount();
                 var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
@@ -192,7 +193,6 @@ module ag.grid {
                 this.ePinnedColsContainer.style.height = containerHeight + "px";
             }
 
-            this.refreshAllVirtualRows(refreshFromIndex);
             this.refreshAllFloatingRows();
             this.selectionController.refreshSelection();
         }
@@ -309,37 +309,60 @@ module ag.grid {
             delete this.renderedRows[indexToRemove];
         }
 
+
+        /***********************************************
+        * START of ROW RENDERING
+        ************************************************/
         public drawVirtualRows() {
             var first: any;
             var last: any;
-            var fillinRowsCount = 0;
+            // var fillinRowsCount = 0;
 
             var rowCount = this.rowModel.getVirtualRowCount();
-            var renderer = this.cellRendererMap['multiline'];
-            var mainRowWidth = this.columnModel.getBodyContainerWidth();
+            // var renderer = this.cellRendererMap['multiline'];
+            // var mainRowWidth = this.columnModel.getBodyContainerWidth();
             var baseHeight = this.gridOptionsWrapper.getRowHeight();
+            // debugger
+            var maxRows: number = this.gridOptionsWrapper.gridOptions.maxRows;
+            var minRows: number = this.gridOptionsWrapper.gridOptions.minRows;
+            var topPixel = this.eBodyViewport.scrollTop;
+            var bottomPixel = topPixel + this.eBodyViewport.offsetHeight;
+            var buffer = this.gridOptionsWrapper.getRowBuffer();
+            var groupKeys = this.gridOptionsWrapper.getGroupKeys()
+            var isGroup = groupKeys ? groupKeys.length : groupKeys
 
             if (this.gridOptionsWrapper.isForPrint()) {
                 first = 0;
                 last = rowCount;
+            } else if (maxRows === void 0 || minRows === void 0) {
+                first = 0;
+                last = rowCount;
+            } else if (maxRows === minRows && !isGroup) {
+                first = Math.trunc(topPixel / (baseHeight * maxRows));
+                last = Math.trunc(bottomPixel / (baseHeight * maxRows));;
+
+                first = first - buffer;
+                last = last + buffer;
+                if (first < 0) {
+                    first = 0;
+                }
+                if (last > rowCount - 1) {
+                    last = rowCount - 1;
+                }
+
             } else {
-                var topPixel = this.eBodyViewport.scrollTop;
-                var bottomPixel = topPixel + this.eBodyViewport.offsetHeight;
                 var row: RowNode;
                 var countRowsBefore = 0;
                 var delta = 0;
                 var preparedRows:any = {};
                 var rowEl: any;
 
-                // if (this.isSingleRow == )
-                
                 for (var k = 0; k < rowCount; k++) {
                     row = this.rowModel.getVirtualRow(k)
                     if (!row) {
                         break;
                     }
                     
-                    // console.log(row);
                     if (!row.group) {
                         delta = row.gridHeight;
                         // if (row.rowHeight === undefined || row.rowHeight === null) {
@@ -381,7 +404,6 @@ module ag.grid {
                 last = k;
 
                 //add in buffer
-                var buffer = this.gridOptionsWrapper.getRowBuffer();
                 first = first - buffer;
                 last = last + buffer;
 
@@ -416,15 +438,17 @@ module ag.grid {
             var rowCount: number = this.rowModel.getVirtualRowCount();
             var row: RowNode;
             var rowEl: any;
+            var maxRows: number = this.gridOptionsWrapper.gridOptions.maxRows;
+
             for (var k = 0; k < rowCount; k++) {
                 row = this.rowModel.getVirtualRow(k);
                 if (!row.group) {
-                    rowEl = this.insertRow(row, k, mainRowWidth, 0, false);
-                    if (rowEl === void 0) throw 'Row is not rendered with id: ' + row.id
-                    row.gridHeight = rowEl.maxRowsNeeded;
+                    // rowEl = this.insertRow(row, k, mainRowWidth, 0, false);
+                    // if (rowEl === void 0) throw 'Row is not rendered with id: ' + row.id
+                    // row.gridHeight = rowEl.maxRowsNeeded;
+                    row.gridHeight = maxRows;
                 } else {
                     row.gridHeight = 1;
-
                 }
             }
         }
@@ -495,9 +519,6 @@ module ag.grid {
                     that.$scope.$apply();
                 }, 0);
             }
-
-            //var end = new Date().getTime();
-            //console.log(end-start);
         }
 
         private insertRow(node: any, rowIndex: any, mainRowWidth: any, rowsBefore: number, realDraw: boolean = true) {
@@ -531,6 +552,10 @@ module ag.grid {
         public getRenderedRows() {
             return this.renderedRows;
         }
+
+        /***********************************************
+        * END of ROW RENDERING
+        ************************************************/
 
         public setListenMouseMove(toAllSet:boolean = true) {
             var eventAction: Function;
