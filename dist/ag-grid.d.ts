@@ -38,6 +38,7 @@ declare module ag.grid {
         private static canvas;
         static getTextWidth(text: string, font: string): number;
         static getWidthHeight(value: string, allowedWidth: number, font: string, maxLines: number): any;
+        static reflowText(elText: HTMLElement, allText: string): void;
         static iterateObject(object: any, callback: (key: string, value: any) => void): void;
         static cloneObject(object: any): any;
         static map<TItem, TResult>(array: TItem[], callback: (item: TItem) => TResult): TResult[];
@@ -675,6 +676,7 @@ declare module ag.grid {
         private topPX;
         private heightPX;
         private headerHeight;
+        private rowHeight;
         private isListenMove;
         listenMoveRef: EventListener;
         private cellRendererMap;
@@ -696,6 +698,7 @@ declare module ag.grid {
         constructor(gridOptionsWrapper: GridOptionsWrapper, valueService: ValueService, parentScope: any, angularGrid: Grid, columnController: ColumnController, expressionService: ExpressionService, cellRendererMap: {
             [key: string]: any;
         }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService, rowsBefore?: number, readyToDraw?: boolean);
+        getHeight(): number;
         insertInDOM(): void;
         getMaxRowsNeeded(): number;
         onRowSelected(selected: boolean): void;

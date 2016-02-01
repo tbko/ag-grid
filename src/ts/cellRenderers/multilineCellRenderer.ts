@@ -17,6 +17,9 @@ module ag.grid {
             var shiftWidth = gridOptionsWrapper.getGroupShiftWidth();
             var controlWidth = gridOptionsWrapper.getGroupControlWidth();
 
+            // debugger;
+            return params.value;
+
             // consider group shifter width in cell one
             if (shiftWidth && params.node && params.node.level) {
                 width -= (shiftWidth * params.node.level)
@@ -28,29 +31,33 @@ module ag.grid {
                 width = 9
             }
 
-            console.log($('<div>').html(params.value).find('span').text() || params.value);
+            var templateEl = $('<div>').html(params.value);
+            var contentTextEl = templateEl.find('.js-ag-text-wrap');
+            var contentText = contentTextEl.text();
+            if (!contentText) {
+                return params.value;
+            }
             
-            if (!(params.value === null || params.value === undefined)) {
+            var lines = _.getWidthHeight(contentText, width, font, gridOptionsWrapper.getMaxRows());
+            var outputLines = lines.outputLines;
 
-                var lines = _.getWidthHeight(params.value, width, font, gridOptionsWrapper.getMaxRows());
-                var outputLines = lines.outputLines;
+            params.rowsNeeded = lines.numLines;
 
-                params.rowsNeeded = lines.numLines;
-
-                for (var i = 0; i < outputLines.length - 1; i++) {
-                    out += '<div>' + outputLines[i] + '</div>\n';
-                }
-
-                out += '<div style="overflow: hidden; text-overflow: ellipsis; width: ' + width + 'px;">' + outputLines[outputLines.length - 1] + '</div>'
-
-                if (params.column.index === 0 && width > 48) {
-                    var shifter = getShifter(params.node.level || 0, true);
-                    out = '<div class="pi-table-cell_top pi-table-cell_fluid">' + out + '</div>'
-                    out = '<div class="pi-table">' + shifter + out + '</div>'
-                }
+            for (var i = 0; i < outputLines.length - 1; i++) {
+                out += '<div>' + outputLines[i] + '</div>\n';
             }
 
-            return out;
+            out += '<div style="overflow: hidden; text-overflow: ellipsis; width: ' + width + 'px;">' + outputLines[outputLines.length - 1] + '</div>'
+
+            if (params.column.index === 0 && width > 48) {
+                var shifter = getShifter(params.node.level || 0, true);
+                out = '<div class="pi-table-cell_top pi-table-cell_fluid">' + out + '</div>'
+                out = '<div class="pi-table">' + shifter + out + '</div>'
+            }
+
+            contentTextEl.html(out);
+            // return params.value;
+            return contentTextEl.prop('outerHTML');
         }
 
         function getShifter(steps: number, needControlWidth: boolean = false) {

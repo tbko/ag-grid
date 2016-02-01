@@ -299,7 +299,7 @@ module ag.grid {
 
         private onColumnChanged(event: ColumnChangeEvent): void {
             var rootEl: HTMLHtmlElement = this.eRootPanel.eGui.getElementsByClassName('ag-root')[0]
-            this.rowRenderer.countGridRows();
+            // this.rowRenderer.countGridRows();
             if (event.isPivotChanged()) {
                 this.inMemoryRowController.onPivotChanged();
                 if (this.columnController.getPivotedColumns().length) {

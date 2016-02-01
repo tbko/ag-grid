@@ -91,6 +91,61 @@ module ag.grid {
 
         }
 
+        static reflowText(elText: HTMLElement, allText: string) {
+            //cut text in element adding ellipsis. Element with CSS:
+            // text-overflow: ellipsis
+            // word-wrap: normal
+            // overflow: hidden
+            // white-space: normal
+            // max-height: 57px - total height
+            // line-height: 19px - single line height
+            var words = allText.split(' ');
+            var overflown = false;
+            if (!elText) {
+                return;
+            }
+            elText.innerHTML = words[0];
+
+            // find the word that breaks last allowed line
+            for (var i = 1; i < words.length; i++) {
+                elText.innerHTML = elText.innerHTML + ' ' + words[i];
+                // if (this.column.colId === 'agreementNumber') {
+                //     debugger;
+                // }
+                if (elText.scrollHeight !== elText.clientHeight) {
+                    overflown = true;
+                    break;
+                    // console.log(`broke on ${i} word`);
+                }
+            }
+
+            // bite out by one char until overflown is gone adding ellipsis to the tail
+            if (overflown) {
+                // debugger;
+                var displayText = elText.innerHTML + '…';
+                // console.log(displayText);
+
+                do {
+
+                    do {
+                        displayText = displayText.slice(0, -2) + '…';
+                    } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
+
+                    elText.innerHTML = displayText;
+                    // console.log(displayText);
+
+                } while (
+                    displayText.length > 1
+                    &&
+                    elText.scrollHeight !== elText.clientHeight
+                );
+            } else {
+                // console.log('not overflown');
+            }
+
+        }
+
+
         static iterateObject(object: any, callback: (key:string, value: any) => void) {
             var keys = Object.keys(object);
             for (var i = 0; i < keys.length; i++) {

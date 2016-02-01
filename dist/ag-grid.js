@@ -177,6 +177,48 @@ var ag;
                     maxWidth: maxWidth
                 };
             };
+            Utils.reflowText = function (elText, allText) {
+                //cut text in element adding ellipsis. Element with CSS:
+                // text-overflow: ellipsis
+                // word-wrap: normal
+                // overflow: hidden
+                // white-space: normal
+                // max-height: 57px - total height
+                // line-height: 19px - single line height
+                var words = allText.split(' ');
+                var overflown = false;
+                if (!elText) {
+                    return;
+                }
+                elText.innerHTML = words[0];
+                // find the word that breaks last allowed line
+                for (var i = 1; i < words.length; i++) {
+                    elText.innerHTML = elText.innerHTML + ' ' + words[i];
+                    // if (this.column.colId === 'agreementNumber') {
+                    //     debugger;
+                    // }
+                    if (elText.scrollHeight !== elText.clientHeight) {
+                        overflown = true;
+                        break;
+                    }
+                }
+                // bite out by one char until overflown is gone adding ellipsis to the tail
+                if (overflown) {
+                    // debugger;
+                    var displayText = elText.innerHTML + '…';
+                    // console.log(displayText);
+                    do {
+                        do {
+                            displayText = displayText.slice(0, -2) + '…';
+                        } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
+                        elText.innerHTML = displayText;
+                    } while (displayText.length > 1
+                        &&
+                            elText.scrollHeight !== elText.clientHeight);
+                }
+                else {
+                }
+            };
             Utils.iterateObject = function (object, callback) {
                 var keys = Object.keys(object);
                 for (var i = 0; i < keys.length; i++) {
@@ -3010,6 +3052,7 @@ var ag;
             };
             RenderedCell.prototype.useCellRenderer = function (cellRenderer, preValue) {
                 var colDef = this.column.colDef;
+                var that = this;
                 var rendererParams = {
                     value: preValue || this.value,
                     valueGetter: this.getValue,
@@ -3051,6 +3094,16 @@ var ag;
                     // otherwise assume it was html, so just insert
                     this.vParentOfValue.setInnerHtml(resultFromRenderer);
                 }
+                // var attachHandler = function (element:HTMLElement) {
+                //     var subElement = element.getElementsByClassName('js-ag-text-wrap')[0];
+                //     if (subElement && that.node && that.node.data.id == 2038) {
+                //         var colId = element.getAttribute('colId');
+                //         var rowId = element.parentElement.getAttribute('row');
+                //         debugger;
+                //         console.log(document.querySelector(`[row="${rowId}"] [colId="${colId}"] .js-ag-text-wrap`));
+                //     }
+                // };
+                // this.vParentOfValue.addElementAttachedListener(attachHandler.bind(this));
                 return resultFromRenderer;
             };
             RenderedCell.prototype.addClasses = function () {
@@ -3105,11 +3158,14 @@ var ag;
                 this.pinning = columnController.isPinning();
                 this.eventService = eventService;
                 this.headerHeight = 0;
+                this.rowHeight = 0;
                 var eRoot = _.findParentWithClass(this.eBodyContainer, 'ag-root');
                 var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
                 var rowIsHeaderThatSpans = node.group && groupHeaderTakesEntireRow;
                 var baseHeight = this.gridOptionsWrapper.getRowHeight();
                 var baseHeightExtra = this.gridOptionsWrapper.getRowHeightExtra();
+                var maxRows = this.gridOptionsWrapper.getMaxRows();
+                var minRows = this.gridOptionsWrapper.getMinRows();
                 this.isListenMove = false;
                 this.listenMoveRef = null;
                 this.vBodyRow = this.createRowContainer();
@@ -3174,10 +3230,41 @@ var ag;
                         this.$compile(this.vPinnedRow.getElement())(this.scope);
                     }
                 }
+                this.rowHeight = 0;
+                console.log(maxRows, minRows);
                 if (readyToDraw) {
                     this.insertInDOM();
+                    for (var key in this.renderedCells) {
+                        var cellObj = this.renderedCells[key];
+                        var cellObjEl = cellObj
+                            .getVGridCell()
+                            .getElement();
+                        var foundElementToWrap = cellObjEl
+                            .querySelector('.js-ag-text-wrap');
+                        if (!foundElementToWrap) {
+                            continue;
+                        }
+                        // fixed lines count - reflow up to...
+                        // up to max count - no reflow
+                        var styles = window.getComputedStyle(cellObjEl);
+                        var verticalGap = parseInt(styles.paddingTop) + parseInt(styles.paddingBottom) + parseInt(styles.borderTopWidth) + parseInt(styles.borderBottomWidth);
+                        // debugger;
+                        var maxLinesHeight = Math.max(maxRows, minRows) * baseHeight - verticalGap;
+                        foundElementToWrap.style['max-height'] = (maxLinesHeight || 100000) + "px";
+                        foundElementToWrap.style['height'] = (maxLinesHeight || 100000) + "px";
+                        // foundElementToWrap.style['line-height'] = `${baseHeight - verticalGap}px`;
+                        foundElementToWrap.style['line-height'] = maxLinesHeight / maxRows + "px";
+                        if (foundElementToWrap) {
+                            _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
+                        }
+                        this.rowHeight = foundElementToWrap.offsetHeight + verticalGap;
+                    }
+                    ;
                 }
             }
+            RenderedRow.prototype.getHeight = function () {
+                return this.rowHeight;
+            };
             RenderedRow.prototype.insertInDOM = function () {
                 this.eBodyContainer.appendChild(this.vBodyRow.getElement());
                 if (this.pinning) {
@@ -3259,6 +3346,16 @@ var ag;
                     else {
                         this.vBodyRow.appendChild(vGridCell);
                     }
+                    // debugger;
+                    // vGridCell.addElementAttachedListener(function(a){
+                    //     if (a.getAttribute('v_element_id') === '3800') {
+                    //         console.log(a);
+                    //         console.log(a.parentElement);
+                    //         debugger;
+                    //         console.log(document.body.contains(a));
+                    //         // a.parentElement.add
+                    //     }
+                    // });
                     this.renderedCells[column.index] = renderedCell;
                 }
                 this.maxRowsNeeded = maxRowsNeeded;
@@ -3849,6 +3946,8 @@ var ag;
                 var width = params.column.actualWidth - gridOptionsWrapper.getWidthGap();
                 var shiftWidth = gridOptionsWrapper.getGroupShiftWidth();
                 var controlWidth = gridOptionsWrapper.getGroupControlWidth();
+                // debugger;
+                return params.value;
                 // consider group shifter width in cell one
                 if (shiftWidth && params.node && params.node.level) {
                     width -= (shiftWidth * params.node.level);
@@ -3859,22 +3958,27 @@ var ag;
                 if (width < 10) {
                     width = 9;
                 }
-                console.log($('<div>').html(params.value).find('span').text() || params.value);
-                if (!(params.value === null || params.value === undefined)) {
-                    var lines = _.getWidthHeight(params.value, width, font, gridOptionsWrapper.getMaxRows());
-                    var outputLines = lines.outputLines;
-                    params.rowsNeeded = lines.numLines;
-                    for (var i = 0; i < outputLines.length - 1; i++) {
-                        out += '<div>' + outputLines[i] + '</div>\n';
-                    }
-                    out += '<div style="overflow: hidden; text-overflow: ellipsis; width: ' + width + 'px;">' + outputLines[outputLines.length - 1] + '</div>';
-                    if (params.column.index === 0 && width > 48) {
-                        var shifter = getShifter(params.node.level || 0, true);
-                        out = '<div class="pi-table-cell_top pi-table-cell_fluid">' + out + '</div>';
-                        out = '<div class="pi-table">' + shifter + out + '</div>';
-                    }
+                var templateEl = $('<div>').html(params.value);
+                var contentTextEl = templateEl.find('.js-ag-text-wrap');
+                var contentText = contentTextEl.text();
+                if (!contentText) {
+                    return params.value;
                 }
-                return out;
+                var lines = _.getWidthHeight(contentText, width, font, gridOptionsWrapper.getMaxRows());
+                var outputLines = lines.outputLines;
+                params.rowsNeeded = lines.numLines;
+                for (var i = 0; i < outputLines.length - 1; i++) {
+                    out += '<div>' + outputLines[i] + '</div>\n';
+                }
+                out += '<div style="overflow: hidden; text-overflow: ellipsis; width: ' + width + 'px;">' + outputLines[outputLines.length - 1] + '</div>';
+                if (params.column.index === 0 && width > 48) {
+                    var shifter = getShifter(params.node.level || 0, true);
+                    out = '<div class="pi-table-cell_top pi-table-cell_fluid">' + out + '</div>';
+                    out = '<div class="pi-table">' + shifter + out + '</div>';
+                }
+                contentTextEl.html(out);
+                // return params.value;
+                return contentTextEl.prop('outerHTML');
             };
             function getShifter(steps, needControlWidth) {
                 if (needControlWidth === void 0) { needControlWidth = false; }
@@ -4288,7 +4392,7 @@ var ag;
                 var rowsToRemove = Object.keys(this.renderedRows);
                 this.removeVirtualRow(rowsToRemove, fromIndex);
                 // add in new rows
-                this.countGridRows();
+                // this.countGridRows();
                 this.drawVirtualRows();
             };
             // public - removes the group rows and then redraws them again
@@ -4479,17 +4583,16 @@ var ag;
                 for (var rowIndex = this.firstVirtualRenderedRow; rowIndex <= this.lastVirtualRenderedRow; rowIndex++) {
                     var node = this.rowModel.getVirtualRow(rowIndex);
                     // count how many grid rows take lines above current
-                    if (node) {
-                        if (!node.group) {
-                            // debugger;
-                            delta = node.gridHeight;
-                        }
-                        else {
-                            // console.log('group row rendered');
-                            delta = 1;
-                        }
-                    }
-                    rowsBeforeCount += delta;
+                    // if (node) {
+                    //     if (!node.group) {
+                    //         // debugger;
+                    //         delta = node.gridHeight;
+                    //     } else {
+                    //         // console.log('group row rendered');
+                    //         delta = 1;
+                    //     }
+                    // }
+                    // rowsBeforeCount += delta;
                     // see if item already there, and if yes, take it out of the 'to remove' array
                     if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
                         rowsToRemove.splice(rowsToRemove.indexOf(rowIndex.toString()), 1);
@@ -4497,7 +4600,8 @@ var ag;
                     }
                     // check this row actually exists (in case overflow buffer window exceeds real data)
                     if (node) {
-                        that.insertRow(node, rowIndex, mainRowWidth, rowsBeforeCount - delta);
+                        var insertedRow = that.insertRow(node, rowIndex, mainRowWidth, rowsBeforeCount);
+                        rowsBeforeCount += insertedRow.getHeight() / baseHeight;
                     }
                 }
                 // at this point, everything in our 'rowsToRemove' . . .
@@ -9737,7 +9841,7 @@ var ag;
             };
             Grid.prototype.onColumnChanged = function (event) {
                 var rootEl = this.eRootPanel.eGui.getElementsByClassName('ag-root')[0];
-                this.rowRenderer.countGridRows();
+                // this.rowRenderer.countGridRows();
                 if (event.isPivotChanged()) {
                     this.inMemoryRowController.onPivotChanged();
                     if (this.columnController.getPivotedColumns().length) {

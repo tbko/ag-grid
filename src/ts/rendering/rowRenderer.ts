@@ -260,7 +260,7 @@ module ag.grid {
             this.removeVirtualRow(rowsToRemove, fromIndex);
 
             // add in new rows
-            this.countGridRows();
+            // this.countGridRows();
             this.drawVirtualRows();
         }
 
@@ -485,16 +485,16 @@ module ag.grid {
                 var node = this.rowModel.getVirtualRow(rowIndex);
 
                 // count how many grid rows take lines above current
-                if (node) {
-                    if (!node.group) {
-                        // debugger;
-                        delta = node.gridHeight;
-                    } else {
-                        // console.log('group row rendered');
-                        delta = 1;
-                    }
-                }
-                rowsBeforeCount += delta;
+                // if (node) {
+                //     if (!node.group) {
+                //         // debugger;
+                //         delta = node.gridHeight;
+                //     } else {
+                //         // console.log('group row rendered');
+                //         delta = 1;
+                //     }
+                // }
+                // rowsBeforeCount += delta;
 
                 // see if item already there, and if yes, take it out of the 'to remove' array
                 if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
@@ -504,7 +504,8 @@ module ag.grid {
 
                 // check this row actually exists (in case overflow buffer window exceeds real data)
                 if (node) {
-                    that.insertRow(node, rowIndex, mainRowWidth, rowsBeforeCount-delta);
+                    var insertedRow = that.insertRow(node, rowIndex, mainRowWidth, rowsBeforeCount);
+                    rowsBeforeCount += insertedRow.getHeight() / baseHeight;
                 }
             }
 

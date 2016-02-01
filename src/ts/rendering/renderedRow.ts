@@ -29,6 +29,7 @@ module ag.grid {
         private topPX: string;
         private heightPX: string;
         private headerHeight: number;
+        private rowHeight: number;
 
         private isListenMove: boolean;
         public listenMoveRef: EventListener;
@@ -87,6 +88,7 @@ module ag.grid {
             this.pinning = columnController.isPinning();
             this.eventService = eventService;
             this.headerHeight = 0;
+            this.rowHeight = 0;
 
             var eRoot: HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
 
@@ -95,6 +97,8 @@ module ag.grid {
 
             var baseHeight:number = this.gridOptionsWrapper.getRowHeight();
             var baseHeightExtra:number = this.gridOptionsWrapper.getRowHeightExtra();
+            var maxRows: number = this.gridOptionsWrapper.getMaxRows();
+            var minRows: number = this.gridOptionsWrapper.getMinRows();
 
             this.isListenMove = false;
             this.listenMoveRef = null;
@@ -171,9 +175,41 @@ module ag.grid {
                     this.$compile(this.vPinnedRow.getElement())(this.scope);
                 }
             }
+            this.rowHeight = 0;
+            console.log(maxRows, minRows);
             if (readyToDraw) {
                 this.insertInDOM();
+                for (var key in this.renderedCells) {
+                    var cellObj: RenderedCell = this.renderedCells[key];
+                    var cellObjEl: HTMLElement = <HTMLElement>cellObj
+                        .getVGridCell()
+                        .getElement()
+                    var foundElementToWrap = cellObjEl
+                        .querySelector('.js-ag-text-wrap');
+                    if (!foundElementToWrap) {
+                        continue;
+                    }
+                    // fixed lines count - reflow up to...
+                    // up to max count - no reflow
+                    var styles = window.getComputedStyle(cellObjEl);
+                    var verticalGap = parseInt(styles.paddingTop) + parseInt(styles.paddingBottom) + parseInt(styles.borderTopWidth) + parseInt(styles.borderBottomWidth);
+                    // debugger;
+                    var maxLinesHeight = Math.max(maxRows, minRows) * baseHeight - verticalGap;
+                    foundElementToWrap.style['max-height'] = `${ maxLinesHeight || 100000}px`;
+                    foundElementToWrap.style['height'] = `${ maxLinesHeight || 100000}px`;
+                    // foundElementToWrap.style['line-height'] = `${baseHeight - verticalGap}px`;
+                    foundElementToWrap.style['line-height'] = `${maxLinesHeight / maxRows}px`;
+
+                    if (foundElementToWrap) {
+                        _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
+                    }
+                    this.rowHeight = foundElementToWrap.offsetHeight + verticalGap;
+                };
             }
+        }
+
+        public getHeight(): number {
+            return this.rowHeight;
         }
 
         public insertInDOM() {
@@ -277,6 +313,16 @@ module ag.grid {
                 } else {
                     this.vBodyRow.appendChild(vGridCell);
                 }
+                // debugger;
+                // vGridCell.addElementAttachedListener(function(a){
+                //     if (a.getAttribute('v_element_id') === '3800') {
+                //         console.log(a);
+                //         console.log(a.parentElement);
+                //         debugger;
+                //         console.log(document.body.contains(a));
+                //         // a.parentElement.add
+                //     }
+                // });
 
                 this.renderedCells[column.index] = renderedCell;
             }
