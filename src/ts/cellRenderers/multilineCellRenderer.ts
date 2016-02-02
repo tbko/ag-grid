@@ -32,7 +32,7 @@ module ag.grid {
             }
 
             var templateEl = $('<div>').html(params.value);
-            var contentTextEl = templateEl.find('.js-ag-text-wrap');
+            var contentTextEl = templateEl.find('.ag-text-wrap');
             var contentText = contentTextEl.text();
             if (!contentText) {
                 return params.value;

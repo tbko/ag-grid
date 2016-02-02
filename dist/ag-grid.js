@@ -3094,16 +3094,6 @@ var ag;
                     // otherwise assume it was html, so just insert
                     this.vParentOfValue.setInnerHtml(resultFromRenderer);
                 }
-                // var attachHandler = function (element:HTMLElement) {
-                //     var subElement = element.getElementsByClassName('js-ag-text-wrap')[0];
-                //     if (subElement && that.node && that.node.data.id == 2038) {
-                //         var colId = element.getAttribute('colId');
-                //         var rowId = element.parentElement.getAttribute('row');
-                //         debugger;
-                //         console.log(document.querySelector(`[row="${rowId}"] [colId="${colId}"] .js-ag-text-wrap`));
-                //     }
-                // };
-                // this.vParentOfValue.addElementAttachedListener(attachHandler.bind(this));
                 return resultFromRenderer;
             };
             RenderedCell.prototype.addClasses = function () {
@@ -3231,7 +3221,6 @@ var ag;
                     }
                 }
                 this.rowHeight = 0;
-                console.log(maxRows, minRows);
                 if (readyToDraw) {
                     this.insertInDOM();
                     for (var key in this.renderedCells) {
@@ -3240,7 +3229,7 @@ var ag;
                             .getVGridCell()
                             .getElement();
                         var foundElementToWrap = cellObjEl
-                            .querySelector('.js-ag-text-wrap');
+                            .querySelector('.ag-text-wrap');
                         if (!foundElementToWrap) {
                             continue;
                         }
@@ -3257,9 +3246,12 @@ var ag;
                         if (foundElementToWrap) {
                             _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
                         }
-                        this.rowHeight = foundElementToWrap.offsetHeight + verticalGap;
+                        this.rowHeight = Math.max(foundElementToWrap.offsetHeight + verticalGap, this.rowHeight);
                     }
                     ;
+                    if (!this.rowHeight) {
+                        this.rowHeight = baseHeight;
+                    }
                 }
             }
             RenderedRow.prototype.getHeight = function () {
@@ -3959,7 +3951,7 @@ var ag;
                     width = 9;
                 }
                 var templateEl = $('<div>').html(params.value);
-                var contentTextEl = templateEl.find('.js-ag-text-wrap');
+                var contentTextEl = templateEl.find('.ag-text-wrap');
                 var contentText = contentTextEl.text();
                 if (!contentText) {
                     return params.value;
@@ -4241,6 +4233,7 @@ var ag;
                 this.eventService = eventService;
                 this.hoveredOn = undefined;
                 this.isSingleRow = true;
+                this.numberOfLinesCalculated = 0;
                 this.cellRendererMap = {
                     'group': grid.groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
                     'groupHeader': grid.groupHeaderFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
@@ -4325,7 +4318,8 @@ var ag;
                 this.refreshAllVirtualRows(refreshFromIndex);
                 if (!this.gridOptionsWrapper.isForPrint()) {
                     var rowCount = this.rowModel.getGridRowCount();
-                    var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
+                    // var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
+                    var containerHeight = this.gridOptionsWrapper.getRowHeight() * this.numberOfLinesCalculated;
                     // debugger;
                     this.eBodyContainer.style.height = containerHeight + "px";
                     // this.gridPanel.getLayout().setRowOverlayRowHeight(this.eBodyContainer.style.height);
@@ -4442,10 +4436,7 @@ var ag;
                 var last;
                 // var fillinRowsCount = 0;
                 var rowCount = this.rowModel.getVirtualRowCount();
-                // var renderer = this.cellRendererMap['multiline'];
-                // var mainRowWidth = this.columnModel.getBodyContainerWidth();
                 var baseHeight = this.gridOptionsWrapper.getRowHeight();
-                // debugger
                 var maxRows = this.gridOptionsWrapper.gridOptions.maxRows;
                 var minRows = this.gridOptionsWrapper.gridOptions.minRows;
                 var topPixel = this.eBodyViewport.scrollTop;
@@ -4453,6 +4444,7 @@ var ag;
                 var buffer = this.gridOptionsWrapper.getRowBuffer();
                 var groupKeys = this.gridOptionsWrapper.getGroupKeys();
                 var isGroup = groupKeys ? groupKeys.length : groupKeys;
+                var countLinesBefore = 0;
                 if (this.gridOptionsWrapper.isForPrint()) {
                     first = 0;
                     last = rowCount;
@@ -4474,10 +4466,12 @@ var ag;
                         last = rowCount - 1;
                     }
                 }
-                else {
+                else if (maxRows === minRows && isGroup) {
+                    // debugger;
                     var row;
                     var countRowsBefore = 0;
                     var delta = 0;
+                    var deltaHistory = [];
                     var preparedRows = {};
                     var rowEl;
                     for (var k = 0; k < rowCount; k++) {
@@ -4486,7 +4480,7 @@ var ag;
                             break;
                         }
                         if (!row.group) {
-                            delta = row.gridHeight;
+                            delta = maxRows;
                         }
                         else {
                             delta = 1;
@@ -4494,41 +4488,50 @@ var ag;
                         if ((countRowsBefore + delta) * baseHeight > topPixel) {
                             break;
                         }
+                        deltaHistory.push(delta);
                         countRowsBefore += delta;
                     }
                     first = k;
+                    countLinesBefore = countRowsBefore;
                     for (; k < rowCount; k++) {
                         row = this.rowModel.getVirtualRow(k);
                         if (!row) {
                             break;
                         }
                         if (!row.group) {
-                            countRowsBefore += row.gridHeight;
+                            delta = maxRows;
                         }
                         else {
-                            countRowsBefore += 1;
+                            delta = 1;
                         }
-                        if (countRowsBefore * baseHeight > bottomPixel) {
+                        if ((countRowsBefore + delta) * baseHeight > bottomPixel) {
                             break;
                         }
+                        countRowsBefore += delta;
                     }
                     last = k;
                     //add in buffer
                     first = first - buffer;
                     last = last + buffer;
+                    countLinesBefore = deltaHistory.slice(0, -buffer).reduce(function (acc, el) { return acc + el; }, 0);
                     // adjust, in case buffer extended actual size
                     if (first < 0) {
+                        countLinesBefore = 0;
                         first = 0;
                     }
                     if (last > rowCount - 1) {
                         last = rowCount - 1;
                     }
                 }
-                // console.log(first, last);
+                else {
+                    first = 0;
+                    last = 10;
+                }
                 this.firstVirtualRenderedRow = first;
                 this.lastVirtualRenderedRow = last;
+                // console.log(first, last, countLinesBefore);
                 // this.ensureRowsRendered(preparedRows);
-                this.ensureRowsRendered();
+                this.ensureRowsRendered(countLinesBefore);
             };
             RowRenderer.prototype.getFirstVirtualRenderedRow = function () {
                 return this.firstVirtualRenderedRow;
@@ -4536,74 +4539,60 @@ var ag;
             RowRenderer.prototype.getLastVirtualRenderedRow = function () {
                 return this.lastVirtualRenderedRow;
             };
-            RowRenderer.prototype.countGridRows = function () {
-                var mainRowWidth = this.columnModel.getBodyContainerWidth();
-                var baseHeight = this.gridOptionsWrapper.getRowHeight();
-                var rowCount = this.rowModel.getVirtualRowCount();
-                var row;
-                var rowEl;
-                var maxRows = this.gridOptionsWrapper.gridOptions.maxRows;
-                for (var k = 0; k < rowCount; k++) {
-                    row = this.rowModel.getVirtualRow(k);
-                    if (!row.group) {
-                        // rowEl = this.insertRow(row, k, mainRowWidth, 0, false);
-                        // if (rowEl === void 0) throw 'Row is not rendered with id: ' + row.id
-                        // row.gridHeight = rowEl.maxRowsNeeded;
-                        row.gridHeight = maxRows;
-                    }
-                    else {
-                        row.gridHeight = 1;
-                    }
-                }
-            };
-            RowRenderer.prototype.ensureRowsRendered = function (preparedRows) {
-                //var start = new Date().getTime();
-                if (preparedRows === void 0) { preparedRows = {}; }
-                var mainRowWidth = this.columnModel.getBodyContainerWidth();
+            RowRenderer.prototype.ensureRowsRendered = function (countLinesBefore) {
+                if (countLinesBefore === void 0) { countLinesBefore = 0; }
                 var that = this;
                 // at the end, this array will contain the items we need to remove
+                // debugger;
                 var rowsToRemove = Object.keys(this.renderedRows);
-                var rowsBefore;
-                var rowsBeforeCount = 0;
+                var totalRows = this.rowModel.getVirtualRowCount();
+                var maxRows = this.gridOptionsWrapper.getMaxRows();
+                var minRows = this.gridOptionsWrapper.getMinRows();
                 var baseHeight = this.gridOptionsWrapper.getRowHeight();
-                var rowEl;
-                var delta = 0;
-                // var heightMult = 3;
-                // add in new rows
-                rowsBefore = this.rowModel.getVirtualRowsUpto(this.firstVirtualRenderedRow);
-                for (var idx = 0; idx < rowsBefore.length; idx++) {
-                    var row = rowsBefore[idx];
-                    if (!row.group) {
-                        rowsBeforeCount += row.gridHeight;
-                    }
-                    else {
-                        rowsBeforeCount += 1;
-                    }
+                var mainRowWidth = this.columnModel.getBodyContainerWidth();
+                var linesBeforeCount = 0;
+                var linesBeforePlusRenderedCount = 0;
+                var linesRenderedCount = 0;
+                var rowsAfterCount = 0;
+                var rowsBeforeCount = 0;
+                var rowsRenderedCount = 0;
+                var linesAfterCount = 0;
+                var linesPerRowInRendered = 0;
+                var linesPerRow = maxRows;
+                if (maxRows !== minRows) {
+                    linesPerRow = (maxRows + minRows) / 2;
                 }
+                rowsBeforeCount = this.firstVirtualRenderedRow;
+                linesBeforeCount = countLinesBefore || Math.round(rowsBeforeCount * linesPerRow);
+                linesBeforePlusRenderedCount = linesBeforeCount;
+                rowsRenderedCount = this.lastVirtualRenderedRow - rowsBeforeCount + 1;
+                // add in new rows
                 for (var rowIndex = this.firstVirtualRenderedRow; rowIndex <= this.lastVirtualRenderedRow; rowIndex++) {
                     var node = this.rowModel.getVirtualRow(rowIndex);
-                    // count how many grid rows take lines above current
-                    // if (node) {
-                    //     if (!node.group) {
-                    //         // debugger;
-                    //         delta = node.gridHeight;
-                    //     } else {
-                    //         // console.log('group row rendered');
-                    //         delta = 1;
-                    //     }
-                    // }
-                    // rowsBeforeCount += delta;
                     // see if item already there, and if yes, take it out of the 'to remove' array
                     if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
                         rowsToRemove.splice(rowsToRemove.indexOf(rowIndex.toString()), 1);
+                        // console.log(this.renderedRows[rowIndex.toString()].node.group, this.renderedRows[rowIndex.toString()].height);
+                        linesBeforePlusRenderedCount += this.renderedRows[rowIndex.toString()].getHeight() / baseHeight;
                         continue;
                     }
+                    if (rowIndex == 13) {
+                    }
+                    // console.log(rowIndex, linesBeforePlusRenderedCount);
                     // check this row actually exists (in case overflow buffer window exceeds real data)
                     if (node) {
-                        var insertedRow = that.insertRow(node, rowIndex, mainRowWidth, rowsBeforeCount);
-                        rowsBeforeCount += insertedRow.getHeight() / baseHeight;
+                        var insertedRow = that.insertRow(node, rowIndex, mainRowWidth, linesBeforePlusRenderedCount);
+                        linesBeforePlusRenderedCount += insertedRow.getHeight() / baseHeight;
                     }
                 }
+                linesRenderedCount = linesBeforePlusRenderedCount - linesBeforeCount;
+                rowsAfterCount = totalRows - rowsBeforeCount - rowsRenderedCount;
+                linesPerRowInRendered = linesRenderedCount / rowsRenderedCount;
+                linesAfterCount = rowsAfterCount * linesPerRowInRendered;
+                this.numberOfLinesCalculated = linesBeforeCount + linesRenderedCount + linesAfterCount;
+                // console.log('Before: ', linesBeforeCount, rowsBeforeCount);
+                // console.log('Rendered: ', linesRenderedCount, rowsRenderedCount);
+                // console.log('After: ', linesAfterCount, rowsAfterCount);
                 // at this point, everything in our 'rowsToRemove' . . .
                 this.removeVirtualRow(rowsToRemove);
                 // if we are doing angular compiling, then do digest the scope here
@@ -5991,12 +5980,13 @@ var ag;
                     if (column.colDef.checkboxSelection) {
                         headerCellRenderer = grid.RenderedHeaderCheckerCell;
                     }
+                    // debugger;
                     var renderedHeaderCell = new headerCellRenderer(column, {
                         'frame': true,
                         'sort': true,
                         'freeze': true,
                         'resize': true,
-                        'drag': true
+                        'drag': !column.colDef.noDrag
                     }, null, _this.gridOptionsWrapper, _this.$scope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.eRoot, _this.popupService);
                     _this.headerElements.push(renderedHeaderCell);
                     var eContainerToAddTo = column.pinned ? _this.ePinnedHeader : _this.eHeaderContainer;
@@ -10743,10 +10733,13 @@ var ag;
                 else {
                     this.eHeaderCell = headerCellLabel;
                 }
+                var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
                 if (this.headerElements.drag) {
-                    var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
                     if (dragHandler)
                         this.setupDND(dragHandler);
+                }
+                else {
+                    dragHandler.classList.remove('ag-js-draghandler');
                 }
                 if (this.headerElements.sort) {
                     this.addSortHandling(this.eHeaderCell);
@@ -11118,7 +11111,11 @@ var ag;
             };
             RenderedHeaderCell.prototype.addSortHandling = function (headerCellLabel) {
                 var that = this;
-                headerCellLabel.querySelector('.ag-js-draghandler').addEventListener("click", function (event) {
+                var clickListenerEl = headerCellLabel.querySelector('.ag-js-draghandler');
+                if (!clickListenerEl) {
+                    clickListenerEl = headerCellLabel;
+                }
+                clickListenerEl.addEventListener("click", function (event) {
                     // debugger
                     if (!that.gridOptionsWrapper.isEnableSorting()) {
                         return;
@@ -11164,48 +11161,52 @@ var ag;
                 var newWidth = this.startWidth + dragChange;
                 this.columnController.setColumnWidth(this.column, newWidth, finished);
             };
-            RenderedHeaderCell.prototype.reflowText = function (elText, allText) {
-                //cut text in element adding ellipsis. Element with CSS:
-                // text-overflow: ellipsis
-                // word-wrap: normal
-                // overflow: hidden
-                // white-space: normal
-                // max-height: 57px - total height
-                // line-height: 19px - single line height
-                var words = allText.split(' ');
-                var overflown = false;
-                if (!elText) {
-                    return;
-                }
-                elText.innerHTML = words[0];
-                // find the word thab breaks last allowed line
-                for (var i = 1; i < words.length; i++) {
-                    elText.innerHTML = elText.innerHTML + ' ' + words[i];
-                    // if (this.column.colId === 'agreementNumber') {
-                    //     debugger;
-                    // }
-                    if (elText.scrollHeight !== elText.clientHeight) {
-                        overflown = true;
-                        break;
-                    }
-                }
-                // bite out by one char until overflown is gone adding ellipsis to the tail
-                if (overflown) {
-                    // debugger;
-                    var displayText = elText.innerHTML + '…';
-                    // console.log(displayText);
-                    do {
-                        do {
-                            displayText = displayText.slice(0, -2) + '…';
-                        } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
-                        elText.innerHTML = displayText;
-                    } while (displayText.length > 1
-                        &&
-                            elText.scrollHeight !== elText.clientHeight);
-                }
-                else {
-                }
-            };
+            // public reflowText(elText: HTMLElement, allText: string) {
+            //     //cut text in element adding ellipsis. Element with CSS:
+            //     // text-overflow: ellipsis
+            //     // word-wrap: normal
+            //     // overflow: hidden
+            //     // white-space: normal
+            //     // max-height: 57px - total height
+            //     // line-height: 19px - single line height
+            //     var words = allText.split(' ');
+            //     var overflown = false;
+            //     if (!elText) {
+            //         return;
+            //     }
+            //     elText.innerHTML = words[0];
+            //     // find the word thab breaks last allowed line
+            //     for (var i = 1; i < words.length; i++) {
+            //         elText.innerHTML = elText.innerHTML + ' ' + words[i];
+            //         // if (this.column.colId === 'agreementNumber') {
+            //         //     debugger;
+            //         // }
+            //         if (elText.scrollHeight !== elText.clientHeight) {
+            //             overflown = true;
+            //             break;
+            //             // console.log(`broke on ${i} word`);
+            //         }
+            //     }
+            //     // bite out by one char until overflown is gone adding ellipsis to the tail
+            //     if (overflown) {
+            //         // debugger;
+            //         var displayText = elText.innerHTML + '…';
+            //         // console.log(displayText);
+            //         do {
+            //             do {
+            //                 displayText = displayText.slice(0, -2) + '…';
+            //             } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
+            //             elText.innerHTML = displayText;
+            //             // console.log(displayText);
+            //         } while (
+            //             displayText.length > 1
+            //             &&
+            //             elText.scrollHeight !== elText.clientHeight
+            //         );
+            //     } else {
+            //         // console.log('not overflown');
+            //     }
+            // }
             RenderedHeaderCell.prototype.onIndividualColumnResized = function (column) {
                 if (this.column !== column || this.lockedForResize) {
                     return;
@@ -11215,7 +11216,7 @@ var ag;
                 this.eHeaderCell.style.width = newWidthPx;
                 var elText = this.getGui().querySelector('.ag-header-text');
                 var allText = this.columnController.getDisplayNameForCol(this.column);
-                this.reflowText(elText, allText);
+                _.reflowText(elText, allText);
                 this.lockedForResize = false;
             };
             RenderedHeaderCell.prototype.addHeaderClassesFromCollDef = function () {
@@ -11566,6 +11567,7 @@ var ag;
                 this.eventService.dispatchEvent(grid.Events.EVENT_COLUMN_PIVOT_CHANGE, event);
             };
             ColumnController.prototype.moveColumn = function (fromIndex, toIndex) {
+                this.allColumns = this.allColumns.filter(function (el) { return el.pivotIndex === void 0; });
                 var column = this.allColumns[fromIndex];
                 this.allColumns.splice(fromIndex, 1);
                 this.allColumns.splice(toIndex, 0, column);

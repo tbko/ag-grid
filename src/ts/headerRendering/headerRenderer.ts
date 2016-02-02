@@ -198,12 +198,13 @@ module ag.grid {
                 if (column.colDef.checkboxSelection) {
                     headerCellRenderer = RenderedHeaderCheckerCell;
                 }
+                // debugger;
                 var renderedHeaderCell = new headerCellRenderer(column, {
                     'frame': true,
                     'sort': true,
                     'freeze': true,
                     'resize': true,
-                    'drag': true                    
+                    'drag': !column.colDef.noDrag
                 }, null, this.gridOptionsWrapper,
                     this.$scope, this.filterManager, this.columnController, this.$compile,
                     this.angularGrid, this.eRoot, this.popupService);

@@ -227,9 +227,11 @@ module ag.grid {
                 this.eHeaderCell = headerCellLabel;
             }
 
+            var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
             if (this.headerElements.drag) {
-                var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
                 if (dragHandler) this.setupDND(dragHandler);
+            } else {
+                dragHandler.classList.remove('ag-js-draghandler');
             }
 
             if (this.headerElements.sort) {
@@ -672,7 +674,12 @@ module ag.grid {
         private addSortHandling(headerCellLabel: HTMLElement) {
             var that = this;
 
-            headerCellLabel.querySelector('.ag-js-draghandler').addEventListener("click", function (event: any) {
+            var clickListenerEl = headerCellLabel.querySelector('.ag-js-draghandler');
+            if (!clickListenerEl) {
+                clickListenerEl = headerCellLabel;
+            }
+
+            clickListenerEl.addEventListener("click", function (event: any) {
                 // debugger
                 if (!that.gridOptionsWrapper.isEnableSorting()) {
                     return;
@@ -727,59 +734,59 @@ module ag.grid {
             this.columnController.setColumnWidth(this.column, newWidth, finished);
         }
 
-        public reflowText(elText: HTMLElement, allText: string) {
-            //cut text in element adding ellipsis. Element with CSS:
-            // text-overflow: ellipsis
-            // word-wrap: normal
-            // overflow: hidden
-            // white-space: normal
-            // max-height: 57px - total height
-            // line-height: 19px - single line height
-            var words = allText.split(' ');
-            var overflown = false;
-            if (!elText) {
-                return;
-            }
-            elText.innerHTML = words[0];
+        // public reflowText(elText: HTMLElement, allText: string) {
+        //     //cut text in element adding ellipsis. Element with CSS:
+        //     // text-overflow: ellipsis
+        //     // word-wrap: normal
+        //     // overflow: hidden
+        //     // white-space: normal
+        //     // max-height: 57px - total height
+        //     // line-height: 19px - single line height
+        //     var words = allText.split(' ');
+        //     var overflown = false;
+        //     if (!elText) {
+        //         return;
+        //     }
+        //     elText.innerHTML = words[0];
 
-            // find the word thab breaks last allowed line
-            for (var i = 1; i < words.length; i++) {
-                elText.innerHTML = elText.innerHTML + ' ' + words[i];
-                // if (this.column.colId === 'agreementNumber') {
-                //     debugger;
-                // }
-                if (elText.scrollHeight !== elText.clientHeight) {
-                    overflown = true;
-                    break;
-                    // console.log(`broke on ${i} word`);
-                }
-            }
+        //     // find the word thab breaks last allowed line
+        //     for (var i = 1; i < words.length; i++) {
+        //         elText.innerHTML = elText.innerHTML + ' ' + words[i];
+        //         // if (this.column.colId === 'agreementNumber') {
+        //         //     debugger;
+        //         // }
+        //         if (elText.scrollHeight !== elText.clientHeight) {
+        //             overflown = true;
+        //             break;
+        //             // console.log(`broke on ${i} word`);
+        //         }
+        //     }
 
-            // bite out by one char until overflown is gone adding ellipsis to the tail
-            if (overflown) {
-                // debugger;
-                var displayText = elText.innerHTML + '…';
-                // console.log(displayText);
+        //     // bite out by one char until overflown is gone adding ellipsis to the tail
+        //     if (overflown) {
+        //         // debugger;
+        //         var displayText = elText.innerHTML + '…';
+        //         // console.log(displayText);
 
-                do {
+        //         do {
 
-                    do {
-                        displayText = displayText.slice(0, -2) + '…';
-                    } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
+        //             do {
+        //                 displayText = displayText.slice(0, -2) + '…';
+        //             } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
 
-                    elText.innerHTML = displayText;
-                    // console.log(displayText);
+        //             elText.innerHTML = displayText;
+        //             // console.log(displayText);
 
-                } while (
-                    displayText.length > 1
-                    &&
-                    elText.scrollHeight !== elText.clientHeight
-                );
-            } else {
-                // console.log('not overflown');
-            }
+        //         } while (
+        //             displayText.length > 1
+        //             &&
+        //             elText.scrollHeight !== elText.clientHeight
+        //         );
+        //     } else {
+        //         // console.log('not overflown');
+        //     }
 
-        }
+        // }
 
         public onIndividualColumnResized(column: Column) {
             if (this.column !== column || this.lockedForResize) {
@@ -792,7 +799,7 @@ module ag.grid {
 
             var elText = this.getGui().querySelector('.ag-header-text');
             var allText = this.columnController.getDisplayNameForCol(this.column);
-            this.reflowText(<HTMLElement>elText, allText);
+            _.reflowText(<HTMLElement>elText, allText);
 
             this.lockedForResize = false;
         }

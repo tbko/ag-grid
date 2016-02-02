@@ -704,16 +704,6 @@ module ag.grid {
                 // otherwise assume it was html, so just insert
                 this.vParentOfValue.setInnerHtml(resultFromRenderer);
             }
-            // var attachHandler = function (element:HTMLElement) {
-            //     var subElement = element.getElementsByClassName('js-ag-text-wrap')[0];
-            //     if (subElement && that.node && that.node.data.id == 2038) {
-            //         var colId = element.getAttribute('colId');
-            //         var rowId = element.parentElement.getAttribute('row');
-            //         debugger;
-            //         console.log(document.querySelector(`[row="${rowId}"] [colId="${colId}"] .js-ag-text-wrap`));
-            //     }
-            // };
-            // this.vParentOfValue.addElementAttachedListener(attachHandler.bind(this));
             return resultFromRenderer;
         }
 

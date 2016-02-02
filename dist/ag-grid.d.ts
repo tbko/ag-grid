@@ -258,6 +258,8 @@ declare module ag.grid {
         comparator?: (valueA: any, valueB: any, nodeA?: RowNode, nodeB?: RowNode, isInverted?: boolean) => number;
         /** Set to true to render a selection checkbox in the column. */
         checkboxSelection?: boolean;
+        /** Set to true to skip rendering drag element in the column header. */
+        noDrag?: boolean;
         /** Set to true if no menu should be shown for this column header. */
         suppressMenu?: boolean;
         /** Set to true if no sorting should be done for this column. */
@@ -838,6 +840,7 @@ declare module ag.grid {
         private eParentsOfRows;
         private hoveredOn;
         private isSingleRow;
+        private numberOfLinesCalculated;
         init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel, angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any, selectionController: SelectionController, expressionService: ExpressionService, templateService: TemplateService, valueService: ValueService, eventService: EventService): void;
         setRowModel(rowModel: any): void;
         onIndividualColumnResized(column: Column): void;
@@ -860,8 +863,7 @@ declare module ag.grid {
         drawVirtualRows(): void;
         getFirstVirtualRenderedRow(): number;
         getLastVirtualRenderedRow(): number;
-        countGridRows(): void;
-        private ensureRowsRendered(preparedRows?);
+        private ensureRowsRendered(countLinesBefore?);
         private insertRow(node, rowIndex, mainRowWidth, rowsBefore, realDraw?);
         getRenderedNodes(): any[];
         getRenderedRows(): {
@@ -1969,7 +1971,6 @@ declare module ag.grid {
         private addSortHandling(headerCellLabel);
         onDragStart(): void;
         onDragging(dragChange: number, finished: boolean): void;
-        reflowText(elText: HTMLElement, allText: string): void;
         onIndividualColumnResized(column: Column): void;
         private addHeaderClassesFromCollDef();
     }

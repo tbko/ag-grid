@@ -176,7 +176,6 @@ module ag.grid {
                 }
             }
             this.rowHeight = 0;
-            console.log(maxRows, minRows);
             if (readyToDraw) {
                 this.insertInDOM();
                 for (var key in this.renderedCells) {
@@ -185,7 +184,7 @@ module ag.grid {
                         .getVGridCell()
                         .getElement()
                     var foundElementToWrap = cellObjEl
-                        .querySelector('.js-ag-text-wrap');
+                        .querySelector('.ag-text-wrap');
                     if (!foundElementToWrap) {
                         continue;
                     }
@@ -203,8 +202,12 @@ module ag.grid {
                     if (foundElementToWrap) {
                         _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
                     }
-                    this.rowHeight = foundElementToWrap.offsetHeight + verticalGap;
+                    this.rowHeight = Math.max(foundElementToWrap.offsetHeight + verticalGap, this.rowHeight);
                 };
+                if (!this.rowHeight) {
+                    this.rowHeight = baseHeight;
+                }
+                // console.log(this.rowHeight);
             }
         }
 

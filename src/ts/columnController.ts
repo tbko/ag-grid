@@ -243,6 +243,7 @@ module ag.grid {
         }
 
         public moveColumn(fromIndex: number, toIndex: number): void {
+            this.allColumns = this.allColumns.filter((el) => { return el.pivotIndex === void 0; });
             var column = this.allColumns[fromIndex];
             this.allColumns.splice(fromIndex, 1);
             this.allColumns.splice(toIndex, 0, column);

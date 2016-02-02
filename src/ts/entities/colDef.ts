@@ -77,6 +77,9 @@ module ag.grid {
         /** Set to true to render a selection checkbox in the column. */
         checkboxSelection?: boolean;
 
+        /** Set to true to skip rendering drag element in the column header. */
+        noDrag?: boolean;
+
         /** Set to true if no menu should be shown for this column header. */
         suppressMenu?: boolean;
 
