@@ -487,7 +487,10 @@ module ag.grid {
                 }
 
                 for (var idx = 0; idx < srcColumnAttrs.colEndIndex - srcColumnAttrs.colStartIndex + 1; idx++) {
-                    that.columnController.moveColumn(fromIdx, toIdx);
+                    // fetch indexes from all columns for visible ones as moveColumn works with all cilomns list
+                    var fromIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[fromIdx]);
+                    var toIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[toIdx]);
+                    that.columnController.moveColumn(fromIdxInAll, toIdxInAll);
                     if (!directionRight) {
                         toIdx++;
                         fromIdx++;
