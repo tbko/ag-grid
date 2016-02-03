@@ -112,7 +112,7 @@ module ag.grid {
                 // if (this.column.colId === 'agreementNumber') {
                 //     debugger;
                 // }
-                if (elText.scrollHeight !== elText.clientHeight) {
+                if (Math.abs(elText.scrollHeight - elText.clientHeight) > 2) {
                     overflown = true;
                     break;
                     // console.log(`broke on ${i} word`);
@@ -137,7 +137,7 @@ module ag.grid {
                 } while (
                     displayText.length > 1
                     &&
-                    elText.scrollHeight !== elText.clientHeight
+                    Math.abs(elText.scrollHeight - elText.clientHeight) > 2
                 );
             } else {
                 // console.log('not overflown');

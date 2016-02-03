@@ -177,6 +177,7 @@ module ag.grid {
             }
             this.rowHeight = 0;
             if (readyToDraw) {
+                debugger;
                 this.insertInDOM();
                 for (var key in this.renderedCells) {
                     var cellObj: RenderedCell = this.renderedCells[key];

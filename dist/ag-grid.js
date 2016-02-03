@@ -197,7 +197,7 @@ var ag;
                     // if (this.column.colId === 'agreementNumber') {
                     //     debugger;
                     // }
-                    if (elText.scrollHeight !== elText.clientHeight) {
+                    if (Math.abs(elText.scrollHeight - elText.clientHeight) > 2) {
                         overflown = true;
                         break;
                     }
@@ -214,7 +214,7 @@ var ag;
                         elText.innerHTML = displayText;
                     } while (displayText.length > 1
                         &&
-                            elText.scrollHeight !== elText.clientHeight);
+                            Math.abs(elText.scrollHeight - elText.clientHeight) > 2);
                 }
                 else {
                 }
@@ -3222,6 +3222,7 @@ var ag;
                 }
                 this.rowHeight = 0;
                 if (readyToDraw) {
+                    debugger;
                     this.insertInDOM();
                     for (var key in this.renderedCells) {
                         var cellObj = this.renderedCells[key];
@@ -4454,8 +4455,8 @@ var ag;
                     last = rowCount;
                 }
                 else if (maxRows === minRows && !isGroup) {
-                    first = Math.trunc(topPixel / (baseHeight * maxRows));
-                    last = Math.trunc(bottomPixel / (baseHeight * maxRows));
+                    first = Math.floor(topPixel / (baseHeight * maxRows));
+                    last = Math.floor(bottomPixel / (baseHeight * maxRows));
                     ;
                     first = first - buffer;
                     last = last + buffer;

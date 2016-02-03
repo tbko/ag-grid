@@ -339,8 +339,8 @@ module ag.grid {
                 first = 0;
                 last = rowCount;
             } else if (maxRows === minRows && !isGroup) {
-                first = Math.trunc(topPixel / (baseHeight * maxRows));
-                last = Math.trunc(bottomPixel / (baseHeight * maxRows));;
+                first = Math.floor(topPixel / (baseHeight * maxRows));
+                last = Math.floor(bottomPixel / (baseHeight * maxRows));;
 
                 first = first - buffer;
                 last = last + buffer;
