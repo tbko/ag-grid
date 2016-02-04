@@ -178,46 +178,58 @@ var ag;
                 };
             };
             Utils.reflowText = function (elText, allText) {
-                //cut text in element adding ellipsis. Element with CSS:
-                // text-overflow: ellipsis
-                // word-wrap: normal
-                // overflow: hidden
-                // white-space: normal
-                // max-height: 57px - total height
-                // line-height: 19px - single line height
                 var words = allText.split(' ');
                 var overflown = false;
                 if (!elText) {
                     return;
                 }
-                elText.innerHTML = words[0];
-                // find the word that breaks last allowed line
-                for (var i = 1; i < words.length; i++) {
-                    elText.innerHTML = elText.innerHTML + ' ' + words[i];
-                    // if (this.column.colId === 'agreementNumber') {
-                    //     debugger;
-                    // }
-                    if (Math.abs(elText.scrollHeight - elText.clientHeight) > 2) {
-                        overflown = true;
-                        break;
+                var tail = '…';
+                var text;
+                var cutPoint = words.length;
+                while (Math.abs(elText.scrollHeight - elText.clientHeight) > 2) {
+                    text = words.slice(0, cutPoint--).join(' ');
+                    elText.innerHTML = text;
+                }
+                if (cutPoint < words.length) {
+                    var lastWord = words[cutPoint + 2] || words[cutPoint + 1];
+                    cutPoint = 0;
+                    while (lastWord && cutPoint < lastWord.length && Math.abs(elText.scrollHeight - elText.clientHeight) <= 2) {
+                        elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint++) + '…';
                     }
+                    elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint - 2) + '…';
                 }
-                // bite out by one char until overflown is gone adding ellipsis to the tail
-                if (overflown) {
-                    // debugger;
-                    var displayText = elText.innerHTML + '…';
-                    // console.log(displayText);
-                    do {
-                        do {
-                            displayText = displayText.slice(0, -2) + '…';
-                        } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
-                        elText.innerHTML = displayText;
-                    } while (displayText.length > 1
-                        &&
-                            Math.abs(elText.scrollHeight - elText.clientHeight) > 2);
-                }
-                else {
-                }
+                // elText.innerHTML = words[0];
+                // // find the word that breaks last allowed line
+                // for (var i = 1; i < words.length; i++) {
+                //     elText.innerHTML = elText.innerHTML + ' ' + words[i];
+                //     // if (this.column.colId === 'agreementNumber') {
+                //     //     debugger;
+                //     // }
+                //     if (Math.abs(elText.scrollHeight - elText.clientHeight) > 2) {
+                //         overflown = true;
+                //         break;
+                //         // console.log(`broke on ${i} word`);
+                //     }
+                // }
+                // // bite out by one char until overflown is gone adding ellipsis to the tail
+                // if (overflown) {
+                //     // debugger;
+                //     var displayText = elText.innerHTML + v;
+                //     // console.log(displayText);
+                //     do {
+                //         do {
+                //             displayText = displayText.slice(0, -2) + '…';
+                //         } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
+                //         elText.innerHTML = displayText;
+                //         // console.log(displayText);
+                //     } while (
+                //         displayText.length > 1
+                //         &&
+                //         Math.abs(elText.scrollHeight - elText.clientHeight) > 2
+                //     );
+                // } else {
+                //     // console.log('not overflown');
+                // }
             };
             Utils.iterateObject = function (object, callback) {
                 var keys = Object.keys(object);
@@ -3149,6 +3161,7 @@ var ag;
                 this.eventService = eventService;
                 this.headerHeight = 0;
                 this.rowHeight = 0;
+                this.timing = 0;
                 var eRoot = _.findParentWithClass(this.eBodyContainer, 'ag-root');
                 var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
                 var rowIsHeaderThatSpans = node.group && groupHeaderTakesEntireRow;
@@ -3222,8 +3235,8 @@ var ag;
                 }
                 this.rowHeight = 0;
                 if (readyToDraw) {
-                    debugger;
                     this.insertInDOM();
+                    var startTs = new Date();
                     for (var key in this.renderedCells) {
                         var cellObj = this.renderedCells[key];
                         var cellObjEl = cellObj
@@ -3234,25 +3247,34 @@ var ag;
                         if (!foundElementToWrap) {
                             continue;
                         }
+                        // var styles = window.getComputedStyle(cellObjEl);
+                        // var verticalGap = parseInt(styles.paddingTop) + parseInt(styles.paddingBottom) + parseInt(styles.borderTopWidth) + parseInt(styles.borderBottomWidth);
+                        var verticalGap = 15;
+                        // if (maxRows == minRows) {
                         // fixed lines count - reflow up to...
-                        // up to max count - no reflow
-                        var styles = window.getComputedStyle(cellObjEl);
-                        var verticalGap = parseInt(styles.paddingTop) + parseInt(styles.paddingBottom) + parseInt(styles.borderTopWidth) + parseInt(styles.borderBottomWidth);
-                        // debugger;
                         var maxLinesHeight = Math.max(maxRows, minRows) * baseHeight - verticalGap;
                         foundElementToWrap.style['max-height'] = (maxLinesHeight || 100000) + "px";
                         foundElementToWrap.style['height'] = (maxLinesHeight || 100000) + "px";
-                        // foundElementToWrap.style['line-height'] = `${baseHeight - verticalGap}px`;
                         foundElementToWrap.style['line-height'] = maxLinesHeight / maxRows + "px";
-                        if (foundElementToWrap) {
-                            _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
-                        }
-                        this.rowHeight = Math.max(foundElementToWrap.offsetHeight + verticalGap, this.rowHeight);
+                        //     if (foundElementToWrap) {
+                        //         _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
+                        //     }
+                        //     this.rowHeight = Math.max(foundElementToWrap.offsetHeight + verticalGap, this.rowHeight);
+                        // } else {
+                        // up to max count - no reflow
+                        // }
+                        // foundElementToWrap.style['max-height'] = `45px`;
+                        // foundElementToWrap.style['height'] = `45px`;
+                        // foundElementToWrap.style['line-height'] = `22px`;
+                        _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
+                        this.rowHeight = maxRows * baseHeight;
                     }
                     ;
                     if (!this.rowHeight) {
                         this.rowHeight = baseHeight;
                     }
+                    var endTs = new Date();
+                    this.timing = endTs - startTs;
                 }
             }
             RenderedRow.prototype.getHeight = function () {
@@ -4563,6 +4585,7 @@ var ag;
                 if (maxRows !== minRows) {
                     linesPerRow = (maxRows + minRows) / 2;
                 }
+                var timing = 0;
                 rowsBeforeCount = this.firstVirtualRenderedRow;
                 linesBeforeCount = countLinesBefore || Math.round(rowsBeforeCount * linesPerRow);
                 linesBeforePlusRenderedCount = linesBeforeCount;
@@ -4584,6 +4607,7 @@ var ag;
                     if (node) {
                         var insertedRow = that.insertRow(node, rowIndex, mainRowWidth, linesBeforePlusRenderedCount);
                         linesBeforePlusRenderedCount += insertedRow.getHeight() / baseHeight;
+                        timing += insertedRow.timing;
                     }
                 }
                 linesRenderedCount = linesBeforePlusRenderedCount - linesBeforeCount;
@@ -4591,9 +4615,7 @@ var ag;
                 linesPerRowInRendered = linesRenderedCount / rowsRenderedCount;
                 linesAfterCount = rowsAfterCount * linesPerRowInRendered;
                 this.numberOfLinesCalculated = linesBeforeCount + linesRenderedCount + linesAfterCount;
-                // console.log('Before: ', linesBeforeCount, rowsBeforeCount);
-                // console.log('Rendered: ', linesRenderedCount, rowsRenderedCount);
-                // console.log('After: ', linesAfterCount, rowsAfterCount);
+                console.log('Total time taken for linws reflow (ms): ', timing);
                 // at this point, everything in our 'rowsToRemove' . . .
                 this.removeVirtualRow(rowsToRemove);
                 // if we are doing angular compiling, then do digest the scope here

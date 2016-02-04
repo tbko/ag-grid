@@ -52,6 +52,8 @@ module ag.grid {
         private valueService: ValueService;
         private eventService: EventService;
 
+        public timing: number;
+
         constructor(gridOptionsWrapper: GridOptionsWrapper,
                     valueService: ValueService,
                     parentScope: any,
@@ -89,6 +91,7 @@ module ag.grid {
             this.eventService = eventService;
             this.headerHeight = 0;
             this.rowHeight = 0;
+            this.timing = 0;
 
             var eRoot: HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
 
@@ -177,38 +180,57 @@ module ag.grid {
             }
             this.rowHeight = 0;
             if (readyToDraw) {
-                debugger;
                 this.insertInDOM();
+                var startTs = new Date();
                 for (var key in this.renderedCells) {
                     var cellObj: RenderedCell = this.renderedCells[key];
                     var cellObjEl: HTMLElement = <HTMLElement>cellObj
                         .getVGridCell()
                         .getElement()
-                    var foundElementToWrap = cellObjEl
+                    var foundElementToWrap = <HTMLElement> cellObjEl
                         .querySelector('.ag-text-wrap');
                     if (!foundElementToWrap) {
                         continue;
                     }
+                    // var styles = window.getComputedStyle(cellObjEl);
+                    // var verticalGap = parseInt(styles.paddingTop) + parseInt(styles.paddingBottom) + parseInt(styles.borderTopWidth) + parseInt(styles.borderBottomWidth);
+                    var verticalGap = 15;
+
+
+                    // if (maxRows == minRows) {
                     // fixed lines count - reflow up to...
-                    // up to max count - no reflow
-                    var styles = window.getComputedStyle(cellObjEl);
-                    var verticalGap = parseInt(styles.paddingTop) + parseInt(styles.paddingBottom) + parseInt(styles.borderTopWidth) + parseInt(styles.borderBottomWidth);
-                    // debugger;
                     var maxLinesHeight = Math.max(maxRows, minRows) * baseHeight - verticalGap;
+
                     foundElementToWrap.style['max-height'] = `${ maxLinesHeight || 100000}px`;
                     foundElementToWrap.style['height'] = `${ maxLinesHeight || 100000}px`;
-                    // foundElementToWrap.style['line-height'] = `${baseHeight - verticalGap}px`;
                     foundElementToWrap.style['line-height'] = `${maxLinesHeight / maxRows}px`;
 
-                    if (foundElementToWrap) {
-                        _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
-                    }
-                    this.rowHeight = Math.max(foundElementToWrap.offsetHeight + verticalGap, this.rowHeight);
+                    //     if (foundElementToWrap) {
+                    //         _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
+                    //     }
+                    //     this.rowHeight = Math.max(foundElementToWrap.offsetHeight + verticalGap, this.rowHeight);
+                    // } else {
+                    // up to max count - no reflow
+
+                    // }
+                    // foundElementToWrap.style['max-height'] = `45px`;
+                    // foundElementToWrap.style['height'] = `45px`;
+                    // foundElementToWrap.style['line-height'] = `22px`;
+                    
+                    _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
+
+                    this.rowHeight = maxRows * baseHeight;
+                    // this.rowHeight = Math.max(foundElementToWrap.offsetHeight + verticalGap, this.rowHeight);
+                    // var fullHeight = foundElementToWrap.offsetHeight + verticalGap;
+                    // if (fullHeight > this.rowHeight) {
+                    //     this.rowHeight = fullHeight;
+                    // }
                 };
                 if (!this.rowHeight) {
                     this.rowHeight = baseHeight;
                 }
-                // console.log(this.rowHeight);
+                var endTs = new Date();
+                this.timing = endTs - startTs;
             }
         }
 

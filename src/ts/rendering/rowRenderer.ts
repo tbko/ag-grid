@@ -470,6 +470,8 @@ module ag.grid {
                 linesPerRow = (maxRows + minRows) / 2;
             }
 
+            var timing = 0;
+
 
             rowsBeforeCount = this.firstVirtualRenderedRow;
             linesBeforeCount = countLinesBefore || Math.round(rowsBeforeCount * linesPerRow);
@@ -496,6 +498,7 @@ module ag.grid {
                 if (node) {
                     var insertedRow = that.insertRow(node, rowIndex, mainRowWidth, linesBeforePlusRenderedCount);
                     linesBeforePlusRenderedCount += insertedRow.getHeight() / baseHeight;
+                    timing += insertedRow.timing;
                 }
             }
 
@@ -506,9 +509,7 @@ module ag.grid {
 
             this.numberOfLinesCalculated = linesBeforeCount + linesRenderedCount + linesAfterCount;
 
-            // console.log('Before: ', linesBeforeCount, rowsBeforeCount);
-            // console.log('Rendered: ', linesRenderedCount, rowsRenderedCount);
-            // console.log('After: ', linesAfterCount, rowsAfterCount);
+            // console.log('Total time taken for linws reflow (ms): ', timing);
 
 
 

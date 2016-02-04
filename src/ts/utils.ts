@@ -92,56 +92,66 @@ module ag.grid {
         }
 
         static reflowText(elText: HTMLElement, allText: string) {
-            //cut text in element adding ellipsis. Element with CSS:
-            // text-overflow: ellipsis
-            // word-wrap: normal
-            // overflow: hidden
-            // white-space: normal
-            // max-height: 57px - total height
-            // line-height: 19px - single line height
             var words = allText.split(' ');
             var overflown = false;
             if (!elText) {
                 return;
             }
-            elText.innerHTML = words[0];
+            var tail = '…';
+            var text: string;
 
-            // find the word that breaks last allowed line
-            for (var i = 1; i < words.length; i++) {
-                elText.innerHTML = elText.innerHTML + ' ' + words[i];
-                // if (this.column.colId === 'agreementNumber') {
-                //     debugger;
-                // }
-                if (Math.abs(elText.scrollHeight - elText.clientHeight) > 2) {
-                    overflown = true;
-                    break;
-                    // console.log(`broke on ${i} word`);
+            var cutPoint = words.length;
+            while (Math.abs(elText.scrollHeight - elText.clientHeight) > 2) {
+                text = words.slice(0, cutPoint--).join(' ');
+                elText.innerHTML = text;
+            }
+            if (cutPoint < words.length) {
+                var lastWord = words[cutPoint + 2] || words[cutPoint + 1]
+                cutPoint = 0;
+
+                while (lastWord && cutPoint < lastWord.length && Math.abs(elText.scrollHeight - elText.clientHeight) <= 2) {
+                    elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint++) + '…';
                 }
+                elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint - 2) + '…';
             }
+            // elText.innerHTML = words[0];
 
-            // bite out by one char until overflown is gone adding ellipsis to the tail
-            if (overflown) {
-                // debugger;
-                var displayText = elText.innerHTML + '…';
-                // console.log(displayText);
+            // // find the word that breaks last allowed line
+            // for (var i = 1; i < words.length; i++) {
+            //     elText.innerHTML = elText.innerHTML + ' ' + words[i];
+            //     // if (this.column.colId === 'agreementNumber') {
+            //     //     debugger;
+            //     // }
+            //     if (Math.abs(elText.scrollHeight - elText.clientHeight) > 2) {
+            //         overflown = true;
+            //         break;
+            //         // console.log(`broke on ${i} word`);
+            //     }
+            // }
 
-                do {
+            // // bite out by one char until overflown is gone adding ellipsis to the tail
+            // if (overflown) {
+            //     // debugger;
+            //     var displayText = elText.innerHTML + v;
+            //     // console.log(displayText);
 
-                    do {
-                        displayText = displayText.slice(0, -2) + '…';
-                    } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
+            //     do {
 
-                    elText.innerHTML = displayText;
-                    // console.log(displayText);
+            //         do {
+            //             displayText = displayText.slice(0, -2) + '…';
+            //         } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
 
-                } while (
-                    displayText.length > 1
-                    &&
-                    Math.abs(elText.scrollHeight - elText.clientHeight) > 2
-                );
-            } else {
-                // console.log('not overflown');
-            }
+            //         elText.innerHTML = displayText;
+            //         // console.log(displayText);
+
+            //     } while (
+            //         displayText.length > 1
+            //         &&
+            //         Math.abs(elText.scrollHeight - elText.clientHeight) > 2
+            //     );
+            // } else {
+            //     // console.log('not overflown');
+            // }
 
         }
 
