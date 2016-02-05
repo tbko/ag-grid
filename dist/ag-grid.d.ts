@@ -698,10 +698,13 @@ declare module ag.grid {
         private valueService;
         private eventService;
         timing: number;
+        timingReflow: number;
         constructor(gridOptionsWrapper: GridOptionsWrapper, valueService: ValueService, parentScope: any, angularGrid: Grid, columnController: ColumnController, expressionService: ExpressionService, cellRendererMap: {
             [key: string]: any;
-        }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService, rowsBefore?: number, readyToDraw?: boolean);
+        }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService, rowsBefore?: number, topPx?: number, readyToDraw?: boolean);
+        positionTop(px: number): void;
         getHeight(): number;
+        getVerticalFrame(): any;
         insertInDOM(): void;
         getMaxRowsNeeded(): number;
         onRowSelected(selected: boolean): void;
@@ -842,6 +845,11 @@ declare module ag.grid {
         private hoveredOn;
         private isSingleRow;
         private numberOfLinesCalculated;
+        private beforeCalculatedHeight;
+        private afterCalculatedHeight;
+        private renderedTotalHeight;
+        private renderedAverageHeight;
+        private heightFromLastRow;
         init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel, angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any, selectionController: SelectionController, expressionService: ExpressionService, templateService: TemplateService, valueService: ValueService, eventService: EventService): void;
         setRowModel(rowModel: any): void;
         onIndividualColumnResized(column: Column): void;
@@ -865,7 +873,8 @@ declare module ag.grid {
         getFirstVirtualRenderedRow(): number;
         getLastVirtualRenderedRow(): number;
         private ensureRowsRendered(countLinesBefore?);
-        private insertRow(node, rowIndex, mainRowWidth, rowsBefore, realDraw?);
+        getBodyHeight(): number;
+        private insertRow(node, rowIndex, mainRowWidth, rowsBefore, topPx, realDraw?);
         getRenderedNodes(): any[];
         getRenderedRows(): {
             [key: string]: RenderedRow;

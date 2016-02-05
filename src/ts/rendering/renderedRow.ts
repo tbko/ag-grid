@@ -53,6 +53,7 @@ module ag.grid {
         private eventService: EventService;
 
         public timing: number;
+        public timingReflow: number;
 
         constructor(gridOptionsWrapper: GridOptionsWrapper,
                     valueService: ValueService,
@@ -72,6 +73,7 @@ module ag.grid {
                     rowIndex: number,
                     eventService: EventService,
                     rowsBefore?: number,
+                    topPx?: number,
                     readyToDraw: boolean = true) {
             this.gridOptionsWrapper = gridOptionsWrapper;
             this.valueService = valueService;
@@ -145,22 +147,30 @@ module ag.grid {
                 }
             }
 
-            // if showing scrolls, position on the container
-            this.top = baseHeight * rowsBefore;
-            this.topPX = `${this.top}px`;
-            this.height = baseHeight * (this.maxRowsNeeded || 1);
-            this.heightPX = `${this.height}px`;
+            var verticalGap = 15; // top/bottom padding + borders (px) default: 15
+            var baseHeight = baseHeight; // filed single row height (px) default: 30
+            var singleLineHeight = baseHeight - verticalGap; // (px) 
+            var numberOfLines = maxRows; // from settings (count)
+            var totalLineHeight = singleLineHeight * numberOfLines; // content height (px)
+            var rowHeight = totalLineHeight + verticalGap; // height of grid line (px)
 
+            // if showing scrolls, position on the container
+            // this.top = rowHeight * rowIndex;
+            this.top = topPx;
+            this.topPX = `${this.top}px`;
             if (!this.gridOptionsWrapper.isForPrint()) {
                 this.vBodyRow.style.top = this.topPX;
                 if (this.pinning) {
                     this.vPinnedRow.style.top = this.topPX;
                 }
             }
-            this.vBodyRow.style.height =  this.heightPX;
-            if (this.pinning) {
-                this.vPinnedRow.style.height = this.heightPX;
-            }
+
+            // this.height = baseHeight * (this.maxRowsNeeded || 1);
+            // this.heightPX = `${this.height}px`;
+            // this.vBodyRow.style.height =  this.heightPX;
+            // if (this.pinning) {
+            //     this.vPinnedRow.style.height = this.heightPX;
+            // }
 
             // if group item, insert the first row
             if (rowIsHeaderThatSpans) {
@@ -194,48 +204,70 @@ module ag.grid {
                     }
                     // var styles = window.getComputedStyle(cellObjEl);
                     // var verticalGap = parseInt(styles.paddingTop) + parseInt(styles.paddingBottom) + parseInt(styles.borderTopWidth) + parseInt(styles.borderBottomWidth);
-                    var verticalGap = 15;
-
 
                     // if (maxRows == minRows) {
                     // fixed lines count - reflow up to...
-                    var maxLinesHeight = Math.max(maxRows, minRows) * baseHeight - verticalGap;
+                    // var maxLinesHeight = Math.max(maxRows, minRows) * baseHeight - verticalGap;
+                    if (maxRows == minRows) {
+                        foundElementToWrap.style['max-height'] = `${totalLineHeight}px`;
+                        foundElementToWrap.style['height'] = `${totalLineHeight}px`;
+                        foundElementToWrap.style['line-height'] = `${singleLineHeight}px`;
 
-                    foundElementToWrap.style['max-height'] = `${ maxLinesHeight || 100000}px`;
-                    foundElementToWrap.style['height'] = `${ maxLinesHeight || 100000}px`;
-                    foundElementToWrap.style['line-height'] = `${maxLinesHeight / maxRows}px`;
+                        var startReflowTs = new Date();
+                        _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
+                        var endReflowTs = new Date();
+                        this.rowHeight = rowHeight;
+                    } else {
+                        foundElementToWrap.style['max-height'] = ``;
+                        foundElementToWrap.style['height'] = ``;
+                        foundElementToWrap.style['line-height'] = `${singleLineHeight}px`;
+                        foundElementToWrap.style['overflow'] = `visible`;
+                        var requiredHeight = foundElementToWrap.scrollHeight + verticalGap;
+                        // debugger
+                        this.rowHeight = requiredHeight > this.rowHeight ? requiredHeight : this.rowHeight;
+                    }
 
-                    //     if (foundElementToWrap) {
-                    //         _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
-                    //     }
-                    //     this.rowHeight = Math.max(foundElementToWrap.offsetHeight + verticalGap, this.rowHeight);
-                    // } else {
-                    // up to max count - no reflow
 
-                    // }
-                    // foundElementToWrap.style['max-height'] = `45px`;
-                    // foundElementToWrap.style['height'] = `45px`;
-                    // foundElementToWrap.style['line-height'] = `22px`;
-                    
-                    _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
-
-                    this.rowHeight = maxRows * baseHeight;
-                    // this.rowHeight = Math.max(foundElementToWrap.offsetHeight + verticalGap, this.rowHeight);
-                    // var fullHeight = foundElementToWrap.offsetHeight + verticalGap;
-                    // if (fullHeight > this.rowHeight) {
-                    //     this.rowHeight = fullHeight;
-                    // }
                 };
                 if (!this.rowHeight) {
                     this.rowHeight = baseHeight;
                 }
-                var endTs = new Date();
-                this.timing = endTs - startTs;
+
+                this.height = this.rowHeight;
+                this.heightPX = `${this.height}px`;
+                this.vBodyRow.element.style.height =  this.heightPX;
+                if (this.pinning) {
+                    this.vPinnedRow.element.style.height = this.heightPX;
+                }
+
             }
+
+
+            var endTs = new Date();
+            this.timing = endTs - startTs;
+            this.timingReflow = endReflowTs - startReflowTs;
+        }
+
+        public positionTop(px: number) {
+            this.top = px;
+            this.topPX = `${this.top}px`;
+            if (!this.gridOptionsWrapper.isForPrint()) {
+                this.vBodyRow.element.style.top = this.topPX;
+                if (this.pinning) {
+                    this.vPinnedRow.element.style.top = this.topPX;
+                }
+            }          
         }
 
         public getHeight(): number {
             return this.rowHeight;
+        }
+
+        public getVerticalFrame(): any {
+            return {
+                top: this.top,
+                bottom: this.top + this.height
+            };
         }
 
         public insertInDOM() {

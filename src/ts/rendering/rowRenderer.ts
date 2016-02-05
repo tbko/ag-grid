@@ -49,6 +49,11 @@ module ag.grid {
         private hoveredOn: any;
         private isSingleRow: boolean;
         private numberOfLinesCalculated: number;
+        private beforeCalculatedHeight: number;
+        private afterCalculatedHeight: number;
+        private renderedTotalHeight: number;
+        private renderedAverageHeight: number;
+        private heightFromLastRow: number;
 
         public init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel,
                     angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any,
@@ -70,6 +75,10 @@ module ag.grid {
             this.hoveredOn = undefined;
             this.isSingleRow = true;
             this.numberOfLinesCalculated = 0;
+            this.beforeCalculatedHeight = 0;
+            this.afterCalculatedHeight = 0;
+            this.renderedTotalHeight = 0;
+            this.heightFromLastRow = 0;
 
             this.cellRendererMap = {
                 'group': groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
@@ -83,6 +92,10 @@ module ag.grid {
             // map of row ids to row objects. keeps track of which elements
             // are rendered for which rows in the dom.
             this.renderedRows = {};
+
+            var maxRows: number = this.gridOptionsWrapper.getMaxRows();
+            var minRows: number = this.gridOptionsWrapper.getMinRows();
+            this.renderedAverageHeight = (maxRows + minRows) / 2;
         }
 
         public setRowModel(rowModel: any) {
@@ -99,6 +112,7 @@ module ag.grid {
                     element.style.width = newWidthPx;
                 }
             });
+            this.refreshView();
         }
 
         public setMainRowWidths() {
@@ -185,11 +199,11 @@ module ag.grid {
         public refreshView(refreshFromIndex?: any) {
             this.refreshAllVirtualRows(refreshFromIndex);
             if (!this.gridOptionsWrapper.isForPrint()) {
-                var rowCount = this.rowModel.getGridRowCount();
+                // var rowCount = this.rowModel.getGridRowCount();
                 // var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
-                var containerHeight = this.gridOptionsWrapper.getRowHeight() * this.numberOfLinesCalculated;
+                // var containerHeight = this.gridOptionsWrapper.getRowHeight() * this.numberOfLinesCalculated;
+                var containerHeight = this.getBodyHeight();
 
-                // debugger;
                 this.eBodyContainer.style.height = containerHeight + "px";
                 // this.gridPanel.getLayout().setRowOverlayRowHeight(this.eBodyContainer.style.height);
 
@@ -332,15 +346,20 @@ module ag.grid {
             var isGroup = groupKeys ? groupKeys.length : groupKeys;
             var countLinesBefore = 0;
 
+            var verticalGap = 15; // top/bottom padding + borders (px) default: 15
+
             if (this.gridOptionsWrapper.isForPrint()) {
                 first = 0;
                 last = rowCount;
             } else if (maxRows === void 0 || minRows === void 0) {
                 first = 0;
                 last = rowCount;
-            } else if (maxRows === minRows && !isGroup) {
-                first = Math.floor(topPixel / (baseHeight * maxRows));
-                last = Math.floor(bottomPixel / (baseHeight * maxRows));;
+                // } else if (maxRows === minRows && !isGroup) {
+            } else {
+                // first = Math.floor(    topPixel / ((baseHeight - verticalGap) * minRows + verticalGap) );
+                // last = Math.floor(  bottomPixel / ((baseHeight - verticalGap) * minRows + verticalGap) );
+                first = Math.floor(topPixel / ((baseHeight - verticalGap) * minRows + verticalGap));
+                last = Math.floor(bottomPixel / baseHeight);
 
                 first = first - buffer;
                 last = last + buffer;
@@ -350,6 +369,7 @@ module ag.grid {
                 if (last > rowCount - 1) {
                     last = rowCount - 1;
                 }
+            }
             //     var preRows = this.rowModel.getVirtualRowsUpto()
             //     first = Math.trunc(topPixel / (baseHeight * maxRows));
             //     last = Math.trunc(bottomPixel / (baseHeight * maxRows));;
@@ -364,74 +384,73 @@ module ag.grid {
             //     }
 
             // } else {
-            } else if (maxRows === minRows && isGroup) {
-                // debugger;
-                var row: RowNode;
-                var countRowsBefore = 0;
-                var delta = 0;
-                var deltaHistory = [];
-                var preparedRows:any = {};
-                var rowEl: any;
+            // } else if (maxRows === minRows && isGroup) {
+            //     var row: RowNode;
+            //     var countRowsBefore = 0;
+            //     var delta = 0;
+            //     var deltaHistory = [];
+            //     var preparedRows:any = {};
+            //     var rowEl: any;
 
-                for (var k = 0; k < rowCount; k++) {
-                    row = this.rowModel.getVirtualRow(k)
-                    if (!row) {
-                        break;
-                    }
+            //     for (var k = 0; k < rowCount; k++) {
+            //         row = this.rowModel.getVirtualRow(k)
+            //         if (!row) {
+            //             break;
+            //         }
                     
-                    if (!row.group) {
-                        delta = maxRows;
-                    } else {
-                        delta = 1;
-                    }
-                    if ((countRowsBefore + delta) * baseHeight > topPixel) {
-                        break;
-                    }
-                    deltaHistory.push(delta);
-                    countRowsBefore += delta;
-                }
-                first = k;
-                countLinesBefore = countRowsBefore;
-                for (; k < rowCount; k++) {
-                    row = this.rowModel.getVirtualRow(k)
-                    if (!row) {
-                        break;
-                    }
+            //         if (!row.group) {
+            //             delta = maxRows;
+            //         } else {
+            //             delta = 1;
+            //         }
+            //         if ((countRowsBefore + delta) * baseHeight > topPixel) {
+            //             break;
+            //         }
+            //         deltaHistory.push(delta);
+            //         countRowsBefore += delta;
+            //     }
+            //     first = k;
+            //     countLinesBefore = countRowsBefore;
+            //     for (; k < rowCount; k++) {
+            //         row = this.rowModel.getVirtualRow(k)
+            //         if (!row) {
+            //             break;
+            //         }
 
-                    if (!row.group) {
-                        delta = maxRows;
-                    } else {
-                        delta = 1
-                    }
-                    if ((countRowsBefore + delta) * baseHeight > bottomPixel) {
-                        break;
-                    }
-                    countRowsBefore += delta;
-                }
-                last = k;
+            //         if (!row.group) {
+            //             delta = maxRows;
+            //         } else {
+            //             delta = 1
+            //         }
+            //         if ((countRowsBefore + delta) * baseHeight > bottomPixel) {
+            //             break;
+            //         }
+            //         countRowsBefore += delta;
+            //     }
+            //     last = k;
 
-                //add in buffer
-                first = first - buffer;
-                last = last + buffer;
-                countLinesBefore = deltaHistory.slice(0, -buffer).reduce(function(acc, el) { return acc + el;}, 0);
+            //     //add in buffer
+            //     first = first - buffer;
+            //     last = last + buffer;
+            //     countLinesBefore = deltaHistory.slice(0, -buffer).reduce(function(acc, el) { return acc + el;}, 0);
 
-                // adjust, in case buffer extended actual size
-                if (first < 0) {
-                    countLinesBefore = 0;
-                    first = 0;
-                }
-                if (last > rowCount - 1) {
-                    last = rowCount - 1;
-                }
-            } else {
-                first = 0;
-                last = 10;
-            }
+            //     // adjust, in case buffer extended actual size
+            //     if (first < 0) {
+            //         countLinesBefore = 0;
+            //         first = 0;
+            //     }
+            //     if (last > rowCount - 1) {
+            //         last = rowCount - 1;
+            //     }
+            // } else {
+            //     first = 0;
+            //     last = 10;
+            // }
 
             this.firstVirtualRenderedRow = first;
             this.lastVirtualRenderedRow = last;
 
-            // console.log(first, last, countLinesBefore);
+            console.log(first, last);
             // this.ensureRowsRendered(preparedRows);
             this.ensureRowsRendered(countLinesBefore);
         }
@@ -448,13 +467,11 @@ module ag.grid {
             var that = this;
 
             // at the end, this array will contain the items we need to remove
-            // debugger;
             var rowsToRemove = Object.keys(this.renderedRows);
 
             var totalRows = this.rowModel.getVirtualRowCount();
             var maxRows: number = this.gridOptionsWrapper.getMaxRows();
             var minRows: number = this.gridOptionsWrapper.getMinRows();
-            var baseHeight = this.gridOptionsWrapper.getRowHeight();
             var mainRowWidth = this.columnModel.getBodyContainerWidth();
 
             var linesBeforeCount = 0;
@@ -470,37 +487,72 @@ module ag.grid {
                 linesPerRow = (maxRows + minRows) / 2;
             }
 
-            var timing = 0;
+            var baseHeight = this.gridOptionsWrapper.getRowHeight();
+            var verticalGap = 15; // top/bottom padding + borders (px) default: 15
 
+            var timing = 0;
+            var timingReflow = 0;
+
+            // debugger;
+            // console.log(this.firstVirtualRenderedRow, Math.min.apply(null, rowsToRemove));
 
             rowsBeforeCount = this.firstVirtualRenderedRow;
             linesBeforeCount = countLinesBefore || Math.round(rowsBeforeCount * linesPerRow);
             linesBeforePlusRenderedCount = linesBeforeCount;
             rowsRenderedCount = this.lastVirtualRenderedRow - rowsBeforeCount + 1;
+
+            var rowKeys = Object.keys(this.renderedRows);
+            var topPx = this.renderedAverageHeight * rowsBeforeCount;
             // add in new rows
-            for (var rowIndex = this.firstVirtualRenderedRow; rowIndex <= this.lastVirtualRenderedRow; rowIndex++) {
+            var direction = 1;
+            var fromIdx = this.firstVirtualRenderedRow;
+            var toIdx = this.lastVirtualRenderedRow;
+            // debugger;
+            if ( (this.firstVirtualRenderedRow || 0) < Math.min.apply(null, rowsToRemove.length ? rowsToRemove : [0])) {
+                direction = -1;
+                fromIdx = this.lastVirtualRenderedRow;
+                toIdx = this.firstVirtualRenderedRow;
+            }
+            for (var rowIndex = fromIdx; direction > 0 ? rowIndex <= toIdx : rowIndex >= toIdx; rowIndex += direction) {
                 var node = this.rowModel.getVirtualRow(rowIndex);
 
                 // see if item already there, and if yes, take it out of the 'to remove' array
                 if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
                     rowsToRemove.splice(rowsToRemove.indexOf(rowIndex.toString()), 1);
-                    // console.log(this.renderedRows[rowIndex.toString()].node.group, this.renderedRows[rowIndex.toString()].height);
-                    linesBeforePlusRenderedCount += this.renderedRows[rowIndex.toString()].getHeight() / baseHeight;
+                    // linesBeforePlusRenderedCount += this.renderedRows[rowIndex.toString()].getHeight() / baseHeight;
+                    linesBeforePlusRenderedCount += maxRows;
+                    topPx += this.renderedRows[rowIndex].getHeight();
                     continue;
                 }
 
-                if (rowIndex == 13) {
-                    // debugger;
-                }
+                // if (rowIndex == 13) {
+                // }
                 // console.log(rowIndex, linesBeforePlusRenderedCount);
 
                 // check this row actually exists (in case overflow buffer window exceeds real data)
                 if (node) {
-                    var insertedRow = that.insertRow(node, rowIndex, mainRowWidth, linesBeforePlusRenderedCount);
-                    linesBeforePlusRenderedCount += insertedRow.getHeight() / baseHeight;
+                    var rowRenderedBefore = this.renderedRows[rowIndex - 1];
+                    var rowRenderedAfter = this.renderedRows[rowIndex + 1];
+                    if (rowRenderedBefore) {
+                        topPx = rowRenderedBefore.getVerticalFrame().bottom;
+                    } else if (rowRenderedAfter) {
+                        topPx = rowRenderedAfter.getVerticalFrame().top;
+                    } else {
+                        topPx = 0;
+                    }
+                    var insertedRow = this.insertRow(node, rowIndex, mainRowWidth, linesBeforePlusRenderedCount, topPx);
+                    if (rowRenderedAfter) {
+                        insertedRow.positionTop(topPx - insertedRow.getHeight())
+                    }
+                    // linesBeforePlusRenderedCount += insertedRow.getHeight() / baseHeight;
+                    linesBeforePlusRenderedCount += maxRows;
+                    topPx += insertedRow.getHeight();
+
                     timing += insertedRow.timing;
+                    timingReflow += insertedRow.timingReflow;
                 }
             }
+
 
             linesRenderedCount = linesBeforePlusRenderedCount - linesBeforeCount;
             rowsAfterCount = totalRows - rowsBeforeCount - rowsRenderedCount;
@@ -509,9 +561,34 @@ module ag.grid {
 
             this.numberOfLinesCalculated = linesBeforeCount + linesRenderedCount + linesAfterCount;
 
-            // console.log('Total time taken for linws reflow (ms): ', timing);
+            
+            rowKeys = Object.keys(this.renderedRows);
+            var lastRenderedIndex = Math.max.apply(null, rowKeys);
+            if (lastRenderedIndex + 1 == totalRows) {
+                var lastRow = this.renderedRows[lastRenderedIndex];
+                this.heightFromLastRow = lastRow.getVerticalFrame().bottom;
+                // this.refreshView();
+                this.eBodyContainer.style.height = this.heightFromLastRow + "px";
+                this.ePinnedColsContainer.style.height = this.heightFromLastRow + "px";
+            } else {
+                this.heightFromLastRow = 0;
+            }
+            if (rowKeys.length) {
+                this.renderedTotalHeight = rowKeys.map((k) => { return this.renderedRows[k]; }).reduce((acc, el) => {
+                    return acc + parseInt(el.getHeight());
+                }, 0);
+            }
+            this.renderedAverageHeight = this.renderedTotalHeight / rowKeys.length;
+            rowsBeforeCount = Math.min.apply(this, rowKeys)
+            this.beforeCalculatedHeight = this.renderedAverageHeight * rowsBeforeCount;
+            rowsAfterCount = totalRows - rowKeys.length - rowsBeforeCount;
+            this.afterCalculatedHeight = this.renderedAverageHeight * rowsAfterCount; 
+            // console.log(renderedAverageHeight, this.renderedTotalHeight, this.beforeCalculatedHeight, this.afterCalculatedHeight);
+            // console.log(this.renderedTotalHeight + this.beforeCalculatedHeight + this.afterCalculatedHeight);
+            
 
-
+            // console.log('Total time taken for lines rendering (ms): ', timing);
+            // console.log('Including lines reflow (ms): ', timingReflow);
 
             // at this point, everything in our 'rowsToRemove' . . .
             this.removeVirtualRow(rowsToRemove);
@@ -525,7 +602,11 @@ module ag.grid {
             }
         }
 
-        private insertRow(node: any, rowIndex: any, mainRowWidth: any, rowsBefore: number, realDraw: boolean = true) {
+        public getBodyHeight(): number {
+            return this.heightFromLastRow || (this.beforeCalculatedHeight + this.renderedTotalHeight + this.afterCalculatedHeight);
+        }
+
+        private insertRow(node: any, rowIndex: any, mainRowWidth: any, rowsBefore: number, topPx: number, realDraw: boolean = true) {
             var columns = this.columnModel.getDisplayedColumns();
             // if no cols, don't draw row
             if (!columns || columns.length == 0) {
@@ -536,7 +617,7 @@ module ag.grid {
                 this.columnModel, this.expressionService, this.cellRendererMap, this.selectionRendererFactory,
                 this.$compile, this.templateService, this.selectionController, this,
                 this.eBodyContainer, this.ePinnedColsContainer, node, rowIndex, this.eventService,
-                rowsBefore, realDraw);
+                rowsBefore, topPx, realDraw);
 
             if (realDraw) {
                 renderedRow.setMainRowWidth(mainRowWidth);
