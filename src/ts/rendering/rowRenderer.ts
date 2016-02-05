@@ -450,7 +450,7 @@ module ag.grid {
             this.firstVirtualRenderedRow = first;
             this.lastVirtualRenderedRow = last;
 
-            console.log(first, last);
+            // console.log(first, last);
             // this.ensureRowsRendered(preparedRows);
             this.ensureRowsRendered(countLinesBefore);
         }

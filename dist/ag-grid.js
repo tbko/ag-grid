@@ -4602,7 +4602,7 @@ var ag;
                 // }
                 this.firstVirtualRenderedRow = first;
                 this.lastVirtualRenderedRow = last;
-                console.log(first, last);
+                // console.log(first, last);
                 // this.ensureRowsRendered(preparedRows);
                 this.ensureRowsRendered(countLinesBefore);
             };
@@ -10970,14 +10970,13 @@ var ag;
                 dragHandler.setAttribute('draggable', 'true');
                 // start/stop dragging header
                 dragHandler.addEventListener('dragstart', function (event) {
-                    // debugger;
                     if (that.eHeaderCell.parentElement.classList.contains('ag-header-group-cell-with-group')) {
                         that.eHeaderCell.parentElement.parentElement.classList.add('ag-dragging');
                     }
                     else {
                         that.eHeaderCell.classList.add('ag-dragging');
                     }
-                    event.dataTransfer.setData('text/plain', that.column.colId);
+                    event.dataTransfer.setData('text', that.column.colId);
                 });
                 dragHandler.addEventListener('dragover', function (event) {
                     event.preventDefault();
@@ -11068,7 +11067,7 @@ var ag;
                 // swap columns on drop
                 this.eHeaderCell.addEventListener('drop', function (event) {
                     var freezeIndex = that.columnController.getPinnedColumnCount();
-                    var dragData = event.dataTransfer.getData('text/plain');
+                    var dragData = event.dataTransfer.getData('text');
                     var srcColumn = that.columnController.getColumn(dragData);
                     if (!srcColumn) {
                         srcColumn = that.columnController.getColumnGroup(dragData).bracketHeader.column;
