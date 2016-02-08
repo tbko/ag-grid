@@ -60,11 +60,6 @@ module ag.grid {
 
         constructor(eGridDiv: any, gridOptions: any, globalEventListener: Function = null, $scope: any = null, $compile: any = null, quickFilterOnScope: any = null) {
 
-            console.log('updated');
-            console.log('updated');
-            console.log('updated');
-            console.log('updated');
-            console.log('updated');
             this.gridOptions = gridOptions;
             this.setupComponents($scope, $compile, eGridDiv, globalEventListener);
 
