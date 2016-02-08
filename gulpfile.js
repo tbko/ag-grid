@@ -110,19 +110,19 @@ function tsReleaseTask() {
         tsResult.dts
             .pipe(header(dtsHeaderTemplate, { pkg : pkg }))
             .pipe(gulp.dest('dist')),
-        jsPlain
-            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/')),
+        // jsPlain
+            // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/')),
         tsResult.js
             .pipe(rename('ag-grid.js'))
             .pipe(header(headerTemplate, { pkg : pkg }))
             // .pipe(gulp.dest('./dist'))
-            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
+            // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
             .pipe(gulp.dest('./dist'))
             .pipe(buffer())
             .pipe(uglify())
             .pipe(rename('ag-grid.min.js'))
             // .pipe(gulp.dest('./dist'))
-            .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
+            // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
             .pipe(gulp.dest('./dist'))
     ]);
 }
