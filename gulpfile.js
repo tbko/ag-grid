@@ -84,7 +84,7 @@ function tsDebugTask() {
     return tsResult.js
         .pipe(sourcemaps.write()) // for sourcemaps only
         .pipe(rename('ag-grid.js'))
-        .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
+        // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
         .pipe(gulp.dest('./dist'));
 
 }
@@ -99,7 +99,7 @@ function tsReleaseTask() {
             //experimentalDecorators: true,
             //emitDecoratorMetadata: true,
             target: 'es5',
-            module: 'commonjs',
+            // module: 'commonjs',
             declarationFiles: true,
             out: 'ag-grid.js'
         }));
@@ -109,7 +109,7 @@ function tsReleaseTask() {
     return merge([
         tsResult.dts
             .pipe(header(dtsHeaderTemplate, { pkg : pkg }))
-            .pipe(gulp.dest('dist')),
+            .pipe(gulp.dest('./dist/')),
         // jsPlain
             // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/')),
         tsResult.js
@@ -117,13 +117,13 @@ function tsReleaseTask() {
             .pipe(header(headerTemplate, { pkg : pkg }))
             // .pipe(gulp.dest('./dist'))
             // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
-            .pipe(gulp.dest('./dist'))
+            .pipe(gulp.dest('./dist/'))
             .pipe(buffer())
             .pipe(uglify())
             .pipe(rename('ag-grid.min.js'))
             // .pipe(gulp.dest('./dist'))
             // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
-            .pipe(gulp.dest('./dist'))
+            .pipe(gulp.dest('./dist/'))
     ]);
 }
 
@@ -138,7 +138,7 @@ function stylusTask() {
                     compress: false
                 }))
                 .pipe(gulp.dest('./dist/'))
-                .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'));
+                // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'));
         }));
 
     // Compressed
@@ -155,7 +155,7 @@ function stylusTask() {
                     name = name.substring(0, dot) + '.min.css';
                     return name;
                 })()))
-                .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
+                // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
                 .pipe(gulp.dest('./dist/'));
         }));
 }

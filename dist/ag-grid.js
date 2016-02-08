@@ -9770,6 +9770,10 @@ var ag;
                 if (quickFilterOnScope === void 0) { quickFilterOnScope = null; }
                 this.virtualRowCallbacks = {};
                 console.log('updated');
+                console.log('updated');
+                console.log('updated');
+                console.log('updated');
+                console.log('updated');
                 this.gridOptions = gridOptions;
                 this.setupComponents($scope, $compile, eGridDiv, globalEventListener);
                 this.gridOptions.api = new grid.GridApi(this, this.rowRenderer, this.headerRenderer, this.filterManager, this.columnController, this.inMemoryRowController, this.selectionController, this.gridOptionsWrapper, this.gridPanel, this.valueService, this.masterSlaveService, this.eventService);
