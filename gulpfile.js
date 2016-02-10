@@ -84,8 +84,8 @@ function tsDebugTask() {
     return tsResult.js
         .pipe(sourcemaps.write()) // for sourcemaps only
         .pipe(rename('ag-grid.js'))
-        // .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
-        .pipe(gulp.dest('./dist'));
+        .pipe(gulp.dest('../pi/frontend/app/vendor/ag-grid/dist/'))
+        // .pipe(gulp.dest('./dist'));
 
 }
 

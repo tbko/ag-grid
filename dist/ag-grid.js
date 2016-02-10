@@ -7594,9 +7594,9 @@ var ag;
                 if (atLeastOneChanged) {
                     this.fireSizeChanged();
                 }
-                var rootWidth = document.getElementsByClassName('b-content-center')[0].offsetWidth + 'px';
-                this.eGui.style.width = rootWidth;
-                // this.eGui.style.width = '1300px';
+                // var rootWidth = document.getElementsByClassName('b-content-center')[0].offsetWidth + 'px';
+                // this.eGui.style.width = rootWidth;
+                this.eGui.style.width = '1300px';
                 // this.eGui.style.width = '1620px';
                 // debugger;
                 return atLeastOneChanged;
