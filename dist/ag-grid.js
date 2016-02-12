@@ -4748,6 +4748,11 @@ var ag;
                 if (realDraw) {
                     renderedRow.setMainRowWidth(mainRowWidth);
                     this.renderedRows[rowIndex] = renderedRow;
+                    debugger;
+                    var dragHandler = renderedRow.vBodyRow.element.querySelector('.ag-js-draghandler');
+                    // if (this.headerElements.drag) {
+                    if (dragHandler)
+                        this.setupDND(dragHandler);
                 }
                 return renderedRow;
             };
@@ -4762,6 +4767,172 @@ var ag;
             };
             /***********************************************
             * END of ROW RENDERING
+            ************************************************/
+            /***********************************************
+            * DND BLOCK
+            ************************************************/
+            RowRenderer.prototype.canDrop = function (providedAttrs) {
+                return true;
+            };
+            RowRenderer.prototype.getDragSource = function () {
+                // drag source is a single element with 'dragging' class
+                var sourceEl = this.eBodyContainer.querySelector('.ag-dragging');
+                var sourceId = sourceEl.getAttribute('row');
+                var draggingRowObject = this.rowModel.getVirtualRow(sourceId);
+                return draggingRowObject;
+            };
+            RowRenderer.prototype.setupDND = function (dragHandler) {
+                var _this = this;
+                var that = this;
+                dragHandler.setAttribute('draggable', 'true');
+                // start/stop dragging header
+                dragHandler.addEventListener('dragstart', function (event) {
+                    var rowEl = dragHandler;
+                    while (!rowEl.classList.contains('ag-row') && rowEl.parentElement) {
+                        rowEl = rowEl.parentElement;
+                    }
+                    rowEl.classList.add('ag-dragging');
+                    // if (that.eHeaderCell.parentElement.classList.contains('ag-header-group-cell-with-group')) {
+                    //     that.eHeaderCell.parentElement.parentElement.classList.add('ag-dragging');
+                    // } else {
+                    //     that.eHeaderCell.classList.add('ag-dragging');
+                    // }
+                    event.dataTransfer.setData('text', rowEl.getAttribute('row'));
+                });
+                dragHandler.addEventListener('dragover', function (event) {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'move';
+                    // if (that.canDrop()) {
+                    //     event.dataTransfer.dropEffect = 'move';
+                    // } else {
+                    //     event.dataTransfer.dropEffect = 'none';
+                    // }
+                });
+                dragHandler.addEventListener('dragend', function () {
+                    var draggingElement = that.eBodyContainer.querySelector('.ag-dragging');
+                    if (draggingElement) {
+                        draggingElement.classList.remove('ag-dragging');
+                    }
+                    clearAllDragStyles();
+                });
+                // react to drag header over header
+                var lastenter;
+                var clearAllDragStyles = function () {
+                    var stylesToClear = ['ag-dragging-over', 'ag-dragging-over-up', 'ag-dragging-over-down'];
+                    stylesToClear.forEach(function (styleName) {
+                        Array.prototype.forEach.call(_this.eBodyContainer.querySelectorAll('.' + styleName), function (element) {
+                            element.classList.remove(styleName);
+                        });
+                    });
+                };
+                var dragEnterHandler = function (event) {
+                    var attrs = that.detectDragParties();
+                    var canDrop = that.canDrop(attrs);
+                    var isDirectionRight = attrs.sourceAttrs.colStartIndex < attrs.destAttrs.colStartIndex;
+                    var host;
+                    var neighbour;
+                    if (!lastenter &&
+                        !that.eHeaderCell.classList.contains('ag-dragging-over') &&
+                        canDrop) {
+                        // debugger;
+                        clearAllDragStyles();
+                        // console.log(that.eHeaderCell);
+                        if (that.eHeaderCell.parentElement.classList.contains('ag-header-group-cell-with-group')) {
+                            host = that.eHeaderCell.parentElement.parentElement;
+                            neighbour = isDirectionRight ? that.eHeaderCell.parentElement.parentElement.nextElementSibling : that.eHeaderCell.parentElement.parentElement.previousElementSibling;
+                        }
+                        else if (that.eHeaderCell.classList.contains('ag-header-cell-grouped')) {
+                            host = that.eHeaderCell;
+                            neighbour = isDirectionRight ? that.eHeaderCell.parentElement.nextElementSibling : that.eHeaderCell.parentElement.previousElementSibling;
+                        }
+                        else {
+                            host = that.eHeaderCell;
+                            neighbour = isDirectionRight ? that.eHeaderCell.parentElement.nextElementSibling : that.eHeaderCell.parentElement.previousElementSibling;
+                        }
+                        host.classList.add('ag-dragging-over');
+                        host.classList.add(isDirectionRight ? 'ag-dragging-over-right' : 'ag-dragging-over-left');
+                        if (neighbour) {
+                            if (neighbour.firstElementChild.classList.contains('ag-header-group-cell-with-group')) {
+                                // console.log('bracket neighbour');
+                                neighbour.classList.add(!isDirectionRight ? 'ag-dragging-over-right' : 'ag-dragging-over-left');
+                            }
+                            else {
+                                // console.log('header neighbour');
+                                neighbour.firstElementChild.classList.add(!isDirectionRight ? 'ag-dragging-over-right' : 'ag-dragging-over-left');
+                            }
+                        }
+                    }
+                    lastenter = event.target;
+                    event.stopPropagation();
+                    event.preventDefault();
+                    return false;
+                };
+                var dragLeaveHandler = function (event) {
+                    var styleName = 'ag-dragging-over';
+                    var hostId = that.getGui().getAttribute('colId');
+                    if (!hostId) {
+                        hostId = that.getGui().querySelector('.ag-header-group-cell-with-group').getAttribute('colId');
+                    }
+                    if (lastenter === event.target) {
+                        var othersDragging = Array.prototype.filter.call(_this.eRootRef.querySelectorAll('.' + styleName), function (element) {
+                            return element.getAttribute('colId') !== hostId;
+                        });
+                        if (!othersDragging.length) {
+                            clearAllDragStyles();
+                        }
+                        lastenter = null;
+                    }
+                };
+                this.eHeaderCell.addEventListener('dragenter', dragEnterHandler);
+                this.eHeaderCell.addEventListener('dragleave', dragLeaveHandler);
+                // swap columns on drop
+                this.eHeaderCell.addEventListener('drop', function (event) {
+                    var freezeIndex = that.columnController.getPinnedColumnCount();
+                    var dragData = event.dataTransfer.getData('text');
+                    var srcColumn = that.columnController.getColumn(dragData);
+                    if (!srcColumn) {
+                        srcColumn = that.columnController.getColumnGroup(dragData).bracketHeader.column;
+                    }
+                    var srcColumnAttrs = that.detectDragParty(srcColumn);
+                    var destColumn = that.column;
+                    var destColumnAttrs = that.detectDragParty(destColumn);
+                    var directionRight = srcColumnAttrs.colStartIndex < destColumnAttrs.colStartIndex;
+                    var toIdx = directionRight ? destColumnAttrs.colEndIndex : destColumnAttrs.colStartIndex;
+                    var fromIdx = srcColumnAttrs.colStartIndex;
+                    var dSrc = srcColumnAttrs.colStartIndex < freezeIndex ? freezeIndex - srcColumnAttrs.colStartIndex : srcColumnAttrs.colStartIndex - freezeIndex + 1;
+                    var dDest = destColumnAttrs.colStartIndex < freezeIndex ? freezeIndex - destColumnAttrs.colStartIndex : destColumnAttrs.colStartIndex - freezeIndex + 1;
+                    var dSrcDest = Math.abs(destColumnAttrs.colStartIndex - srcColumnAttrs.colStartIndex) + 1;
+                    var srcBracketSize = srcColumn.colDef.columnGroup ? srcColumn.colDef.columnGroup.displayedColumns.length - 1 : 0;
+                    var isCrossBorder = dSrc + dDest == dSrcDest;
+                    var bracketShiftCompensation = 0;
+                    if (isCrossBorder) {
+                        var lastInFridge = that.eRootRef.querySelector('.ag-pinned-header').lastElementChild;
+                        if (!directionRight && lastInFridge.firstElementChild.classList.contains('ag-header-group-cell')) {
+                            bracketShiftCompensation = -lastInFridge.querySelectorAll('.ag-header-cell').length + 1;
+                        }
+                        var firstInRiver = that.eRootRef.querySelector('.ag-header-container').firstElementChild;
+                        if (directionRight && firstInRiver.firstElementChild.classList.contains('ag-header-group-cell')) {
+                            bracketShiftCompensation = firstInRiver.querySelectorAll('.ag-header-cell').length - 1;
+                        }
+                        that.columnController.setPinnedColumnCount(freezeIndex + srcBracketSize * (directionRight ? -1 : 1) + bracketShiftCompensation);
+                    }
+                    for (var idx = 0; idx < srcColumnAttrs.colEndIndex - srcColumnAttrs.colStartIndex + 1; idx++) {
+                        // fetch indexes from all columns for visible ones as moveColumn works with all cilomns list
+                        var fromIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[fromIdx]);
+                        var toIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[toIdx]);
+                        that.columnController.moveColumn(fromIdxInAll, toIdxInAll);
+                        if (!directionRight) {
+                            toIdx++;
+                            fromIdx++;
+                        }
+                    }
+                    event.stopPropagation();
+                    event.preventDefault();
+                    return false;
+                });
+            };
+            /***********************************************
+            * END of DND BLOCK
             ************************************************/
             RowRenderer.prototype.setListenMouseMove = function (toAllSet) {
                 if (toAllSet === void 0) { toAllSet = true; }
@@ -7594,7 +7765,14 @@ var ag;
                 if (atLeastOneChanged) {
                     this.fireSizeChanged();
                 }
-                var rootWidth = document.getElementsByClassName('b-content-center')[0].offsetWidth + 'px';
+                var rootEl = document.getElementsByClassName('b-content-center')[0];
+                if (!rootEl) {
+                    rootEl = document.querySelector('work-space-cb-main-column one');
+                }
+                var rootWidth = 600;
+                if (rootEl) {
+                    rootWidth = rootEl.offsetWidth + 'px';
+                }
                 this.eGui.style.width = rootWidth;
                 // this.eGui.style.width = '1300px';
                 // debugger;

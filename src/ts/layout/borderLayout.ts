@@ -308,7 +308,14 @@ module ag.grid {
                 this.fireSizeChanged();
             }
 
-            var rootWidth = document.getElementsByClassName('b-content-center')[0].offsetWidth + 'px';
+            var rootEl = document.getElementsByClassName('b-content-center')[0];
+            if (!rootEl) {
+                rootEl = document.querySelector('work-space-cb-main-column one');
+            }
+            var rootWidth = 600;
+            if (rootEl) {
+                rootWidth = rootEl.offsetWidth + 'px';
+            }
             this.eGui.style.width = rootWidth;
             // this.eGui.style.width = '1300px';
             // debugger;

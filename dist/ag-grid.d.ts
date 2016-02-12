@@ -882,6 +882,15 @@ declare module ag.grid {
         /***********************************************
         * END of ROW RENDERING
         ************************************************/
+        /***********************************************
+        * DND BLOCK
+        ************************************************/
+        private canDrop(providedAttrs?);
+        private getDragSource();
+        private setupDND(dragHandler);
+        /***********************************************
+        * END of DND BLOCK
+        ************************************************/
         setListenMouseMove(toAllSet?: boolean): void;
         setHoveredOn(rowNode: any): void;
         getHoveredOn(): any;
