@@ -626,10 +626,9 @@ module ag.grid {
                 renderedRow.setMainRowWidth(mainRowWidth);
                 this.renderedRows[rowIndex] = renderedRow;
 
-                debugger;
                 var dragHandler = renderedRow.vBodyRow.element.querySelector('.ag-js-draghandler');
                 // if (this.headerElements.drag) {
-                if (dragHandler) this.setupDND(dragHandler);
+                if (dragHandler) this.setupDND(dragHandler, renderedRow);
                 // } else {
                 //     dragHandler.classList.remove('ag-js-draghandler');
                 // }
@@ -659,48 +658,45 @@ module ag.grid {
             return true;
         }
 
-        private getDragSource(): any {
+        private getDragSource(): RenderedRow {
             // drag source is a single element with 'dragging' class
             var sourceEl = this.eBodyContainer.querySelector('.ag-dragging');
+            // var sourceEl = document.querySelector('.ag-dragging');
             var sourceId = sourceEl.getAttribute('row');
-            var draggingRowObject: any = this.rowModel.getVirtualRow(sourceId);
+            console.log(sourceId);
+            debugger;
+            var draggingRowObject: RenderedRow = this.rowModel.getVirtualRow(sourceId);
 
             return draggingRowObject;
         }
 
-        private setupDND(dragHandler: Element) {
+        private findParentRow(startEl: Element): Element {
+            var rowEl = startEl;
+            while (!rowEl.classList.contains('ag-row') && rowEl.parentElement) {
+                rowEl = rowEl.parentElement;
+            }
+            return rowEl;
+        }
+
+        private setupDND(dragHandler: Element, thisRow: RenderedRow) {
             var that = this;
             dragHandler.setAttribute('draggable', 'true');
 
-            // start/stop dragging header
+            // start/stop dragging row
             dragHandler.addEventListener('dragstart', function(event: DragEvent) {
-                var rowEl = dragHandler;
-                while (!rowEl.classList.contains('ag-row') && rowEl.parentElement) {
-                    rowEl = rowEl.parentElement;
-                }
+                var rowEl = that.findParentRow(dragHandler);
                 rowEl.classList.add('ag-dragging');
-                // if (that.eHeaderCell.parentElement.classList.contains('ag-header-group-cell-with-group')) {
-                //     that.eHeaderCell.parentElement.parentElement.classList.add('ag-dragging');
-                // } else {
-                //     that.eHeaderCell.classList.add('ag-dragging');
-                // }
                 event.dataTransfer.setData('text', rowEl.getAttribute('row'));
             });
             dragHandler.addEventListener('dragover', function(event: DragEvent) {
                 event.preventDefault();
                 event.dataTransfer.dropEffect = 'move';
-                // if (that.canDrop()) {
-                //     event.dataTransfer.dropEffect = 'move';
-                // } else {
-                //     event.dataTransfer.dropEffect = 'none';
-                // }
             });
             dragHandler.addEventListener('dragend', function() {
                 var draggingElement = that.eBodyContainer.querySelector('.ag-dragging');
                 if (draggingElement) {
                     draggingElement.classList.remove('ag-dragging');
                 }
-
                 clearAllDragStyles();
             });
 
@@ -718,49 +714,31 @@ module ag.grid {
 
             var dragEnterHandler = (event: DragEvent) => {
 
-                var attrs = that.detectDragParties();
-                var canDrop = that.canDrop(attrs);
-                var isDirectionRight = attrs.sourceAttrs.colStartIndex < attrs.destAttrs.colStartIndex
+                var canDrop = that.canDrop();
+                // debugger;
+                var isDirectionUp = parseInt(thisRow.getRowIndex()) < parseInt(this.getDragSource().getRowIndex())
                 var host: Element;
                 var neighbour: Element;
 
                 if (
                     !lastenter &&
-                    !that.eHeaderCell.classList.contains('ag-dragging-over') &&
+                    !that.eBodyContainer.classList.contains('ag-dragging-over') &&
                     canDrop
                 ) {
-                    // debugger;
                     clearAllDragStyles();
-                    // console.log(that.eHeaderCell);
-                    if (that.eHeaderCell.parentElement.classList.contains('ag-header-group-cell-with-group')) {
-                        host = that.eHeaderCell.parentElement.parentElement;
-                        neighbour = isDirectionRight ? that.eHeaderCell.parentElement.parentElement.nextElementSibling : that.eHeaderCell.parentElement.parentElement.previousElementSibling;
-                    } else if (that.eHeaderCell.classList.contains('ag-header-cell-grouped')) {
-                        host = that.eHeaderCell;
-                        neighbour = isDirectionRight ? that.eHeaderCell.parentElement.nextElementSibling : that.eHeaderCell.parentElement.previousElementSibling;
-                    } else {
-                        host = that.eHeaderCell;
-                        neighbour = isDirectionRight ? that.eHeaderCell.parentElement.nextElementSibling : that.eHeaderCell.parentElement.previousElementSibling;
-                    }
+
+                    host = this.findParentRow(dragHandler);
+                    neighbour = isDirectionUp ? host.previousElementSibling : host.nextElementSibling;
 
                     host.classList.add('ag-dragging-over');
                     host.classList.add(
-                        isDirectionRight ? 'ag-dragging-over-right' : 'ag-dragging-over-left'
+                        isDirectionUp ? 'ag-dragging-over-up' : 'ag-dragging-over-down'
                     );
 
                     if (neighbour) {
-                        if (neighbour.firstElementChild.classList.contains('ag-header-group-cell-with-group')) {
-                            
-                            // console.log('bracket neighbour');
-                            neighbour.classList.add(
-                                !isDirectionRight ? 'ag-dragging-over-right' : 'ag-dragging-over-left'
-                            );
-                        } else {
-                            // console.log('header neighbour');
-                            neighbour.firstElementChild.classList.add(
-                                !isDirectionRight ? 'ag-dragging-over-right' : 'ag-dragging-over-left'
-                            );
-                        }
+                        neighbour.classList.add(
+                            !isDirectionUp ? 'ag-dragging-over-up' : 'ag-dragging-over-down'
+                        );
                     }
                 }
 
@@ -769,15 +747,13 @@ module ag.grid {
                 event.preventDefault();
                 return false;
             };
+
             var dragLeaveHandler = (event: Event) => {
                 var styleName = 'ag-dragging-over';
-                var hostId = that.getGui().getAttribute('colId');
-                if (!hostId) {
-                    hostId = that.getGui().querySelector('.ag-header-group-cell-with-group').getAttribute('colId');
-                }
+                var hostId = that.findParentRow(dragHandler).getAttribute('row');
                 if (lastenter === event.target) {
-                    var othersDragging = Array.prototype.filter.call(this.eRootRef.querySelectorAll('.' + styleName), (element: HTMLElement) => {
-                        return element.getAttribute('colId') !== hostId;
+                    var othersDragging = Array.prototype.filter.call(this.eBodyContainer.querySelectorAll('.' + styleName), (element: HTMLElement) => {
+                        return element.getAttribute('row') !== hostId;
                     });
                     if (!othersDragging.length) {
                         clearAllDragStyles();
@@ -786,55 +762,56 @@ module ag.grid {
                     lastenter = null;
                 }
             };
-            this.eHeaderCell.addEventListener('dragenter', dragEnterHandler);
-            this.eHeaderCell.addEventListener('dragleave', dragLeaveHandler);
+            this.eBodyContainer.addEventListener('dragenter', dragEnterHandler);
+            this.eBodyContainer.addEventListener('dragleave', dragLeaveHandler);
 
             // swap columns on drop
-            this.eHeaderCell.addEventListener('drop', function(event: DragEvent) {
-                var freezeIndex = that.columnController.getPinnedColumnCount();
-                var dragData = event.dataTransfer.getData('text');
-                var srcColumn = that.columnController.getColumn(dragData);
-                if (!srcColumn) {
-                    srcColumn = that.columnController.getColumnGroup(dragData).bracketHeader.column
-                }
-                var srcColumnAttrs = that.detectDragParty(srcColumn);
-                var destColumn = that.column
-                var destColumnAttrs = that.detectDragParty(destColumn);
+            this.eBodyContainer.addEventListener('drop', function(event: DragEvent) {
+                console.log(event);
+                // var freezeIndex = that.columnController.getPinnedColumnCount();
+                // var dragData = event.dataTransfer.getData('text');
+                // var srcColumn = that.columnController.getColumn(dragData);
+                // if (!srcColumn) {
+                //     srcColumn = that.columnController.getColumnGroup(dragData).bracketHeader.column
+                // }
+                // var srcColumnAttrs = that.detectDragParty(srcColumn);
+                // var destColumn = that.column
+                // var destColumnAttrs = that.detectDragParty(destColumn);
 
-                var directionRight = srcColumnAttrs.colStartIndex < destColumnAttrs.colStartIndex
-                var toIdx = directionRight ? destColumnAttrs.colEndIndex : destColumnAttrs.colStartIndex;
-                var fromIdx = srcColumnAttrs.colStartIndex;
+                // var directionRight = srcColumnAttrs.colStartIndex < destColumnAttrs.colStartIndex
+                // var toIdx = directionRight ? destColumnAttrs.colEndIndex : destColumnAttrs.colStartIndex;
+                // var fromIdx = srcColumnAttrs.colStartIndex;
 
-                var dSrc = srcColumnAttrs.colStartIndex < freezeIndex ? freezeIndex - srcColumnAttrs.colStartIndex : srcColumnAttrs.colStartIndex - freezeIndex + 1;
-                var dDest = destColumnAttrs.colStartIndex < freezeIndex ? freezeIndex - destColumnAttrs.colStartIndex : destColumnAttrs.colStartIndex - freezeIndex + 1;
-                var dSrcDest = Math.abs(destColumnAttrs.colStartIndex - srcColumnAttrs.colStartIndex) + 1;
+                // var dSrc = srcColumnAttrs.colStartIndex < freezeIndex ? freezeIndex - srcColumnAttrs.colStartIndex : srcColumnAttrs.colStartIndex - freezeIndex + 1;
+                // var dDest = destColumnAttrs.colStartIndex < freezeIndex ? freezeIndex - destColumnAttrs.colStartIndex : destColumnAttrs.colStartIndex - freezeIndex + 1;
+                // var dSrcDest = Math.abs(destColumnAttrs.colStartIndex - srcColumnAttrs.colStartIndex) + 1;
 
-                var srcBracketSize = srcColumn.colDef.columnGroup ? srcColumn.colDef.columnGroup.displayedColumns.length - 1 : 0;
-                var isCrossBorder = dSrc + dDest == dSrcDest;
-                var bracketShiftCompensation = 0;
+                // var srcBracketSize = srcColumn.colDef.columnGroup ? srcColumn.colDef.columnGroup.displayedColumns.length - 1 : 0;
+                // var isCrossBorder = dSrc + dDest == dSrcDest;
+                // var bracketShiftCompensation = 0;
 
-                if (isCrossBorder) {
-                    var lastInFridge = that.eRootRef.querySelector('.ag-pinned-header').lastElementChild;
-                    if (!directionRight && lastInFridge.firstElementChild.classList.contains('ag-header-group-cell')) {
-                        bracketShiftCompensation = -lastInFridge.querySelectorAll('.ag-header-cell').length + 1;
-                    }
-                    var firstInRiver = that.eRootRef.querySelector('.ag-header-container').firstElementChild;
-                    if (directionRight && firstInRiver.firstElementChild.classList.contains('ag-header-group-cell')) {
-                        bracketShiftCompensation = firstInRiver.querySelectorAll('.ag-header-cell').length - 1;
-                    }
-                    that.columnController.setPinnedColumnCount(freezeIndex + srcBracketSize * (directionRight ? -1 : 1) + bracketShiftCompensation);
-                }
+                // if (isCrossBorder) {
+                //     var lastInFridge = that.eRootRef.querySelector('.ag-pinned-header').lastElementChild;
+                //     if (!directionRight && lastInFridge.firstElementChild.classList.contains('ag-header-group-cell')) {
+                //         bracketShiftCompensation = -lastInFridge.querySelectorAll('.ag-header-cell').length + 1;
+                //     }
+                //     var firstInRiver = that.eRootRef.querySelector('.ag-header-container').firstElementChild;
+                //     if (directionRight && firstInRiver.firstElementChild.classList.contains('ag-header-group-cell')) {
+                //         bracketShiftCompensation = firstInRiver.querySelectorAll('.ag-header-cell').length - 1;
+                //     }
+                //     that.columnController.setPinnedColumnCount(freezeIndex + srcBracketSize * (directionRight ? -1 : 1) + bracketShiftCompensation);
+                // }
 
-                for (var idx = 0; idx < srcColumnAttrs.colEndIndex - srcColumnAttrs.colStartIndex + 1; idx++) {
-                    // fetch indexes from all columns for visible ones as moveColumn works with all cilomns list
-                    var fromIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[fromIdx]);
-                    var toIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[toIdx]);
-                    that.columnController.moveColumn(fromIdxInAll, toIdxInAll);
-                    if (!directionRight) {
-                        toIdx++;
-                        fromIdx++;
-                    }
-                }
+                // for (var idx = 0; idx < srcColumnAttrs.colEndIndex - srcColumnAttrs.colStartIndex + 1; idx++) {
+                //     // fetch indexes from all columns for visible ones as moveColumn works with all cilomns list
+                //     var fromIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[fromIdx]);
+                //     var toIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[toIdx]);
+                //     that.columnController.moveColumn(fromIdxInAll, toIdxInAll);
+                //     if (!directionRight) {
+                //         toIdx++;
+                //         fromIdx++;
+                //     }
+                // }
 
                 event.stopPropagation();
                 event.preventDefault();
