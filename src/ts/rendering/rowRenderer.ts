@@ -654,20 +654,14 @@ module ag.grid {
         /***********************************************
         * DND BLOCK
         ************************************************/
-        private canDrop(providedAttrs?: any): boolean {
-            return true;
-        }
+        private canDrop(destEl: Element, srcEl: Element = null): boolean {
+            if (!srcEl) {
+                srcEl = this.eBodyContainer.querySelector('.ag-dragging');
+            }
+            var srcNodeData = this.draggingNodeInfo(srcEl);
+            var dstNodeData = this.draggingNodeInfo(this.findParentRow(destEl));
 
-        private getDragSource(): RenderedRow {
-            // drag source is a single element with 'dragging' class
-            var sourceEl = this.eBodyContainer.querySelector('.ag-dragging');
-            // var sourceEl = document.querySelector('.ag-dragging');
-            var sourceId = sourceEl.getAttribute('row');
-            console.log(sourceId);
-            debugger;
-            var draggingRowObject: RenderedRow = this.rowModel.getVirtualRow(sourceId);
-
-            return draggingRowObject;
+            return srcNodeData.level == dstNodeData.level && srcNodeData.parentId == dstNodeData.parentId
         }
 
         private findParentRow(startEl: Element): Element {
@@ -678,8 +672,25 @@ module ag.grid {
             return rowEl;
         }
 
+        private draggingNodeInfo(el: Element): any {
+            var rowObj = this.renderedRows[el.getAttribute('row')];          
+            var rowNode = rowObj.node;
+            var lvl = (rowNode.data.order.orderNumber.match(/\./g) || []).length
+            var isParent = rowNode.data.order.isParent;
+            while (rowNode.parent && rowNode.level != lvl) {
+                rowNode = rowNode.parent;
+            }
+            return {
+                row: rowObj,
+                level: lvl,
+                parentId: rowNode.parent ? rowNode.parent.id : 0,
+                hasChildren: isParent
+            };
+        }
+
         private setupDND(dragHandler: Element, thisRow: RenderedRow) {
             var that = this;
+            var thisRowIndex = thisRow.getRowIndex()
             dragHandler.setAttribute('draggable', 'true');
 
             // start/stop dragging row
@@ -690,7 +701,12 @@ module ag.grid {
             });
             dragHandler.addEventListener('dragover', function(event: DragEvent) {
                 event.preventDefault();
-                event.dataTransfer.dropEffect = 'move';
+                if (that.canDrop(event.srcElement)) {
+                    event.dataTransfer.dropEffect = 'move';
+                } else {
+                    event.dataTransfer.dropEffect = 'none';
+                }
+
             });
             dragHandler.addEventListener('dragend', function() {
                 var draggingElement = that.eBodyContainer.querySelector('.ag-dragging');
@@ -714,9 +730,12 @@ module ag.grid {
 
             var dragEnterHandler = (event: DragEvent) => {
 
-                var canDrop = that.canDrop();
-                // debugger;
-                var isDirectionUp = parseInt(thisRow.getRowIndex()) < parseInt(this.getDragSource().getRowIndex())
+                var sourceEl = that.eBodyContainer.querySelector('.ag-dragging');
+                var canDrop = that.canDrop(event.srcElement, sourceEl);
+                // var dragSource = this.getDragSource();
+                // var sourceEl = document.querySelector('.ag-dragging');
+                var sourceId = sourceEl.getAttribute('row');
+                var isDirectionUp = thisRowIndex < parseInt(sourceId)
                 var host: Element;
                 var neighbour: Element;
 
@@ -762,12 +781,86 @@ module ag.grid {
                     lastenter = null;
                 }
             };
-            this.eBodyContainer.addEventListener('dragenter', dragEnterHandler);
-            this.eBodyContainer.addEventListener('dragleave', dragLeaveHandler);
+            dragHandler.addEventListener('dragenter', dragEnterHandler);
+            dragHandler.addEventListener('dragleave', dragLeaveHandler);
 
             // swap columns on drop
-            this.eBodyContainer.addEventListener('drop', function(event: DragEvent) {
-                console.log(event);
+            dragHandler.addEventListener('drop', function(event: DragEvent) {
+                var sourceEl = that.eBodyContainer.querySelector('.ag-dragging');
+                var canDrop = that.canDrop(event.srcElement, sourceEl);
+                var sourceId = parseInt(sourceEl.getAttribute('row'));
+                var jumpStep = Math.abs(sourceId - thisRowIndex);
+                var promoteStep = 0;
+                var demoteStep = 0;
+                console.log(sourceId);
+                console.log(thisRowIndex);
+
+                var shiftOrder(node: any, increment: number): any {
+                    console.log(node);
+                    if (!node || !node.data) {
+                        return;
+                    }
+                    var ordering = node.data.order.orderNumber;
+                    var orderingSplitted = ordering.split('.');
+                    var len = orderingSplitted.length;
+                    orderingSplitted[len - 1] = (parseInt(orderingSplitted[len - 1]) + increment).toString();
+                    ordering = orderingSplitted.join('.');
+                    node.data.order_regular.orderNumber = ordering;
+                    node.data[`order_${len - 1}`] = orderingSplitted[len - 1];
+                }
+
+                var rowsToPromote = [];
+                var rowsToDemote = [];
+
+                if (thisRowIndex == sourceId) {
+                    return;
+                }
+
+                var direction = thisRowIndex < sourceId ? 1 : -1;
+
+                for (var idx = thisRowIndex; idx !== thisRowIndex + jumpStep * direction; idx += direction) {
+                    rowsToPromote.push(that.renderedRows[idx]);
+                }
+                if (direction > 0) {
+                    rowsToDemote.push(that.renderedRows[sourceId]);
+                    promoteStep = 1;
+                    demoteStep = -jumpStep;
+                } else {
+                    rowsToDemote = rowsToPromote;
+                    rowsToPromote = [];
+                    rowsToPromote.push(that.renderedRows[sourceId]);
+                    promoteStep = jumpStep;
+                    demoteStep = -1;
+                }
+                console.log(rowsToDemote, rowsToPromote);
+                rowsToDemote.forEach((el) => {
+                    shiftOrder(el.node, demoteStep);
+                });
+                rowsToPromote.forEach((el) => {
+                    shiftOrder(el.node, promoteStep);
+                });
+                debugger;
+                var parentRow = rowsToPromote[0].node.parent.parent
+                parentRow.children.sort((a, b) => {
+                    if (parseInt(a.children[0].data.order_2 || 0) < parseInt(b.children[0].data.order_2 || 0)) {
+                        return -1;
+                    } else {
+                        return 1;
+                    }
+                });
+                parentRow.children = parentRow.children.map((el, idx) => {
+                    el.childIndex = idx;
+                    return el;
+                });
+                parentRow.childrenAfterFilter = parentRow.children;
+                parentRow.childrenAfterSort = parentRow.children;
+                that.gridOptionsWrapper.getApi().refreshPivot();
+                // that.refreshRows([parentRow]);
+                // that.refreshRows(rowsToPromote);
+                // that.refreshRows(rowsToDemote);
+                console.log(parentRow);
+                that.gridOptionsWrapper.getApi().setRowData([]);
+                that.refreshView();
                 // var freezeIndex = that.columnController.getPinnedColumnCount();
                 // var dragData = event.dataTransfer.getData('text');
                 // var srcColumn = that.columnController.getColumn(dragData);
