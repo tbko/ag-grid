@@ -308,10 +308,8 @@ module ag.grid {
                 this.fireSizeChanged();
             }
 
-            var rootEl = document.getElementsByClassName('b-content-center')[0];
-            if (!rootEl) {
-                rootEl = document.querySelector('work-space-cb-main-column one');
-            }
+            // debugger
+            var rootEl = document.getElementsByClassName('ag-basic')[0];
             var rootWidth = 600;
             if (rootEl) {
                 rootWidth = rootEl.offsetWidth + 'px';
