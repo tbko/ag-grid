@@ -108,6 +108,7 @@ module ag.grid {
         public getWidthGap() { return this.gridOptions.widthGap; }
         public getMaxRows() { return this.gridOptions.maxRows; }
         public getMinRows() { return this.gridOptions.minRows; }
+        public isRowDrug() { return this.gridOptions.isRowDrug; }
         public setMetrics(metrics: any): void {
             this.gridOptions.metrics = metrics;
         }

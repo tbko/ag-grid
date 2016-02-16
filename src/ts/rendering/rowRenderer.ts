@@ -54,6 +54,9 @@ module ag.grid {
         private renderedTotalHeight: number;
         private renderedAverageHeight: number;
         private heightFromLastRow: number;
+        private previousRowIndex: number;
+        private prePreviousRowIndex: number;
+
 
         public init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel,
                     angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any,
@@ -79,6 +82,9 @@ module ag.grid {
             this.afterCalculatedHeight = 0;
             this.renderedTotalHeight = 0;
             this.heightFromLastRow = 0;
+
+            this.previousRowIndex = null;
+            this.prePreviousRowIndex = null;
 
             this.cellRendererMap = {
                 'group': groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
@@ -626,7 +632,11 @@ module ag.grid {
                 renderedRow.setMainRowWidth(mainRowWidth);
                 this.renderedRows[rowIndex] = renderedRow;
 
-                var dragHandler = renderedRow.vBodyRow.element.querySelector('.ag-js-draghandler');
+                // debugger;
+                var dragHandler = (
+                    renderedRow.vBodyRow.element.classList.contains('ag-js-draghandler') ?
+                    renderedRow.vBodyRow.element : renderedRow.vBodyRow.element.querySelector('.ag-js-draghandler')
+                );
                 // if (this.headerElements.drag) {
                 if (dragHandler) this.setupDND(dragHandler, renderedRow);
                 // } else {
@@ -654,14 +664,22 @@ module ag.grid {
         /***********************************************
         * DND BLOCK
         ************************************************/
-        private canDrop(destEl: Element, srcEl: Element = null): boolean {
-            if (!srcEl) {
-                srcEl = this.eBodyContainer.querySelector('.ag-dragging');
-            }
-            var srcNodeData = this.draggingNodeInfo(srcEl);
-            var dstNodeData = this.draggingNodeInfo(this.findParentRow(destEl));
+        private isParentByIndex(parentOrderIndex: string, childOrderIndex: string) {
+            return !!~childOrderIndex.search(
+                new RegExp('^' + parentOrderIndex.replace('\.', '\\.'))
+            );
+        }
 
-            return srcNodeData.level == dstNodeData.level && srcNodeData.parentId == dstNodeData.parentId
+        private getOrderIndex(rowIndex: number|string): string {
+            return this.getRenderedRows()[rowIndex].getNode().data.order.orderNumber;
+        }
+
+        private getSourceOrderIndex(): string {
+            return this.rowModel.getDragSource();
+        }
+        
+        private canDrop(sourceOrderIndex: string, destOrderIndex: string): boolean {
+            return !this.isParentByIndex(sourceOrderIndex, destOrderIndex);
         }
 
         private findParentRow(startEl: Element): Element {
@@ -673,7 +691,7 @@ module ag.grid {
         }
 
         private draggingNodeInfo(el: Element): any {
-            var rowObj = this.renderedRows[el.getAttribute('row')];          
+            var rowObj = this.renderedRows[el.getAttribute('row')];
             var rowNode = rowObj.node;
             var lvl = (rowNode.data.order.orderNumber.match(/\./g) || []).length
             var isParent = rowNode.data.order.isParent;
@@ -697,17 +715,22 @@ module ag.grid {
             dragHandler.addEventListener('dragstart', function(event: DragEvent) {
                 var rowEl = that.findParentRow(dragHandler);
                 rowEl.classList.add('ag-dragging');
-                event.dataTransfer.setData('text', rowEl.getAttribute('row'));
+                var rowIndex = rowEl.getAttribute('row')
+                event.dataTransfer.setData('text', rowIndex);
+                // store node data as it can be in not rendered state when drag is dropped (went out of visual scope)
+                that.rowModel.setDragSource(that.getRenderedRows()[rowIndex].getNode().data.order.orderNumber)
             });
+
             dragHandler.addEventListener('dragover', function(event: DragEvent) {
                 event.preventDefault();
-                if (that.canDrop(event.srcElement)) {
+                if (that.canDrop(that.getSourceOrderIndex(), that.getOrderIndex(thisRowIndex))) {
                     event.dataTransfer.dropEffect = 'move';
                 } else {
                     event.dataTransfer.dropEffect = 'none';
                 }
 
             });
+
             dragHandler.addEventListener('dragend', function() {
                 var draggingElement = that.eBodyContainer.querySelector('.ag-dragging');
                 if (draggingElement) {
@@ -729,36 +752,48 @@ module ag.grid {
             }
 
             var dragEnterHandler = (event: DragEvent) => {
+                // check if can drop
+                // set classes for row drag styling if positive
 
-                var sourceEl = that.eBodyContainer.querySelector('.ag-dragging');
-                var canDrop = that.canDrop(event.srcElement, sourceEl);
-                // var dragSource = this.getDragSource();
-                // var sourceEl = document.querySelector('.ag-dragging');
-                var sourceId = sourceEl.getAttribute('row');
-                var isDirectionUp = thisRowIndex < parseInt(sourceId)
-                var host: Element;
-                var neighbour: Element;
+                // if (thisRowIndex !== that.previousRowIndex) {
+                //     that.prePreviousRowIndex = that.previousRowIndex;
+                //     that.previousRowIndex = thisRowIndex;
+                // }
+                // var dragDirection = that.prePreviousRowIndex > thisRowIndex;
+
+                var sourceOrderIndex = that.getSourceOrderIndex();
+                var destOrderIndex = that.getOrderIndex(thisRowIndex);
+                var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex);
 
                 if (
                     !lastenter &&
                     !that.eBodyContainer.classList.contains('ag-dragging-over') &&
                     canDrop
                 ) {
+                    var sourceParentIndex = sourceOrderIndex.split('.').slice(0, -1).join('.');
+                    var destParentIndex = destOrderIndex.split('.').slice(0, -1).join('.');
+                    var sourceLevelIndex = parseInt(sourceOrderIndex.split('.').slice(-1)[0]);
+                    var destLevelIndex = parseInt(destOrderIndex.split('.').slice(-1)[0]);
+
+                    var dragStyleSuffix = (sourceParentIndex == destParentIndex && sourceLevelIndex < destLevelIndex) ? 'down' : 'up';
+
+                    var host: Element = this.findParentRow(dragHandler);
+
                     clearAllDragStyles();
 
-                    host = this.findParentRow(dragHandler);
-                    neighbour = isDirectionUp ? host.previousElementSibling : host.nextElementSibling;
-
                     host.classList.add('ag-dragging-over');
-                    host.classList.add(
-                        isDirectionUp ? 'ag-dragging-over-up' : 'ag-dragging-over-down'
-                    );
+                    host.classList.add(`ag-dragging-over-${dragStyleSuffix}`);
+                    // neighbour = isDirectionUp ? host.previousElementSibling : host.nextElementSibling;
 
-                    if (neighbour) {
-                        neighbour.classList.add(
-                            !isDirectionUp ? 'ag-dragging-over-up' : 'ag-dragging-over-down'
-                        );
-                    }
+                    // host.classList.add(
+                    //     isDirectionUp ? 'ag-dragging-over-up' : 'ag-dragging-over-down'
+                    // );
+
+                    // if (neighbour) {
+                    //     neighbour.classList.add(
+                    //         !isDirectionUp ? 'ag-dragging-over-up' : 'ag-dragging-over-down'
+                    //     );
+                    // }
                 }
 
                 lastenter = event.target;
@@ -768,6 +803,7 @@ module ag.grid {
             };
 
             var dragLeaveHandler = (event: Event) => {
+                // clear classes for row drag styling
                 var styleName = 'ag-dragging-over';
                 var hostId = that.findParentRow(dragHandler).getAttribute('row');
                 if (lastenter === event.target) {
@@ -786,125 +822,142 @@ module ag.grid {
 
             // swap columns on drop
             dragHandler.addEventListener('drop', function(event: DragEvent) {
-                var sourceEl = that.eBodyContainer.querySelector('.ag-dragging');
-                var canDrop = that.canDrop(event.srcElement, sourceEl);
-                var sourceId = parseInt(sourceEl.getAttribute('row'));
-                var jumpStep = Math.abs(sourceId - thisRowIndex);
-                var promoteStep = 0;
-                var demoteStep = 0;
-                console.log(sourceId);
-                console.log(thisRowIndex);
+                var maxLevels = that.gridOptionsWrapper.getGroupKeys().length;
 
-                var shiftOrder(node: any, increment: number): any {
-                    console.log(node);
-                    if (!node || !node.data) {
-                        return;
+                var sourceOrderIndex = that.getSourceOrderIndex();
+                var destOrderIndex = that.getOrderIndex(thisRowIndex);
+                var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex);
+
+                var sourceLevel = (sourceOrderIndex.match(/\./g) || []).length;
+                var destLevel = (destOrderIndex.match(/\./g) || []).length;
+                var sourceParentIndex = sourceOrderIndex.split('.').slice(0, -1).join('.');
+                var destParentIndex = destOrderIndex.split('.').slice(0, -1).join('.');
+
+                var flatData = that.gridOptionsWrapper.getRowData();
+                var curNode: any;
+
+                var shiftOrderInfix = function(orderNumber: string, level: number, shift: number) {
+                    var splittedOrderNumber = orderNumber.split('.');
+                    splittedOrderNumber[level] = (parseInt(splittedOrderNumber[level]) + shift).toString();
+                    return splittedOrderNumber.join('.');
+                };
+
+
+                // 1. Для элементов с порядковым номером источника и всех его дочерних элементов
+                // (все элементы, имеющие префикс с номером источника в порядковом номере и следующие за ним, если есть такие)
+                // меняем в порядковом номере префикс совпадающий с номером источника на номер назначения
+                //
+                // Находим индекс источника и меняем его номер
+                var idx = 0;
+                var parentIndex: number;
+                if (sourceParentIndex) {
+                    for (; idx < flatData.length; idx++) {
+                        if (flatData[idx].order.orderNumber == sourceParentIndex) break;
+
                     }
-                    var ordering = node.data.order.orderNumber;
-                    var orderingSplitted = ordering.split('.');
-                    var len = orderingSplitted.length;
-                    orderingSplitted[len - 1] = (parseInt(orderingSplitted[len - 1]) + increment).toString();
-                    ordering = orderingSplitted.join('.');
-                    node.data.order_regular.orderNumber = ordering;
-                    node.data[`order_${len - 1}`] = orderingSplitted[len - 1];
+                    parentIndex = idx;
                 }
+                for (;idx < flatData.length; idx++) {
+                    if (flatData[idx].order.orderNumber == sourceOrderIndex) break;
 
-                var rowsToPromote = [];
-                var rowsToDemote = [];
-
-                if (thisRowIndex == sourceId) {
-                    return;
                 }
+                var startSourceIndex = idx;
+                var oldIndexPrefix = new RegExp('^' + sourceOrderIndex.replace(new RegExp('\\.', 'g'), '\\.'));
+                // Находим индекс, где заканчиваются его дочерние элементы, меняем их префикс на назначение
+                for (; idx < flatData.length; idx++) {
+                    curNode = flatData[idx];
+                    if (!that.isParentByIndex(sourceOrderIndex, curNode.order.orderNumber)) break;
 
-                var direction = thisRowIndex < sourceId ? 1 : -1;
-
-                for (var idx = thisRowIndex; idx !== thisRowIndex + jumpStep * direction; idx += direction) {
-                    rowsToPromote.push(that.renderedRows[idx]);
-                }
-                if (direction > 0) {
-                    rowsToDemote.push(that.renderedRows[sourceId]);
-                    promoteStep = 1;
-                    demoteStep = -jumpStep;
-                } else {
-                    rowsToDemote = rowsToPromote;
-                    rowsToPromote = [];
-                    rowsToPromote.push(that.renderedRows[sourceId]);
-                    promoteStep = jumpStep;
-                    demoteStep = -1;
-                }
-                console.log(rowsToDemote, rowsToPromote);
-                rowsToDemote.forEach((el) => {
-                    shiftOrder(el.node, demoteStep);
-                });
-                rowsToPromote.forEach((el) => {
-                    shiftOrder(el.node, promoteStep);
-                });
-                debugger;
-                var parentRow = rowsToPromote[0].node.parent.parent
-                parentRow.children.sort((a, b) => {
-                    if (parseInt(a.children[0].data.order_2 || 0) < parseInt(b.children[0].data.order_2 || 0)) {
-                        return -1;
-                    } else {
-                        return 1;
+                    curNode.order.orderNumber = curNode.order.orderNumber.replace(
+                        oldIndexPrefix,
+                        destOrderIndex
+                    )
+                    // опеределяем максимальный уровень вложенности после переноса всех элементов
+                    maxLevels = Math.max(maxLevels, curNode.order.orderNumber.split('.').length);
+                    for (var i = 0; i < maxLevels; i++) {
+                        delete curNode[`order_${i}`];
                     }
+                    curNode.order.orderNumber.split('.').forEach((el, idx) => {
+                        curNode[`order_${idx}`] = el;
+                    });
+                }
+                var endSourceIndex = idx;
+
+                // 2. Все последующие элементы с префиксом, совпадающим с родительским префиксом элемента источника
+                // (если есть такие) уменьшают инфикс, на уровне, совпадающем с уровнем источника на единицу
+                //
+                for (; idx < flatData.length; idx++) {
+                    curNode = flatData[idx];
+                    if (!that.isParentByIndex(sourceParentIndex, curNode.order.orderNumber)) break;
+
+                    curNode.order.orderNumber = shiftOrderInfix(curNode.order.orderNumber, sourceLevel, -1);
+                    for (var i = 0; i < maxLevels; i++) {
+                        delete curNode[`order_${i}`];
+                    }
+                    curNode.order.orderNumber.split('.').forEach((el, idx) => {
+                        curNode[`order_${idx}`] = el;
+                    });
+                }
+
+                // 3. Элементы источника и его дочерние элементы вырезаются из списка
+                // если у родительского элемента источника, не осталось больше детей меняем его родительский статус
+                var shiftBlock = flatData.splice(startSourceIndex, endSourceIndex - startSourceIndex);
+                if (flatData[parentIndex] &&
+                    (!flatData[parentIndex + 1] ||
+                    !that.isParentByIndex(flatData[parentIndex].order.orderNumber, flatData[parentIndex + 1].order.orderNumber))
+                ) {
+                    flatData[parentIndex].order.isParent = false;
+                }
+
+                // 4. Элемент с номером назначения (его может уже и не быть, если его номер изменился в предыдущих пунктах)
+                // и все последующие элементы с префиксом, совпадающим с родительским префиксом элемента назначения (если есть)
+                // увеличивают инфикс, на уровне, совпадающем с уровнем назначения на единицу
+                for (idx = 0; idx < flatData.length; idx++) {
+                    curNode = flatData[idx];
+                    if (curNode.order.orderNumber == destOrderIndex) break;
+                }
+                for (; idx < flatData.length; idx++) {
+                    curNode = flatData[idx];
+                    if (!that.isParentByIndex(destParentIndex, curNode.order.orderNumber)) break;
+
+                    curNode.order.orderNumber = shiftOrderInfix(curNode.order.orderNumber, destLevel, 1);
+                    for (var i = 0; i < maxLevels; i++) {
+                        delete curNode[`order_${i}`];
+                    }
+                    curNode.order.orderNumber.split('.').forEach((el, idx) => {
+                        curNode[`order_${idx}`] = el;
+                    });
+                }
+
+                // 5. Дополняем список вырезанными элементами и сортируем по порядковому номеру
+                flatData = flatData.concat(shiftBlock);
+                console.log(flatData);
+
+                flatData.sort((a, b) => {
+                    for (var i = 0; i < maxLevels; i++) {
+                        if (parseInt(a[`order_${i}`] || 0) > parseInt(b[`order_${i}`] || 0))
+                            return 1
+                        if (parseInt(a[`order_${i}`] || 0) < parseInt(b[`order_${i}`] || 0))
+                            return -1
+                    }
+                    return 0
                 });
-                parentRow.children = parentRow.children.map((el, idx) => {
-                    el.childIndex = idx;
-                    return el;
-                });
-                parentRow.childrenAfterFilter = parentRow.children;
-                parentRow.childrenAfterSort = parentRow.children;
-                that.gridOptionsWrapper.getApi().refreshPivot();
-                // that.refreshRows([parentRow]);
-                // that.refreshRows(rowsToPromote);
-                // that.refreshRows(rowsToDemote);
-                console.log(parentRow);
-                that.gridOptionsWrapper.getApi().setRowData([]);
-                that.refreshView();
-                // var freezeIndex = that.columnController.getPinnedColumnCount();
-                // var dragData = event.dataTransfer.getData('text');
-                // var srcColumn = that.columnController.getColumn(dragData);
-                // if (!srcColumn) {
-                //     srcColumn = that.columnController.getColumnGroup(dragData).bracketHeader.column
+
+                that.gridOptionsWrapper.getApi().setRowData(flatData);
+
+                // if (that.gridOptionsWrapper.getGroupKeys().length !== maxLevels) {
                 // }
-                // var srcColumnAttrs = that.detectDragParty(srcColumn);
-                // var destColumn = that.column
-                // var destColumnAttrs = that.detectDragParty(destColumn);
+                var newGroupingKeys = [];
+                for (var i = 0; i < maxLevels; i++) {
+                    newGroupingKeys.push(`order_${i}`);
+                }
 
-                // var directionRight = srcColumnAttrs.colStartIndex < destColumnAttrs.colStartIndex
-                // var toIdx = directionRight ? destColumnAttrs.colEndIndex : destColumnAttrs.colStartIndex;
-                // var fromIdx = srcColumnAttrs.colStartIndex;
-
-                // var dSrc = srcColumnAttrs.colStartIndex < freezeIndex ? freezeIndex - srcColumnAttrs.colStartIndex : srcColumnAttrs.colStartIndex - freezeIndex + 1;
-                // var dDest = destColumnAttrs.colStartIndex < freezeIndex ? freezeIndex - destColumnAttrs.colStartIndex : destColumnAttrs.colStartIndex - freezeIndex + 1;
-                // var dSrcDest = Math.abs(destColumnAttrs.colStartIndex - srcColumnAttrs.colStartIndex) + 1;
-
-                // var srcBracketSize = srcColumn.colDef.columnGroup ? srcColumn.colDef.columnGroup.displayedColumns.length - 1 : 0;
-                // var isCrossBorder = dSrc + dDest == dSrcDest;
-                // var bracketShiftCompensation = 0;
-
-                // if (isCrossBorder) {
-                //     var lastInFridge = that.eRootRef.querySelector('.ag-pinned-header').lastElementChild;
-                //     if (!directionRight && lastInFridge.firstElementChild.classList.contains('ag-header-group-cell')) {
-                //         bracketShiftCompensation = -lastInFridge.querySelectorAll('.ag-header-cell').length + 1;
-                //     }
-                //     var firstInRiver = that.eRootRef.querySelector('.ag-header-container').firstElementChild;
-                //     if (directionRight && firstInRiver.firstElementChild.classList.contains('ag-header-group-cell')) {
-                //         bracketShiftCompensation = firstInRiver.querySelectorAll('.ag-header-cell').length - 1;
-                //     }
-                //     that.columnController.setPinnedColumnCount(freezeIndex + srcBracketSize * (directionRight ? -1 : 1) + bracketShiftCompensation);
-                // }
-
-                // for (var idx = 0; idx < srcColumnAttrs.colEndIndex - srcColumnAttrs.colStartIndex + 1; idx++) {
-                //     // fetch indexes from all columns for visible ones as moveColumn works with all cilomns list
-                //     var fromIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[fromIdx]);
-                //     var toIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[toIdx]);
-                //     that.columnController.moveColumn(fromIdxInAll, toIdxInAll);
-                //     if (!directionRight) {
-                //         toIdx++;
-                //         fromIdx++;
-                //     }
-                // }
+                var col = that.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
+                that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, maxLevels * 17 * 2);
+                that.gridOptionsWrapper.gridOptions.wrapper.reGroup(newGroupingKeys);
+                // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
+                // debugger;
+                // that.gridOptionsWrapper.getApi().refreshPivot();
 
                 event.stopPropagation();
                 event.preventDefault();

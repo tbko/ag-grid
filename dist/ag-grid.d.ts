@@ -494,6 +494,7 @@ declare module ag.grid {
         getWidthGap(): number;
         getMaxRows(): number;
         getMinRows(): number;
+        isRowDrug(): boolean;
         setMetrics(metrics: any): void;
         getFullRowHeight(): number;
         getBaseRowHeight(): number;
@@ -717,6 +718,7 @@ declare module ag.grid {
         isNodeInList(nodes: RowNode[]): boolean;
         isGroup(): boolean;
         getId(): any;
+        getNode(): any;
         private drawNormalRow();
         private bindVirtualElement(vElement);
         private createGroupRow();
@@ -850,6 +852,8 @@ declare module ag.grid {
         private renderedTotalHeight;
         private renderedAverageHeight;
         private heightFromLastRow;
+        private previousRowIndex;
+        private prePreviousRowIndex;
         init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel, angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any, selectionController: SelectionController, expressionService: ExpressionService, templateService: TemplateService, valueService: ValueService, eventService: EventService): void;
         setRowModel(rowModel: any): void;
         onIndividualColumnResized(column: Column): void;
@@ -885,7 +889,10 @@ declare module ag.grid {
         /***********************************************
         * DND BLOCK
         ************************************************/
-        private canDrop(destEl, srcEl?);
+        private isParentByIndex(parentOrderIndex, childOrderIndex);
+        private getOrderIndex(rowIndex);
+        private getSourceOrderIndex();
+        private canDrop(sourceOrderIndex, destOrderIndex);
         private findParentRow(startEl);
         private draggingNodeInfo(el);
         private setupDND(dragHandler, thisRow);
@@ -1095,6 +1102,7 @@ declare module ag.grid {
         private groupCreator;
         private valueService;
         private eventService;
+        private dragSourceOrderIndex;
         constructor();
         init(gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, angularGrid: any, filterManager: FilterManager, $scope: any, groupCreator: GroupCreator, valueService: ValueService, eventService: EventService): void;
         private createModel();
@@ -1557,6 +1565,7 @@ declare module ag.grid {
         widthGap: number;
         maxRows: number;
         minRows: number;
+        isRowDrug: boolean;
         metrics: any;
         localeText?: any;
         localeTextFunc?: Function;
@@ -1601,6 +1610,7 @@ declare module ag.grid {
         groupAggFunction?(nodes: any[]): any;
         getBusinessKeyForNode?(node: RowNode): string;
         onMultitoolClicked?(params: any): void;
+        onRowReordered?(params: any): void;
         onSelectionStateChanged?(params: any): void;
         onReady?(api: any): void;
         onModelUpdated?(): void;
@@ -1809,6 +1819,7 @@ declare module ag.grid {
         static EVENT_ROW_DOUBLE_CLICKED: string;
         static EVENT_READY: string;
         static EVENT_MULTITOOL_CLICK: string;
+        static EVENT_ROW_REORDER: string;
         static EVENT_SELECTION_STATE_CHANGED: string;
         static EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE: string;
         static EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE: string;

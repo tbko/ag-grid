@@ -40,6 +40,7 @@ module ag.grid {
         widthGap: number;
         maxRows: number;
         minRows: number;
+        isRowDrug: boolean;
         metrics: any;
 
         // just set once
@@ -96,6 +97,7 @@ module ag.grid {
 
         // events
         onMultitoolClicked?(params: any): void;
+        onRowReordered?(params: any): void;
         onSelectionStateChanged?(params: any): void;
         onReady?(api: any): void;
         onModelUpdated?(): void;

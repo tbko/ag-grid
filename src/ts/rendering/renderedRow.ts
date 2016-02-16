@@ -340,6 +340,10 @@ module ag.grid {
             return this.node.id;
         }
 
+        public getNode(): any {
+            return this.node;
+        }
+
         private drawNormalRow() {
             var columns = this.columnController.getDisplayedColumns();
             var maxRowsNeeded = 0;
@@ -603,6 +607,9 @@ module ag.grid {
             var classes: string[] = [];
 
             classes.push('ag-row');
+            if (this.gridOptionsWrapper.isRowDrug()) {
+                classes.push('ag-js-draghandler');
+            }
 
             classes.push(this.rowIndex % 2 == 0 ? "ag-row-even" : "ag-row-odd");
 
