@@ -607,7 +607,7 @@ module ag.grid {
             var classes: string[] = [];
 
             classes.push('ag-row');
-            if (this.gridOptionsWrapper.isRowDrug()) {
+            if (this.gridOptionsWrapper.isRowDrug() && this.gridOptionsWrapper.gridOptions.groupKeys && ~this.gridOptionsWrapper.gridOptions.groupKeys.indexOf('order_0')) {
                 classes.push('ag-js-draghandler');
             }
 

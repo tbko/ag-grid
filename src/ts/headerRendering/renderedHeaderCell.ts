@@ -145,7 +145,12 @@ module ag.grid {
 
             // label div
             var headerCellLabel = document.createElement("div");
-            headerCellLabel.className = "ag-header-cell-label";
+            if (this.column.colDef.suppressResize) {
+                headerCellLabel.className = "ag-header-cell-label ag-header-cell-fullsize";
+            } else {
+                headerCellLabel.className = "ag-header-cell-label";
+            }
+
             if (this.gridOptionsWrapper.isGroupHeaders() && this.parentGroup && this.parentGroup.getVisibleColumnsCount() > 1) {
                 headerCellLabel.setAttribute('colId', this.column.colId);
             }
@@ -196,8 +201,8 @@ module ag.grid {
                 }
                 headerCellRenderer = function() {
                     return `
-                    <div class="ag-header-cell-actionbox ag-js-draghandler">
-                      <div class="ag-header-text">
+                    <div class="ag-header-cell-actionbox ag-js-draghandler" title="${headerNameValue || ''}" >
+                      <div class="ag-header-text" >
                         ${headerNameValue || ''}
                       </div>
                       <div class="ag-header-action">

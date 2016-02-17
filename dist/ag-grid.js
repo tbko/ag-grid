@@ -3609,7 +3609,7 @@ var ag;
             RenderedRow.prototype.addDynamicClasses = function () {
                 var classes = [];
                 classes.push('ag-row');
-                if (this.gridOptionsWrapper.isRowDrug()) {
+                if (this.gridOptionsWrapper.isRowDrug() && this.gridOptionsWrapper.gridOptions.groupKeys && ~this.gridOptionsWrapper.gridOptions.groupKeys.indexOf('order_0')) {
                     classes.push('ag-js-draghandler');
                 }
                 classes.push(this.rowIndex % 2 == 0 ? "ag-row-even" : "ag-row-odd");
@@ -5016,7 +5016,7 @@ var ag;
                         newGroupingKeys.push("order_" + i);
                     }
                     var col = that.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
-                    that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, maxLevels * 17 * 2);
+                    that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, 40 + maxLevels * 17 * 2);
                     that.gridOptionsWrapper.gridOptions.wrapper.reGroup(newGroupingKeys);
                     // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
                     // debugger;
@@ -11095,7 +11095,12 @@ var ag;
                 // this.addMenu();
                 // label div
                 var headerCellLabel = document.createElement("div");
-                headerCellLabel.className = "ag-header-cell-label";
+                if (this.column.colDef.suppressResize) {
+                    headerCellLabel.className = "ag-header-cell-label ag-header-cell-fullsize";
+                }
+                else {
+                    headerCellLabel.className = "ag-header-cell-label";
+                }
                 if (this.gridOptionsWrapper.isGroupHeaders() && this.parentGroup && this.parentGroup.getVisibleColumnsCount() > 1) {
                     headerCellLabel.setAttribute('colId', this.column.colId);
                 }
@@ -11125,7 +11130,7 @@ var ag;
                         freezeBlock = "\n                    <div class=\"ag-header-action-lock ag-locked-icon\">\n                      <div class=\"pi-table-column-locked\" >\n                          <label>\n                              <span class=\"checkbox-input\">\n                                  <input id=\"ag-js-freeze\" name=\"locked\" type=\"checkbox\" />\n                                  <span class=\"input-icon\"></span>\n                              </span>\n                          </label>\n                      </div>\n                    </div>\n                    ";
                     }
                     headerCellRenderer = function () {
-                        return "\n                    <div class=\"ag-header-cell-actionbox ag-js-draghandler\">\n                      <div class=\"ag-header-text\">\n                        " + (headerNameValue || '') + "\n                      </div>\n                      <div class=\"ag-header-action\">\n                        " + freezeBlock + "    \n                        " + sortBlock + "    \n                      </div>\n                    </div>                    \n                    ";
+                        return "\n                    <div class=\"ag-header-cell-actionbox ag-js-draghandler\" title=\"" + (headerNameValue || '') + "\" >\n                      <div class=\"ag-header-text\" >\n                        " + (headerNameValue || '') + "\n                      </div>\n                      <div class=\"ag-header-action\">\n                        " + freezeBlock + "    \n                        " + sortBlock + "    \n                      </div>\n                    </div>                    \n                    ";
                     };
                 }
                 if (headerCellRenderer) {
