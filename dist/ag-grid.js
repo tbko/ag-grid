@@ -7985,7 +7985,6 @@ var ag;
                 return this.getOverlayRowWrapper(template.join(''));
             };
             BorderLayout.prototype.showOverlayRow = function () {
-                var _this = this;
                 if (this.eOverlayRowZoneWrapper === void 0)
                     return;
                 document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
@@ -7994,12 +7993,15 @@ var ag;
                 var actions = this.gridOptionsWrapper.getActionTemplate();
                 for (var k in actions) {
                     var v = actions[k];
-                    this.eOverlayRowWrapper.querySelector("#ag-action-row-" + k).addEventListener('click', function (event) {
-                        event.stopPropagation();
-                        event.preventDefault();
-                        _this.rowActionListener(event, k);
-                        return false;
-                    });
+                    var that = this;
+                    (function (k) {
+                        that.eOverlayRowWrapper.querySelector("#ag-action-row-" + k).addEventListener('click', function (event) {
+                            event.stopPropagation();
+                            event.preventDefault();
+                            that.rowActionListener(event, k);
+                            return false;
+                        });
+                    })(k);
                 }
                 // this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
                 //     event.stopPropagation();
@@ -8193,6 +8195,7 @@ var ag;
                             name: key,
                             items: selected
                         };
+                        console.log(multitoolParams);
                         that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                     },
                     // rowDeleteListener: function(ev: Event) {

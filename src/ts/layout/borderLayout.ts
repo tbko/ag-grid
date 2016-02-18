@@ -449,12 +449,15 @@ module ag.grid {
             var actions = this.gridOptionsWrapper.getActionTemplate();
             for (var k in actions) {
                 var v = actions[k];
-                this.eOverlayRowWrapper.querySelector(`#ag-action-row-${k}`).addEventListener('click', (event) => {
-                    event.stopPropagation();
-                    event.preventDefault();
-                    this.rowActionListener(event, k);
-                    return false; 
-                });
+                var that = this;
+                (function(k) {
+                    that.eOverlayRowWrapper.querySelector(`#ag-action-row-${k}`).addEventListener('click', (event) => {
+                        event.stopPropagation();
+                        event.preventDefault();
+                        that.rowActionListener(event, k);
+                        return false;
+                    });
+                })(k);
             }
             // this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
             //     event.stopPropagation();

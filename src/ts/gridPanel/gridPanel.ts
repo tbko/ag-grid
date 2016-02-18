@@ -150,6 +150,7 @@ module ag.grid {
                         name: key,
                         items: selected
                     }
+                    console.log(multitoolParams);
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                 },
                 // rowDeleteListener: function(ev: Event) {
