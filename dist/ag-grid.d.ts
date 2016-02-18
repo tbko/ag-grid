@@ -422,6 +422,7 @@ declare module ag.grid {
         private gridOptions;
         private groupHeaders;
         private headerHeight;
+        private actionTemplate;
         private rowHeight;
         private rowHeightExtra;
         private floatingTopRowData;
@@ -502,6 +503,7 @@ declare module ag.grid {
         getFullHeaderHeight(): number;
         getHeaderHeight(): number;
         setHeaderHeight(headerHeight: number): void;
+        getActionTemplate(): string;
         isGroupHeaders(): boolean;
         setGroupHeaders(groupHeaders: boolean): void;
         getFloatingTopRowData(): any[];
@@ -1252,9 +1254,7 @@ declare module ag.grid {
         private sizeChangeListeners;
         private overlays;
         private deleteListener;
-        private rowEditListener;
-        private rowDeleteListener;
-        private rowSplitListener;
+        private rowActionListener;
         private eventService;
         private gridOptionsWrapper;
         private gridPanel;

@@ -142,36 +142,36 @@ module ag.grid {
                     }
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                 },
-                rowEditListener: function(ev: Event) {
+                rowActionListener: function(ev: Event, key: string) {
                     ev.preventDefault();
 
                     var selected = [that.rowRenderer.getHoveredOn()];
                     var multitoolParams = {
-                        name: 'edit',
+                        name: key,
                         items: selected
                     }
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                 },
-                rowDeleteListener: function(ev: Event) {
-                    ev.preventDefault();
+                // rowDeleteListener: function(ev: Event) {
+                //     ev.preventDefault();
 
-                    var selected = [that.rowRenderer.getHoveredOn()];
-                    var multitoolParams = {
-                        name: 'delete',
-                        items: selected
-                    }
-                    that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
-                },
-                rowSplitListener: function(ev: Event) {
-                    ev.preventDefault();
+                //     var selected = [that.rowRenderer.getHoveredOn()];
+                //     var multitoolParams = {
+                //         name: 'delete',
+                //         items: selected
+                //     }
+                //     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                // },
+                // rowSplitListener: function(ev: Event) {
+                //     ev.preventDefault();
 
-                    var selected = [that.rowRenderer.getHoveredOn()];
-                    var multitoolParams = {
-                        name: 'split',
-                        items: selected
-                    }
-                    that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
-                },
+                //     var selected = [that.rowRenderer.getHoveredOn()];
+                //     var multitoolParams = {
+                //         name: 'split',
+                //         items: selected
+                //     }
+                //     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                // },
                 eventService: that.eventService,
                 gridOptionsWrapper: that.gridOptionsWrapper,
                 gridPanel: this

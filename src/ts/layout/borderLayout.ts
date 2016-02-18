@@ -35,9 +35,7 @@ module ag.grid {
         private sizeChangeListeners = <any>[];
         private overlays: any;
         private deleteListener: any;
-        private rowEditListener: any;
-        private rowDeleteListener: any;
-        private rowSplitListener: any;
+        private rowActionListener: any;
         private eventService: EventService;
         private gridOptionsWrapper: GridOptionsWrapper;
         private gridPanel: GridPanel;
@@ -48,9 +46,7 @@ module ag.grid {
 
             this.fullHeight = !params.north && !params.south;
             this.deleteListener = params.deleteListener;
-            this.rowEditListener = params.rowEditListener;
-            this.rowDeleteListener = params.rowDeleteListener;
-            this.rowSplitListener = params.rowSplitListener;
+            this.rowActionListener = params.rowActionListener;
             this.eventService = params.eventService;
             this.gridOptionsWrapper = params.gridOptionsWrapper;
             this.gridPanel = params.gridPanel;
@@ -426,12 +422,21 @@ module ag.grid {
         }
 
         private createOverlayRowTemplate(): string {
-            var tmpl = `
-                <a title="Редактировать" href="#"><span id="ag-action-row-edit" class="i-edit" style="pointer-events:all;"></span></a>
-                <a title="Удалить" href="#"><span id="ag-action-row-delete" class="i-delete" style="pointer-events:all;"></span></a>
-                <a title="Разделить" href="#"><span id="ag-action-row-split" class="i-split" style="pointer-events:all;"></span></a>
-            `;
-            return this.getOverlayRowWrapper(tmpl);
+            // debugger
+            var actions = this.gridOptionsWrapper.getActionTemplate();
+            var template = [];
+            for (var k in actions) {
+                var v = actions[k];
+                template.push(`
+                <a title="${v}" href="#"><span id="ag-action-row-${k}" class="i-${k}" style="pointer-events:all;"></span></a>
+                `);
+            }
+            // var tmpl = `
+            //     <a title="Редактировать" href="#"><span id="ag-action-row-edit" class="i-edit" style="pointer-events:all;"></span></a>
+            //     <a title="Удалить" href="#"><span id="ag-action-row-delete" class="i-delete" style="pointer-events:all;"></span></a>
+            //     <a title="Разделить" href="#"><span id="ag-action-row-split" class="i-split" style="pointer-events:all;"></span></a>
+            // `;
+            return this.getOverlayRowWrapper(template.join(''));
         }
 
         public showOverlayRow() {
@@ -441,24 +446,34 @@ module ag.grid {
             this.eOverlayRowWrapper.appendChild(
                 _.loadTemplate(this.createOverlayRowTemplate().trim())
             );
-            this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
-                event.stopPropagation();
-                event.preventDefault();
-                this.rowEditListener(event);
-                return false; 
-            });
-            this.eOverlayRowWrapper.querySelector('#ag-action-row-delete').addEventListener('click', (event) => {
-                event.stopPropagation();
-                event.preventDefault();
-                this.rowDeleteListener(event);
-                return false; 
-            });
-            this.eOverlayRowWrapper.querySelector('#ag-action-row-split').addEventListener('click', (event) => {
-                event.stopPropagation();
-                event.preventDefault();
-                this.rowSplitListener(event);
-                return false; 
-            });
+            var actions = this.gridOptionsWrapper.getActionTemplate();
+            for (var k in actions) {
+                var v = actions[k];
+                this.eOverlayRowWrapper.querySelector(`#ag-action-row-${k}`).addEventListener('click', (event) => {
+                    event.stopPropagation();
+                    event.preventDefault();
+                    this.rowActionListener(event, k);
+                    return false; 
+                });
+            }
+            // this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
+            //     event.stopPropagation();
+            //     event.preventDefault();
+            //     this.rowEditListener(event);
+            //     return false; 
+            // });
+            // this.eOverlayRowWrapper.querySelector('#ag-action-row-delete').addEventListener('click', (event) => {
+            //     event.stopPropagation();
+            //     event.preventDefault();
+            //     this.rowDeleteListener(event);
+            //     return false; 
+            // });
+            // this.eOverlayRowWrapper.querySelector('#ag-action-row-split').addEventListener('click', (event) => {
+            //     event.stopPropagation();
+            //     event.preventDefault();
+            //     this.rowSplitListener(event);
+            //     return false; 
+            // });
         }
 
         public showOverlay(key: string) {

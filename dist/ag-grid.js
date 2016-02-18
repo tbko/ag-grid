@@ -1802,6 +1802,7 @@ var ag;
             GridOptionsWrapper.prototype.init = function (gridOptions, eventService) {
                 this.gridOptions = gridOptions;
                 this.headerHeight = gridOptions.headerHeight;
+                this.actionTemplate = gridOptions.actionTemplate;
                 this.groupHeaders = gridOptions.groupHeaders;
                 this.rowHeight = gridOptions.rowHeight;
                 this.rowHeightExtra = gridOptions.rowHeightExtra;
@@ -1920,6 +1921,9 @@ var ag;
                 }
             };
             GridOptionsWrapper.prototype.setHeaderHeight = function (headerHeight) { this.headerHeight = headerHeight; };
+            GridOptionsWrapper.prototype.getActionTemplate = function () {
+                return this.actionTemplate;
+            };
             GridOptionsWrapper.prototype.isGroupHeaders = function () { return isTrue(this.groupHeaders); };
             GridOptionsWrapper.prototype.setGroupHeaders = function (groupHeaders) { this.groupHeaders = groupHeaders; };
             GridOptionsWrapper.prototype.getFloatingTopRowData = function () { return this.floatingTopRowData; };
@@ -4917,6 +4921,7 @@ var ag;
                         splittedOrderNumber[level] = (parseInt(splittedOrderNumber[level]) + shift).toString();
                         return splittedOrderNumber.join('.');
                     };
+                    // debugger;
                     // 1. Для элементов с порядковым номером источника и всех его дочерних элементов
                     // (все элементы, имеющие префикс с номером источника в порядковом номере и следующие за ним, если есть такие)
                     // меняем в порядковом номере префикс совпадающий с номером источника на номер назначения
@@ -7648,9 +7653,7 @@ var ag;
                 this.isLayoutPanel = true;
                 this.fullHeight = !params.north && !params.south;
                 this.deleteListener = params.deleteListener;
-                this.rowEditListener = params.rowEditListener;
-                this.rowDeleteListener = params.rowDeleteListener;
-                this.rowSplitListener = params.rowSplitListener;
+                this.rowActionListener = params.rowActionListener;
                 this.eventService = params.eventService;
                 this.gridOptionsWrapper = params.gridOptionsWrapper;
                 this.gridPanel = params.gridPanel;
@@ -7967,8 +7970,19 @@ var ag;
                 return tmpl;
             };
             BorderLayout.prototype.createOverlayRowTemplate = function () {
-                var tmpl = "\n                <a title=\"\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C\" href=\"#\"><span id=\"ag-action-row-edit\" class=\"i-edit\" style=\"pointer-events:all;\"></span></a>\n                <a title=\"\u0423\u0434\u0430\u043B\u0438\u0442\u044C\" href=\"#\"><span id=\"ag-action-row-delete\" class=\"i-delete\" style=\"pointer-events:all;\"></span></a>\n                <a title=\"\u0420\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u044C\" href=\"#\"><span id=\"ag-action-row-split\" class=\"i-split\" style=\"pointer-events:all;\"></span></a>\n            ";
-                return this.getOverlayRowWrapper(tmpl);
+                // debugger
+                var actions = this.gridOptionsWrapper.getActionTemplate();
+                var template = [];
+                for (var k in actions) {
+                    var v = actions[k];
+                    template.push("\n                <a title=\"" + v + "\" href=\"#\"><span id=\"ag-action-row-" + k + "\" class=\"i-" + k + "\" style=\"pointer-events:all;\"></span></a>\n                ");
+                }
+                // var tmpl = `
+                //     <a title="Редактировать" href="#"><span id="ag-action-row-edit" class="i-edit" style="pointer-events:all;"></span></a>
+                //     <a title="Удалить" href="#"><span id="ag-action-row-delete" class="i-delete" style="pointer-events:all;"></span></a>
+                //     <a title="Разделить" href="#"><span id="ag-action-row-split" class="i-split" style="pointer-events:all;"></span></a>
+                // `;
+                return this.getOverlayRowWrapper(template.join(''));
             };
             BorderLayout.prototype.showOverlayRow = function () {
                 var _this = this;
@@ -7977,24 +7991,34 @@ var ag;
                 document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
                 // this.eOverlayRowWrapper.style.display = 'none';
                 this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
-                this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', function (event) {
-                    event.stopPropagation();
-                    event.preventDefault();
-                    _this.rowEditListener(event);
-                    return false;
-                });
-                this.eOverlayRowWrapper.querySelector('#ag-action-row-delete').addEventListener('click', function (event) {
-                    event.stopPropagation();
-                    event.preventDefault();
-                    _this.rowDeleteListener(event);
-                    return false;
-                });
-                this.eOverlayRowWrapper.querySelector('#ag-action-row-split').addEventListener('click', function (event) {
-                    event.stopPropagation();
-                    event.preventDefault();
-                    _this.rowSplitListener(event);
-                    return false;
-                });
+                var actions = this.gridOptionsWrapper.getActionTemplate();
+                for (var k in actions) {
+                    var v = actions[k];
+                    this.eOverlayRowWrapper.querySelector("#ag-action-row-" + k).addEventListener('click', function (event) {
+                        event.stopPropagation();
+                        event.preventDefault();
+                        _this.rowActionListener(event, k);
+                        return false;
+                    });
+                }
+                // this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
+                //     event.stopPropagation();
+                //     event.preventDefault();
+                //     this.rowEditListener(event);
+                //     return false; 
+                // });
+                // this.eOverlayRowWrapper.querySelector('#ag-action-row-delete').addEventListener('click', (event) => {
+                //     event.stopPropagation();
+                //     event.preventDefault();
+                //     this.rowDeleteListener(event);
+                //     return false; 
+                // });
+                // this.eOverlayRowWrapper.querySelector('#ag-action-row-split').addEventListener('click', (event) => {
+                //     event.stopPropagation();
+                //     event.preventDefault();
+                //     this.rowSplitListener(event);
+                //     return false; 
+                // });
             };
             BorderLayout.prototype.showOverlay = function (key) {
                 var overlay = this.overlays ? this.overlays[key] : null;
@@ -8162,33 +8186,33 @@ var ag;
                         };
                         that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                     },
-                    rowEditListener: function (ev) {
+                    rowActionListener: function (ev, key) {
                         ev.preventDefault();
                         var selected = [that.rowRenderer.getHoveredOn()];
                         var multitoolParams = {
-                            name: 'edit',
+                            name: key,
                             items: selected
                         };
                         that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                     },
-                    rowDeleteListener: function (ev) {
-                        ev.preventDefault();
-                        var selected = [that.rowRenderer.getHoveredOn()];
-                        var multitoolParams = {
-                            name: 'delete',
-                            items: selected
-                        };
-                        that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
-                    },
-                    rowSplitListener: function (ev) {
-                        ev.preventDefault();
-                        var selected = [that.rowRenderer.getHoveredOn()];
-                        var multitoolParams = {
-                            name: 'split',
-                            items: selected
-                        };
-                        that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
-                    },
+                    // rowDeleteListener: function(ev: Event) {
+                    //     ev.preventDefault();
+                    //     var selected = [that.rowRenderer.getHoveredOn()];
+                    //     var multitoolParams = {
+                    //         name: 'delete',
+                    //         items: selected
+                    //     }
+                    //     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                    // },
+                    // rowSplitListener: function(ev: Event) {
+                    //     ev.preventDefault();
+                    //     var selected = [that.rowRenderer.getHoveredOn()];
+                    //     var multitoolParams = {
+                    //         name: 'split',
+                    //         items: selected
+                    //     }
+                    //     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                    // },
                     eventService: that.eventService,
                     gridOptionsWrapper: that.gridOptionsWrapper,
                     gridPanel: this
