@@ -931,7 +931,6 @@ module ag.grid {
 
                 // 5. Дополняем список вырезанными элементами и сортируем по порядковому номеру
                 flatData = flatData.concat(shiftBlock);
-                console.log(flatData);
 
                 flatData.sort((a, b) => {
                     for (var i = 0; i < maxLevels; i++) {
@@ -953,7 +952,7 @@ module ag.grid {
                 }
 
                 var col = that.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
-                that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, 40 + maxLevels * 17 * 2);
+                that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, 24 + maxLevels * 17 * 2);
                 that.gridOptionsWrapper.gridOptions.wrapper.reGroup(newGroupingKeys);
                 // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
                 // debugger;

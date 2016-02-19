@@ -806,7 +806,7 @@ module ag.grid {
 
             var elText = this.getGui().querySelector('.ag-header-text');
             var allText = this.columnController.getDisplayNameForCol(this.column);
-            _.reflowText(<HTMLElement>elText, allText);
+            // _.reflowText(<HTMLElement>elText, allText);
 
             this.lockedForResize = false;
         }

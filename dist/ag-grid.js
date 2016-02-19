@@ -5021,7 +5021,7 @@ var ag;
                         newGroupingKeys.push("order_" + i);
                     }
                     var col = that.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
-                    that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, 40 + maxLevels * 17 * 2);
+                    that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, 24 + maxLevels * 17 * 2);
                     that.gridOptionsWrapper.gridOptions.wrapper.reGroup(newGroupingKeys);
                     // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
                     // debugger;
@@ -11662,7 +11662,7 @@ var ag;
                 this.eHeaderCell.style.width = newWidthPx;
                 var elText = this.getGui().querySelector('.ag-header-text');
                 var allText = this.columnController.getDisplayNameForCol(this.column);
-                _.reflowText(elText, allText);
+                // _.reflowText(<HTMLElement>elText, allText);
                 this.lockedForResize = false;
             };
             RenderedHeaderCell.prototype.addHeaderClassesFromCollDef = function () {
