@@ -150,8 +150,10 @@ module ag.grid {
                         name: key,
                         items: selected
                     }
-                    console.log(multitoolParams);
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                },
+                getHoveredOn: function() {
+                    return that.rowRenderer.getHoveredOn();
                 },
                 // rowDeleteListener: function(ev: Event) {
                 //     ev.preventDefault();

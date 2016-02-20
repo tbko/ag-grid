@@ -985,6 +985,7 @@ module ag.grid {
         public setHoveredOn(rowNode: any) {
             if (rowNode === null || rowNode === void 0 || !rowNode.node)
                 return;
+            this.eventService.dispatchEvent(Events.EVENT_ROWS_MOUSE_IN, rowNode);
             this.hoveredOn = rowNode.node;
         }
 

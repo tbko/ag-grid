@@ -1255,6 +1255,7 @@ declare module ag.grid {
         private overlays;
         private deleteListener;
         private rowActionListener;
+        private getHoveredOn;
         private eventService;
         private gridOptionsWrapper;
         private gridPanel;
@@ -1267,6 +1268,7 @@ declare module ag.grid {
         private setupPanels(params);
         private addOverlayRowZone();
         positionOverlayRowZone(offsetTopY: number): void;
+        switchExtraButton(rowObj: any): void;
         private overlayEventThrough(event);
         private rowOverlayLeaveListener(event);
         private rowOverlayEnterListener(event);
@@ -1823,6 +1825,7 @@ declare module ag.grid {
         static EVENT_SELECTION_STATE_CHANGED: string;
         static EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE: string;
         static EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE: string;
+        static EVENT_ROWS_MOUSE_IN: string;
         static EVENT_DO_NOTHING: string;
     }
 }
@@ -1879,6 +1882,7 @@ declare module ag.grid {
         getId(): string;
         private periodicallyDoLayout();
         private setupComponents($scope, $compile, eUserProvidedDiv, globalEventListener);
+        private onRowsMouseIn(rowObj);
         private onRowsListenMouseMove();
         private onRowsStopListenMouseMove();
         private onColumnChanged(event);

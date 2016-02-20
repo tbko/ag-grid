@@ -5003,7 +5003,6 @@ var ag;
                     }
                     // 5. Дополняем список вырезанными элементами и сортируем по порядковому номеру
                     flatData = flatData.concat(shiftBlock);
-                    console.log(flatData);
                     flatData.sort(function (a, b) {
                         for (var i = 0; i < maxLevels; i++) {
                             if (parseInt(a[("order_" + i)] || 0) > parseInt(b[("order_" + i)] || 0))
@@ -5052,6 +5051,7 @@ var ag;
             RowRenderer.prototype.setHoveredOn = function (rowNode) {
                 if (rowNode === null || rowNode === void 0 || !rowNode.node)
                     return;
+                this.eventService.dispatchEvent(grid.Events.EVENT_ROWS_MOUSE_IN, rowNode);
                 this.hoveredOn = rowNode.node;
             };
             RowRenderer.prototype.getHoveredOn = function () {
@@ -7654,6 +7654,7 @@ var ag;
                 this.fullHeight = !params.north && !params.south;
                 this.deleteListener = params.deleteListener;
                 this.rowActionListener = params.rowActionListener;
+                this.getHoveredOn = params.getHoveredOn;
                 this.eventService = params.eventService;
                 this.gridOptionsWrapper = params.gridOptionsWrapper;
                 this.gridPanel = params.gridPanel;
@@ -7783,6 +7784,19 @@ var ag;
                 this.setRowOverlayRowHeight(rowOverlayHeight);
                 this.setRowOverlayRight(rightPosition);
             };
+            BorderLayout.prototype.switchExtraButton = function (rowObj) {
+                // var row = this.getOverlayRow();
+                var needToShow = (rowObj.node.data.files || []).length;
+                var buttonToSwitch = this.eGui.querySelector('#ag-action-row-download');
+                if (buttonToSwitch) {
+                    if (needToShow) {
+                        buttonToSwitch.style.display = null;
+                    }
+                    else {
+                        buttonToSwitch.style.display = 'none';
+                    }
+                }
+            };
             BorderLayout.prototype.overlayEventThrough = function (event) {
                 // relay mouse events to underlying element
                 var coordinates;
@@ -7870,7 +7884,6 @@ var ag;
                 if (atLeastOneChanged) {
                     this.fireSizeChanged();
                 }
-                // debugger
                 var rootEl = document.getElementsByClassName('ag-basic')[0];
                 var rootWidth = 600;
                 if (rootEl) {
@@ -8195,8 +8208,10 @@ var ag;
                             name: key,
                             items: selected
                         };
-                        console.log(multitoolParams);
                         that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                    },
+                    getHoveredOn: function () {
+                        return that.rowRenderer.getHoveredOn();
                     },
                     // rowDeleteListener: function(ev: Event) {
                     //     ev.preventDefault();
@@ -9911,6 +9926,7 @@ var ag;
             Events.EVENT_SELECTION_STATE_CHANGED = 'selectionStateChanged';
             Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE = 'rowsListenMouseMove';
             Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE = 'rowsStopListenMouseMove';
+            Events.EVENT_ROWS_MOUSE_IN = 'rowsMouseIn';
             Events.EVENT_DO_NOTHING = 'doNothing';
             return Events;
         })();
@@ -10261,6 +10277,10 @@ var ag;
                 eventService.addEventListener(grid.Events.EVENT_COLUMN_VISIBLE, this.onColumnChanged.bind(this));
                 eventService.addEventListener(grid.Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE, this.onRowsListenMouseMove.bind(this));
                 eventService.addEventListener(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.onRowsStopListenMouseMove.bind(this));
+                eventService.addEventListener(grid.Events.EVENT_ROWS_MOUSE_IN, this.onRowsMouseIn.bind(this));
+            };
+            Grid.prototype.onRowsMouseIn = function (rowObj) {
+                this.eRootPanel.switchExtraButton(rowObj);
             };
             Grid.prototype.onRowsListenMouseMove = function () {
                 this.rowRenderer.setListenMouseMove();

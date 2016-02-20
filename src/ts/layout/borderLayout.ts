@@ -36,6 +36,7 @@ module ag.grid {
         private overlays: any;
         private deleteListener: any;
         private rowActionListener: any;
+        private getHoveredOn: any;
         private eventService: EventService;
         private gridOptionsWrapper: GridOptionsWrapper;
         private gridPanel: GridPanel;
@@ -47,6 +48,7 @@ module ag.grid {
             this.fullHeight = !params.north && !params.south;
             this.deleteListener = params.deleteListener;
             this.rowActionListener = params.rowActionListener;
+            this.getHoveredOn = params.getHoveredOn;
             this.eventService = params.eventService;
             this.gridOptionsWrapper = params.gridOptionsWrapper;
             this.gridPanel = params.gridPanel;
@@ -206,6 +208,19 @@ module ag.grid {
             this.setRowOverlayRight(rightPosition);
         }
 
+        public switchExtraButton(rowObj) {
+            // var row = this.getOverlayRow();
+            var needToShow = (rowObj.node.data.files || []).length;
+            var buttonToSwitch = this.eGui.querySelector('#ag-action-row-download');
+            if (buttonToSwitch) {
+                if (needToShow) {
+                    buttonToSwitch.style.display = null;
+                } else {
+                    buttonToSwitch.style.display = 'none';
+                }
+            }
+        }
+
         private overlayEventThrough(event: MouseEvent) {
             // relay mouse events to underlying element
             var coordinates: any;
@@ -304,7 +319,6 @@ module ag.grid {
                 this.fireSizeChanged();
             }
 
-            // debugger
             var rootEl = document.getElementsByClassName('ag-basic')[0];
             var rootWidth = 600;
             if (rootEl) {

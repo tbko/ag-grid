@@ -287,6 +287,11 @@ module ag.grid {
             eventService.addEventListener(Events.EVENT_COLUMN_VISIBLE, this.onColumnChanged.bind(this));
             eventService.addEventListener(Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE, this.onRowsListenMouseMove.bind(this));
             eventService.addEventListener(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.onRowsStopListenMouseMove.bind(this));
+            eventService.addEventListener(Events.EVENT_ROWS_MOUSE_IN, this.onRowsMouseIn.bind(this));
+        }
+
+        private onRowsMouseIn(rowObj: any) {
+            this.eRootPanel.switchExtraButton(rowObj);
         }
 
         private onRowsListenMouseMove() {
