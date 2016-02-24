@@ -105,7 +105,7 @@ module ag.grid {
                 this.setupPanels(params);
             }
 
-            if (params.overlays) {
+            if (params.overlays && this.gridOptionsWrapper.getActionTemplate()) {
                 this.addOverlayRowZone();
             }
 
@@ -519,15 +519,22 @@ module ag.grid {
         }
 
         public setRowOverlayTop(offsetY: number): void {
-            this.eOverlayRowZoneWrapper.style.top = this.pXhelper(offsetY);
+            if (this.eOverlayRowZoneWrapper) {
+                this.eOverlayRowZoneWrapper.style.top = this.pXhelper(offsetY);
+            }
         }
 
         public setRowOverlayRight(offsetRight: number): void {
-            this.eOverlayRowZoneWrapper.style.right = this.pXhelper(offsetRight);
+            if (this.eOverlayRowZoneWrapper) {
+                this.eOverlayRowZoneWrapper.style.right = this.pXhelper(offsetRight);
+            }
         }
 
         public setRowOverlayRowHeight(height: number): void {
-            this.eOverlayRowZoneWrapper.style.height = this.pXhelper(height);
+            if (this.eOverlayRowZoneWrapper) {
+                this.eOverlayRowZoneWrapper.style.height = this.pXhelper(height);
+            }
+
         }
 
         public setSouthVisible(visible: any) {

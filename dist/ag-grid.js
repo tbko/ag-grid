@@ -7708,7 +7708,7 @@ var ag;
                 if (params) {
                     this.setupPanels(params);
                 }
-                if (params.overlays) {
+                if (params.overlays && this.gridOptionsWrapper.getActionTemplate()) {
                     this.addOverlayRowZone();
                 }
                 this.overlays = params.overlays;
@@ -8060,13 +8060,19 @@ var ag;
                 return value + "px";
             };
             BorderLayout.prototype.setRowOverlayTop = function (offsetY) {
-                this.eOverlayRowZoneWrapper.style.top = this.pXhelper(offsetY);
+                if (this.eOverlayRowZoneWrapper) {
+                    this.eOverlayRowZoneWrapper.style.top = this.pXhelper(offsetY);
+                }
             };
             BorderLayout.prototype.setRowOverlayRight = function (offsetRight) {
-                this.eOverlayRowZoneWrapper.style.right = this.pXhelper(offsetRight);
+                if (this.eOverlayRowZoneWrapper) {
+                    this.eOverlayRowZoneWrapper.style.right = this.pXhelper(offsetRight);
+                }
             };
             BorderLayout.prototype.setRowOverlayRowHeight = function (height) {
-                this.eOverlayRowZoneWrapper.style.height = this.pXhelper(height);
+                if (this.eOverlayRowZoneWrapper) {
+                    this.eOverlayRowZoneWrapper.style.height = this.pXhelper(height);
+                }
             };
             BorderLayout.prototype.setSouthVisible = function (visible) {
                 if (this.eSouthWrapper) {
