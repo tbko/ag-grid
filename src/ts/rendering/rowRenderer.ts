@@ -360,7 +360,7 @@ module ag.grid {
             } else if (maxRows === void 0 || minRows === void 0) {
                 first = 0;
                 last = rowCount;
-                // } else if (maxRows === minRows && !isGroup) {
+            // } else if (maxRows === minRows && !isGroup) {
             } else {
                 // first = Math.floor(    topPixel / ((baseHeight - verticalGap) * minRows + verticalGap) );
                 // last = Math.floor(  bottomPixel / ((baseHeight - verticalGap) * minRows + verticalGap) );
@@ -495,6 +495,8 @@ module ag.grid {
 
             var baseHeight = this.gridOptionsWrapper.getRowHeight();
             var verticalGap = 15; // top/bottom padding + borders (px) default: 15
+            var assumedRowHeghtPx = (baseHeight - verticalGap) * minRows + verticalGap;
+            // console.log('assumed height', assumedRowHeghtPx);
 
             var timing = 0;
             var timingReflow = 0;
@@ -544,7 +546,8 @@ module ag.grid {
                     } else if (rowRenderedAfter) {
                         topPx = rowRenderedAfter.getVerticalFrame().top;
                     } else {
-                        topPx = 0;
+                        // console.log('no pre or after rendered rows', linesBeforeCount);
+                        topPx = rowIndex * assumedRowHeghtPx;
                     }
                     var insertedRow = this.insertRow(node, rowIndex, mainRowWidth, linesBeforePlusRenderedCount, topPx);
                     if (rowRenderedAfter) {
