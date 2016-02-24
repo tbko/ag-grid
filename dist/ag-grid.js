@@ -3617,6 +3617,10 @@ var ag;
                     classes.push('ag-js-draghandler');
                 }
                 classes.push(this.rowIndex % 2 == 0 ? "ag-row-even" : "ag-row-odd");
+                console.log(this.node.data);
+                if (this.node.data.isParentAccepted) {
+                    classes.push('ag-row_inactive');
+                }
                 if (this.selectionController.isNodeSelected(this.node)) {
                     classes.push("ag-row-selected");
                 }
