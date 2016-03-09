@@ -682,7 +682,17 @@ module ag.grid {
         }
         
         private canDrop(sourceOrderIndex: string, destOrderIndex: string): boolean {
-            return !this.isParentByIndex(sourceOrderIndex, destOrderIndex);
+            var isDrop = this.gridOptionsWrapper.isRowDrop({
+                sourceOrderIndex: sourceOrderIndex,
+                destOrderIndex: destOrderIndex
+            });
+            if (isDrop === void 0) {
+                return (
+                    !this.isParentByIndex(sourceOrderIndex, destOrderIndex)
+                );
+            } else {
+                return isDrop;
+            }
         }
 
         private findParentRow(startEl: Element): Element {
@@ -726,7 +736,9 @@ module ag.grid {
 
             dragHandler.addEventListener('dragover', function(event: DragEvent) {
                 event.preventDefault();
+                // debugger;
                 if (that.canDrop(that.getSourceOrderIndex(), that.getOrderIndex(thisRowIndex))) {
+                    // console.log(event.offsetY);
                     event.dataTransfer.dropEffect = 'move';
                 } else {
                     event.dataTransfer.dropEffect = 'none';
@@ -844,6 +856,10 @@ module ag.grid {
                     splittedOrderNumber[level] = (parseInt(splittedOrderNumber[level]) + shift).toString();
                     return splittedOrderNumber.join('.');
                 };
+                // turn to app for server call
+                // need 2 know: 1. source id; 2. destination parent id; 3. order in new parent
+                // var sourceNodeId = that.getRenderedRows()[event.dataTransfer.getData('text')].node.data.id;
+                // var destinationNodeId = that.getRenderedRows()[event.dataTransfer.getData('text')].node.data.id;
 
                 // debugger;
                 // 1. Для элементов с порядковым номером источника и всех его дочерних элементов
@@ -960,6 +976,7 @@ module ag.grid {
                 // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
                 // debugger;
                 // that.gridOptionsWrapper.getApi().refreshPivot();
+                that.eventService.dispatchEvent(Events.EVENT_ROW_REORDER, { curNode: curNode, flatData: flatData });
 
                 event.stopPropagation();
                 event.preventDefault();

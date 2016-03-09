@@ -40,7 +40,8 @@ module ag.grid {
         widthGap: number;
         maxRows: number;
         minRows: number;
-        isRowDrug: boolean;
+        isRowDrug: any;
+        isRowDrop: any;
         metrics: any;
 
         // just set once

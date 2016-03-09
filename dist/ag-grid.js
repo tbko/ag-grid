@@ -1882,7 +1882,19 @@ var ag;
             GridOptionsWrapper.prototype.getWidthGap = function () { return this.gridOptions.widthGap; };
             GridOptionsWrapper.prototype.getMaxRows = function () { return this.gridOptions.maxRows; };
             GridOptionsWrapper.prototype.getMinRows = function () { return this.gridOptions.minRows; };
-            GridOptionsWrapper.prototype.isRowDrug = function () { return this.gridOptions.isRowDrug; };
+            GridOptionsWrapper.prototype.isRowDrug = function (options) {
+                if (options === void 0) { options = {}; }
+                if (typeof this.gridOptions.isRowDrug === 'function') {
+                    return this.gridOptions.isRowDrug(options);
+                }
+                return this.gridOptions.isRowDrug;
+            };
+            GridOptionsWrapper.prototype.isRowDrop = function (options) {
+                if (options === void 0) { options = {}; }
+                if (typeof this.gridOptions.isRowDrop === 'function') {
+                    return this.gridOptions.isRowDrop(options);
+                }
+            };
             GridOptionsWrapper.prototype.setMetrics = function (metrics) {
                 this.gridOptions.metrics = metrics;
             };
@@ -3613,7 +3625,7 @@ var ag;
             RenderedRow.prototype.addDynamicClasses = function () {
                 var classes = [];
                 classes.push('ag-row');
-                if (this.gridOptionsWrapper.isRowDrug() && this.gridOptionsWrapper.gridOptions.groupKeys && ~this.gridOptionsWrapper.gridOptions.groupKeys.indexOf('order_0')) {
+                if (this.gridOptionsWrapper.isRowDrug(this) && this.gridOptionsWrapper.gridOptions.groupKeys && ~this.gridOptionsWrapper.gridOptions.groupKeys.indexOf('order_0')) {
                     classes.push('ag-js-draghandler');
                 }
                 classes.push(this.rowIndex % 2 == 0 ? "ag-row-even" : "ag-row-odd");
@@ -4801,7 +4813,16 @@ var ag;
                 return this.rowModel.getDragSource();
             };
             RowRenderer.prototype.canDrop = function (sourceOrderIndex, destOrderIndex) {
-                return !this.isParentByIndex(sourceOrderIndex, destOrderIndex);
+                var isDrop = this.gridOptionsWrapper.isRowDrop({
+                    sourceOrderIndex: sourceOrderIndex,
+                    destOrderIndex: destOrderIndex
+                });
+                if (isDrop === void 0) {
+                    return (!this.isParentByIndex(sourceOrderIndex, destOrderIndex));
+                }
+                else {
+                    return isDrop;
+                }
             };
             RowRenderer.prototype.findParentRow = function (startEl) {
                 var rowEl = startEl;
@@ -4841,7 +4862,9 @@ var ag;
                 });
                 dragHandler.addEventListener('dragover', function (event) {
                     event.preventDefault();
+                    // debugger;
                     if (that.canDrop(that.getSourceOrderIndex(), that.getOrderIndex(thisRowIndex))) {
+                        // console.log(event.offsetY);
                         event.dataTransfer.dropEffect = 'move';
                     }
                     else {
@@ -4927,6 +4950,10 @@ var ag;
                         splittedOrderNumber[level] = (parseInt(splittedOrderNumber[level]) + shift).toString();
                         return splittedOrderNumber.join('.');
                     };
+                    // turn to app for server call
+                    // need 2 know: 1. source id; 2. destination parent id; 3. order in new parent
+                    // var sourceNodeId = that.getRenderedRows()[event.dataTransfer.getData('text')].node.data.id;
+                    // var destinationNodeId = that.getRenderedRows()[event.dataTransfer.getData('text')].node.data.id;
                     // debugger;
                     // 1. Для элементов с порядковым номером источника и всех его дочерних элементов
                     // (все элементы, имеющие префикс с номером источника в порядковом номере и следующие за ним, если есть такие)
@@ -5031,6 +5058,7 @@ var ag;
                     // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
                     // debugger;
                     // that.gridOptionsWrapper.getApi().refreshPivot();
+                    that.eventService.dispatchEvent(grid.Events.EVENT_ROW_REORDER, { curNode: curNode, flatData: flatData });
                     event.stopPropagation();
                     event.preventDefault();
                     return false;

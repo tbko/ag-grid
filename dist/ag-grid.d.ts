@@ -495,7 +495,8 @@ declare module ag.grid {
         getWidthGap(): number;
         getMaxRows(): number;
         getMinRows(): number;
-        isRowDrug(): boolean;
+        isRowDrug(options?: {}): any;
+        isRowDrop(options?: {}): any;
         setMetrics(metrics: any): void;
         getFullRowHeight(): number;
         getBaseRowHeight(): number;
@@ -1567,7 +1568,8 @@ declare module ag.grid {
         widthGap: number;
         maxRows: number;
         minRows: number;
-        isRowDrug: boolean;
+        isRowDrug: any;
+        isRowDrop: any;
         metrics: any;
         localeText?: any;
         localeTextFunc?: Function;
