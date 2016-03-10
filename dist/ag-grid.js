@@ -178,6 +178,7 @@ var ag;
                 };
             };
             Utils.reflowText = function (elText, allText) {
+                // debugger
                 var words = allText.split(' ');
                 var overflown = false;
                 if (!elText) {
@@ -191,12 +192,19 @@ var ag;
                     elText.innerHTML = text;
                 }
                 if (cutPoint < words.length) {
-                    var lastWord = words[cutPoint + 2] || words[cutPoint + 1];
+                    // var lastWord = words[cutPoint + 2] || words[cutPoint + 1]
+                    var lastWord = words[cutPoint + 1];
                     cutPoint = 0;
                     while (lastWord && cutPoint < lastWord.length && Math.abs(elText.scrollHeight - elText.clientHeight) <= 2) {
-                        elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint++) + '…';
+                        console.log(lastWord, cutPoint);
+                        elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint++) + tail;
                     }
-                    elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint - 2) + '…';
+                    if (cutPoint < 2) {
+                        elText.innerHTML = text + tail;
+                    }
+                    else {
+                        elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint - 2) + tail;
+                    }
                 }
                 // elText.innerHTML = words[0];
                 // // find the word that breaks last allowed line
