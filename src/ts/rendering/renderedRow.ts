@@ -613,7 +613,11 @@ module ag.grid {
 
             classes.push(this.rowIndex % 2 == 0 ? "ag-row-even" : "ag-row-odd");
 
-            if (this.node.data.isParentAccepted) {
+            if (this.node.data && this.node.data.order && this.node.data.order.isParent) {
+                classes.push('ag-row-group');
+            }
+
+            if (this.node.data && this.node.data.isParentAccepted) {
                 classes.push('ag-row_inactive');
             }
 
