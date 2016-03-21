@@ -359,7 +359,7 @@ var ag;
                     return destination;
                 }
                 var eventMatchers = {
-                    'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll|DOMMouseScroll)$/,
+                    'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll|wheel|DOMMouseScroll|MSPointerMove)$/,
                     'MouseEvents': /^(?:click|dblclick|mouse(?:down|up|over|move|out|enter|leave|wheel))$/
                 };
                 var defaultOptions = {
@@ -3572,6 +3572,7 @@ var ag;
                 var vRow = new ag.vdom.VHtmlElement('div');
                 var that = this;
                 function listenMove(event) {
+                    // console.log('row listen mouse move');
                     var eRoot = _.findParentWithClass(that.eBodyContainer, 'ag-root');
                     var eRowOverlay = document.querySelector('#ag-overlay-row');
                     that.rowRenderer.setHoveredOn(null);
@@ -3582,7 +3583,8 @@ var ag;
                         else {
                             // var eventTarget$('.ag-row[row="74"]')[0].parentNode.parentNode.parentNode.querySelector('.ag-body-viewport').scrollTop
                             eRowOverlay.style.display = '';
-                            eRowOverlay.style.top = that.top + "px";
+                            // console.log(that.top);
+                            eRowOverlay.style.top = (that.top - 1) + "px";
                             eRowOverlay.style.height = that.heightPX;
                             that.rowRenderer.setHoveredOn(that);
                         }
@@ -5087,7 +5089,12 @@ var ag;
                     el = allRows[k];
                     eventAction = toAllSet ? el.vBodyRow.addEventListener.bind(el.vBodyRow) : el.vBodyRow.removeEventListener.bind(el.vBodyRow);
                     if (toAllSet !== el.isListenForMove()) {
+                        // if (window.navigator.msPointerEnabled) {
+                        //     eventAction('mousemove', el.listenMoveRef);
+                        //     eventAction('MSPointerMove', el.listenMoveRef);
+                        // } else {
                         eventAction('mousemove', el.listenMoveRef);
+                        // }
                         el.isListenForMove(toAllSet);
                     }
                 }
@@ -7797,16 +7804,21 @@ var ag;
                 var rowOverlay = document.createElement('div');
                 rowOverlay.id = 'ag-overlay-row';
                 rowOverlay.className = rowOverlay.id;
+                var rowOverlayDummy = document.createTextNode('XXXX');
                 var rowOverlayZone = document.createElement('div');
                 rowOverlayZone.id = 'ag-overlay-row-zone';
                 rowOverlayZone.className = rowOverlayZone.id;
+                rowOverlayZone.appendChild(rowOverlayDummy);
                 rowOverlayZone.appendChild(rowOverlay);
                 // rowOverlayZone.style.top = `${this.gridOptionsWrapper.getFullHeaderHeight()}px`;
                 rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
+                // rowOverlayZone.addEventListener('pointerdown', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('scroll', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('mousemove', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('DOMMouseScroll', this.overlayEventThrough.bind(this));
+                rowOverlayZone.addEventListener('MSPointerMove', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('mousewheel', this.overlayEventThrough.bind(this));
+                rowOverlayZone.addEventListener('wheel', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
                 rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
                 rowOverlay.style.display = 'none';
@@ -7843,6 +7855,7 @@ var ag;
                 }
             };
             BorderLayout.prototype.overlayEventThrough = function (event) {
+                // console.dir(event);
                 // relay mouse events to underlying element
                 var coordinates;
                 event.target.style.display = 'none';
@@ -8444,6 +8457,12 @@ var ag;
                 }
                 // otherwise, col is already in view, so do nothing
             };
+            GridPanel.prototype.scrollToPx = function (topPx) {
+                this.eBodyViewport.scrollTop = topPx;
+            };
+            GridPanel.prototype.getScrollPx = function () {
+                return this.eBodyViewport.scrollTop;
+            };
             GridPanel.prototype.showLoadingOverlay = function () {
                 if (!this.gridOptionsWrapper.isSuppressLoadingOverlay()) {
                     this.layout.showOverlay('loading');
@@ -8530,6 +8549,7 @@ var ag;
                     this.eParentsOfRows = [this.eBody, this.eFloatingTop, this.eFloatingBottom];
                     // IE9, Chrome, Safari, Opera
                     this.ePinnedColsViewport.addEventListener('mousewheel', this.mouseWheelListener.bind(this));
+                    this.ePinnedColsViewport.addEventListener('wheel', this.mouseWheelListener.bind(this));
                     // Firefox
                     this.ePinnedColsViewport.addEventListener('DOMMouseScroll', this.mouseWheelListener.bind(this));
                 }
@@ -9714,6 +9734,12 @@ var ag;
             };
             GridApi.prototype.ensureNodeVisible = function (comparator) {
                 this.grid.ensureNodeVisible(comparator);
+            };
+            GridApi.prototype.scrollToPx = function (topPx) {
+                this.gridPanel.scrollToPx(topPx);
+            };
+            GridApi.prototype.getScrollPx = function () {
+                return this.gridPanel.getScrollPx();
             };
             GridApi.prototype.forEachInMemory = function (callback) {
                 console.warn('ag-Grid: please use forEachNode instead of forEachInMemory, method is same, I just renamed it, forEachInMemory is deprecated');

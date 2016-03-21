@@ -387,6 +387,15 @@ module ag.grid {
             // otherwise, col is already in view, so do nothing
         }
 
+        public scrollToPx(topPx: number) {
+
+            this.eBodyViewport.scrollTop = topPx;
+        }
+
+        public getScrollPx(): number {
+            return this.eBodyViewport.scrollTop;
+        }
+
         public showLoadingOverlay(): void {
             if (!this.gridOptionsWrapper.isSuppressLoadingOverlay()) {
                 this.layout.showOverlay('loading');
@@ -494,6 +503,7 @@ module ag.grid {
 
                 // IE9, Chrome, Safari, Opera
                 this.ePinnedColsViewport.addEventListener('mousewheel', this.mouseWheelListener.bind(this));
+                this.ePinnedColsViewport.addEventListener('wheel', this.mouseWheelListener.bind(this));
                 // Firefox
                 this.ePinnedColsViewport.addEventListener('DOMMouseScroll', this.mouseWheelListener.bind(this));
 

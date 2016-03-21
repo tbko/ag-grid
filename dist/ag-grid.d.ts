@@ -1354,6 +1354,8 @@ declare module ag.grid {
         private createToolOverlayTemplate(counterText?);
         ensureIndexVisible(index: any): void;
         ensureColIndexVisible(index: any): void;
+        scrollToPx(topPx: number): void;
+        getScrollPx(): number;
         showLoadingOverlay(): void;
         showNoRowsOverlay(): void;
         showToolOverlay(counter?: number): void;
@@ -1729,6 +1731,8 @@ declare module ag.grid {
         ensureColIndexVisible(index: any): void;
         ensureIndexVisible(index: any): void;
         ensureNodeVisible(comparator: any): void;
+        scrollToPx(topPx: number): void;
+        getScrollPx(): number;
         forEachInMemory(callback: Function): void;
         forEachNode(callback: Function): void;
         forEachNodeAfterFilter(callback: Function): void;

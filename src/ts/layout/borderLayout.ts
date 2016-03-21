@@ -162,21 +162,27 @@ module ag.grid {
             var rowOverlay = document.createElement('div');
             rowOverlay.id = 'ag-overlay-row';
             rowOverlay.className = rowOverlay.id;
+            var rowOverlayDummy = document.createTextNode('XXXX');
+
 
             var rowOverlayZone = document.createElement('div');
             rowOverlayZone.id = 'ag-overlay-row-zone';
             rowOverlayZone.className = rowOverlayZone.id;
 
+            rowOverlayZone.appendChild(rowOverlayDummy);
             rowOverlayZone.appendChild(rowOverlay);
 
             
             // rowOverlayZone.style.top = `${this.gridOptionsWrapper.getFullHeaderHeight()}px`;
 
             rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
+            // rowOverlayZone.addEventListener('pointerdown', this.overlayEventThrough.bind(this));
             rowOverlayZone.addEventListener('scroll', this.overlayEventThrough.bind(this));
             rowOverlayZone.addEventListener('mousemove', this.overlayEventThrough.bind(this));
             rowOverlayZone.addEventListener('DOMMouseScroll', this.overlayEventThrough.bind(this));
+            rowOverlayZone.addEventListener('MSPointerMove', this.overlayEventThrough.bind(this));
             rowOverlayZone.addEventListener('mousewheel', this.overlayEventThrough.bind(this));
+            rowOverlayZone.addEventListener('wheel', this.overlayEventThrough.bind(this));
 
 
             rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
@@ -222,6 +228,7 @@ module ag.grid {
         }
 
         private overlayEventThrough(event: MouseEvent) {
+            // console.dir(event);
             // relay mouse events to underlying element
             var coordinates: any;
             (<HTMLElement>event.target).style.display = 'none';

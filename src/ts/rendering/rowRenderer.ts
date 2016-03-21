@@ -996,7 +996,12 @@ module ag.grid {
                 el = allRows[k];
                 eventAction = toAllSet ? el.vBodyRow.addEventListener.bind(el.vBodyRow) : el.vBodyRow.removeEventListener.bind(el.vBodyRow);
                 if (toAllSet !== el.isListenForMove()) {
+                    // if (window.navigator.msPointerEnabled) {
+                    //     eventAction('mousemove', el.listenMoveRef);
+                    //     eventAction('MSPointerMove', el.listenMoveRef);
+                    // } else {
                     eventAction('mousemove', el.listenMoveRef);
+                    // }
                     el.isListenForMove(toAllSet);
                 }
             };
