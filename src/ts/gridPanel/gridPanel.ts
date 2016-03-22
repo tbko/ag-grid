@@ -62,7 +62,7 @@ module ag.grid {
         private eventService: EventService;
         private gridOptionsWrapper: GridOptionsWrapper;
         private columnModel: ColumnController;
-        private rowRenderer: RowRenderer;
+        public rowRenderer: RowRenderer;
         private rowModel: any;
 
         private layout: BorderLayout;
@@ -145,7 +145,7 @@ module ag.grid {
                 rowActionListener: function(ev: Event, key: string) {
                     ev.preventDefault();
 
-                    var selected = [that.rowRenderer.getHoveredOn()];
+                    var selected = [that.rowRenderer.getHoveredOn().node];
                     var multitoolParams = {
                         name: key,
                         items: selected

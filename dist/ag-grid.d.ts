@@ -848,6 +848,7 @@ declare module ag.grid {
         private eFloatingBottomPinnedContainer;
         private eParentsOfRows;
         private hoveredOn;
+        isListenMouseMove: boolean;
         private isSingleRow;
         private numberOfLinesCalculated;
         private beforeCalculatedHeight;
@@ -1316,7 +1317,7 @@ declare module ag.grid {
         private eventService;
         private gridOptionsWrapper;
         private columnModel;
-        private rowRenderer;
+        rowRenderer: RowRenderer;
         private rowModel;
         private layout;
         private forPrint;

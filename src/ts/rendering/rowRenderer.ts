@@ -47,6 +47,7 @@ module ag.grid {
         private eParentsOfRows: HTMLElement[];
 
         private hoveredOn: any;
+        public isListenMouseMove: boolean;
         private isSingleRow: boolean;
         private numberOfLinesCalculated: number;
         private beforeCalculatedHeight: number;
@@ -76,6 +77,7 @@ module ag.grid {
             this.findAllElements(gridPanel);
             this.eventService = eventService;
             this.hoveredOn = undefined;
+            this.isListenMouseMove = false;
             this.isSingleRow = true;
             this.numberOfLinesCalculated = 0;
             this.beforeCalculatedHeight = 0;
@@ -992,6 +994,9 @@ module ag.grid {
             var eventAction: Function;
             var allRows = this.renderedRows;
             var el: RenderedRow;
+
+            this.isListenMouseMove = toAllSet;
+
             for (var k in allRows) {
                 el = allRows[k];
                 eventAction = toAllSet ? el.vBodyRow.addEventListener.bind(el.vBodyRow) : el.vBodyRow.removeEventListener.bind(el.vBodyRow);
@@ -1011,7 +1016,7 @@ module ag.grid {
             if (rowNode === null || rowNode === void 0 || !rowNode.node)
                 return;
             this.eventService.dispatchEvent(Events.EVENT_ROWS_MOUSE_IN, rowNode);
-            this.hoveredOn = rowNode.node;
+            this.hoveredOn = rowNode;
         }
 
         public getHoveredOn(): any {

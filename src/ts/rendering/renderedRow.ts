@@ -533,9 +533,11 @@ module ag.grid {
             var that = this;
 
             function listenMove(event: any) {
-                // console.log('row listen mouse move');
                 var eRoot:HTMLElement = _.findParentWithClass(that.eBodyContainer, 'ag-root');
                 var eRowOverlay:HTMLElement = <HTMLElement>document.querySelector('#ag-overlay-row');
+
+                // event.stopPropagation();
+                // event.preventDefault();
 
                 that.rowRenderer.setHoveredOn(null);
 
@@ -543,10 +545,9 @@ module ag.grid {
                     if (that.node.group) {
                         eRowOverlay.style.display = 'none';
                     } else {
-                        // var eventTarget$('.ag-row[row="74"]')[0].parentNode.parentNode.parentNode.querySelector('.ag-body-viewport').scrollTop
                         eRowOverlay.style.display = '';
-                        // console.log(that.top);
-                        eRowOverlay.style.top = `${that.top - 1}px`;
+
+                        eRowOverlay.style.top = `${that.vBodyRow.element.offsetTop - that.eBodyContainer.parentElement.scrollTop - 1}px`;
                         eRowOverlay.style.height = that.heightPX;
                         that.rowRenderer.setHoveredOn(that);
                     }
@@ -555,6 +556,7 @@ module ag.grid {
                 that.rowRenderer.setListenMouseMove();
                 that.isListenMove = false;
                 that.vBodyRow.getElement().removeEventListener('mousemove', listenMove);
+
             }
             this.listenMoveRef = listenMove;
             this.isListenMove = false;

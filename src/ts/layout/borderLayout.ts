@@ -162,14 +162,11 @@ module ag.grid {
             var rowOverlay = document.createElement('div');
             rowOverlay.id = 'ag-overlay-row';
             rowOverlay.className = rowOverlay.id;
-            var rowOverlayDummy = document.createTextNode('XXXX');
-
 
             var rowOverlayZone = document.createElement('div');
             rowOverlayZone.id = 'ag-overlay-row-zone';
             rowOverlayZone.className = rowOverlayZone.id;
 
-            rowOverlayZone.appendChild(rowOverlayDummy);
             rowOverlayZone.appendChild(rowOverlay);
 
             
@@ -179,6 +176,8 @@ module ag.grid {
             // rowOverlayZone.addEventListener('pointerdown', this.overlayEventThrough.bind(this));
             rowOverlayZone.addEventListener('scroll', this.overlayEventThrough.bind(this));
             rowOverlayZone.addEventListener('mousemove', this.overlayEventThrough.bind(this));
+            rowOverlayZone.addEventListener('mouseup', this.overlayEventThrough.bind(this));
+            rowOverlayZone.addEventListener('mousedown', this.overlayEventThrough.bind(this));
             rowOverlayZone.addEventListener('DOMMouseScroll', this.overlayEventThrough.bind(this));
             rowOverlayZone.addEventListener('MSPointerMove', this.overlayEventThrough.bind(this));
             rowOverlayZone.addEventListener('mousewheel', this.overlayEventThrough.bind(this));
@@ -196,21 +195,36 @@ module ag.grid {
 
         public positionOverlayRowZone(offsetTopY: number) {
 
-            var eBodyViewport = this.gridPanel.getBodyContainer();
             var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
-            var rowOverlayOffset = headerHeight - offsetTopY;
-            // var rowOverlayOffset = headerHeight;
-            var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
-            // console.log(offsetTopY);
-            // console.log(eBodyViewport.clientHeight);
-            // console.log(offsetTopY + eBodyViewport.clientHeight);
-            // console.log('***');
+            var eBodyViewport = this.gridPanel.getBodyContainer().parentElement;
+
+            var rowsInView = this.gridPanel.rowRenderer.getRenderedRows();
+            var rowKeys = Object.keys(rowsInView);
+            var rowsInViewIdx = Math.max.apply(null, rowKeys);
+            var visibleHeight = eBodyViewport.clientHeight;
+
+            var curRow: RenderedRow;
+            var curRowEl: HTMLElement;
+            var curRowBottomPx = 0;
 
             var rightGap = this.gridPanel.getRightGap();
-            var rightPosition = rightGap > 0 ? rightGap : 18;
+            var rightPosition = eBodyViewport.offsetWidth - eBodyViewport.clientWidth + (rightGap > 0 ? rightGap : 0);
 
-            this.setRowOverlayTop(rowOverlayOffset);
-            this.setRowOverlayRowHeight(rowOverlayHeight);            
+            while (rowsInViewIdx) {
+                curRow = rowsInView[rowsInViewIdx]
+                if (!curRow || !curRow.vBodyRow) break;
+                curRowEl = curRow.vBodyRow.element;
+                curRowBottomPx = curRowEl.offsetTop - eBodyViewport.scrollTop + curRowEl.offsetHeight;
+                if ( curRowBottomPx <= visibleHeight + 1) break;
+                rowsInViewIdx--;
+            }
+
+            var rowUnderCursor = this.getHoveredOn();
+            if (rowUnderCursor && this.gridPanel.rowRenderer.isListenMouseMove) rowUnderCursor.listenMoveRef();
+
+
+            this.setRowOverlayTop(headerHeight);
+            this.setRowOverlayRowHeight(curRowBottomPx);            
             this.setRowOverlayRight(rightPosition);
         }
 
@@ -228,7 +242,6 @@ module ag.grid {
         }
 
         private overlayEventThrough(event: MouseEvent) {
-            // console.dir(event);
             // relay mouse events to underlying element
             var coordinates: any;
             (<HTMLElement>event.target).style.display = 'none';
@@ -239,7 +252,6 @@ module ag.grid {
                 }
             }
             var underEl = document.elementFromPoint(event.clientX, event.clientY);
-            // console.log(underEl);
             if (underEl) _.simulateEvent((<HTMLElement>underEl), event.type, coordinates);
             (<HTMLElement>event.target).style.display = '';
         }

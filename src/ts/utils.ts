@@ -302,7 +302,7 @@ module ag.grid {
             }
 
             var eventMatchers:any = {
-                'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll|wheel|DOMMouseScroll|MSPointerMove)$/,
+                'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll|wheel|DOMMouseScroll|MSPointerMove|pointermove)$/,
                 'MouseEvents': /^(?:click|dblclick|mouse(?:down|up|over|move|out|enter|leave|wheel))$/
             }
 

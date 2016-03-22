@@ -359,7 +359,7 @@ var ag;
                     return destination;
                 }
                 var eventMatchers = {
-                    'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll|wheel|DOMMouseScroll|MSPointerMove)$/,
+                    'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll|wheel|DOMMouseScroll|MSPointerMove|pointermove)$/,
                     'MouseEvents': /^(?:click|dblclick|mouse(?:down|up|over|move|out|enter|leave|wheel))$/
                 };
                 var defaultOptions = {
@@ -3572,19 +3572,18 @@ var ag;
                 var vRow = new ag.vdom.VHtmlElement('div');
                 var that = this;
                 function listenMove(event) {
-                    // console.log('row listen mouse move');
                     var eRoot = _.findParentWithClass(that.eBodyContainer, 'ag-root');
                     var eRowOverlay = document.querySelector('#ag-overlay-row');
+                    // event.stopPropagation();
+                    // event.preventDefault();
                     that.rowRenderer.setHoveredOn(null);
                     if (that.node) {
                         if (that.node.group) {
                             eRowOverlay.style.display = 'none';
                         }
                         else {
-                            // var eventTarget$('.ag-row[row="74"]')[0].parentNode.parentNode.parentNode.querySelector('.ag-body-viewport').scrollTop
                             eRowOverlay.style.display = '';
-                            // console.log(that.top);
-                            eRowOverlay.style.top = (that.top - 1) + "px";
+                            eRowOverlay.style.top = (that.vBodyRow.element.offsetTop - that.eBodyContainer.parentElement.scrollTop - 1) + "px";
                             eRowOverlay.style.height = that.heightPX;
                             that.rowRenderer.setHoveredOn(that);
                         }
@@ -4326,6 +4325,7 @@ var ag;
                 this.findAllElements(gridPanel);
                 this.eventService = eventService;
                 this.hoveredOn = undefined;
+                this.isListenMouseMove = false;
                 this.isSingleRow = true;
                 this.numberOfLinesCalculated = 0;
                 this.beforeCalculatedHeight = 0;
@@ -5085,6 +5085,7 @@ var ag;
                 var eventAction;
                 var allRows = this.renderedRows;
                 var el;
+                this.isListenMouseMove = toAllSet;
                 for (var k in allRows) {
                     el = allRows[k];
                     eventAction = toAllSet ? el.vBodyRow.addEventListener.bind(el.vBodyRow) : el.vBodyRow.removeEventListener.bind(el.vBodyRow);
@@ -5104,7 +5105,7 @@ var ag;
                 if (rowNode === null || rowNode === void 0 || !rowNode.node)
                     return;
                 this.eventService.dispatchEvent(grid.Events.EVENT_ROWS_MOUSE_IN, rowNode);
-                this.hoveredOn = rowNode.node;
+                this.hoveredOn = rowNode;
             };
             RowRenderer.prototype.getHoveredOn = function () {
                 return this.hoveredOn;
@@ -7804,17 +7805,17 @@ var ag;
                 var rowOverlay = document.createElement('div');
                 rowOverlay.id = 'ag-overlay-row';
                 rowOverlay.className = rowOverlay.id;
-                var rowOverlayDummy = document.createTextNode('XXXX');
                 var rowOverlayZone = document.createElement('div');
                 rowOverlayZone.id = 'ag-overlay-row-zone';
                 rowOverlayZone.className = rowOverlayZone.id;
-                rowOverlayZone.appendChild(rowOverlayDummy);
                 rowOverlayZone.appendChild(rowOverlay);
                 // rowOverlayZone.style.top = `${this.gridOptionsWrapper.getFullHeaderHeight()}px`;
                 rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
                 // rowOverlayZone.addEventListener('pointerdown', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('scroll', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('mousemove', this.overlayEventThrough.bind(this));
+                rowOverlayZone.addEventListener('mouseup', this.overlayEventThrough.bind(this));
+                rowOverlayZone.addEventListener('mousedown', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('DOMMouseScroll', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('MSPointerMove', this.overlayEventThrough.bind(this));
                 rowOverlayZone.addEventListener('mousewheel', this.overlayEventThrough.bind(this));
@@ -7826,19 +7827,32 @@ var ag;
                 this.eOverlayRowZoneWrapper = rowOverlayZone;
             };
             BorderLayout.prototype.positionOverlayRowZone = function (offsetTopY) {
-                var eBodyViewport = this.gridPanel.getBodyContainer();
                 var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
-                var rowOverlayOffset = headerHeight - offsetTopY;
-                // var rowOverlayOffset = headerHeight;
-                var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
-                // console.log(offsetTopY);
-                // console.log(eBodyViewport.clientHeight);
-                // console.log(offsetTopY + eBodyViewport.clientHeight);
-                // console.log('***');
+                var eBodyViewport = this.gridPanel.getBodyContainer().parentElement;
+                var rowsInView = this.gridPanel.rowRenderer.getRenderedRows();
+                var rowKeys = Object.keys(rowsInView);
+                var rowsInViewIdx = Math.max.apply(null, rowKeys);
+                var visibleHeight = eBodyViewport.clientHeight;
+                var curRow;
+                var curRowEl;
+                var curRowBottomPx = 0;
                 var rightGap = this.gridPanel.getRightGap();
-                var rightPosition = rightGap > 0 ? rightGap : 18;
-                this.setRowOverlayTop(rowOverlayOffset);
-                this.setRowOverlayRowHeight(rowOverlayHeight);
+                var rightPosition = eBodyViewport.offsetWidth - eBodyViewport.clientWidth + (rightGap > 0 ? rightGap : 0);
+                while (rowsInViewIdx) {
+                    curRow = rowsInView[rowsInViewIdx];
+                    if (!curRow || !curRow.vBodyRow)
+                        break;
+                    curRowEl = curRow.vBodyRow.element;
+                    curRowBottomPx = curRowEl.offsetTop - eBodyViewport.scrollTop + curRowEl.offsetHeight;
+                    if (curRowBottomPx <= visibleHeight + 1)
+                        break;
+                    rowsInViewIdx--;
+                }
+                var rowUnderCursor = this.getHoveredOn();
+                if (rowUnderCursor && this.gridPanel.rowRenderer.isListenMouseMove)
+                    rowUnderCursor.listenMoveRef();
+                this.setRowOverlayTop(headerHeight);
+                this.setRowOverlayRowHeight(curRowBottomPx);
                 this.setRowOverlayRight(rightPosition);
             };
             BorderLayout.prototype.switchExtraButton = function (rowObj) {
@@ -7855,7 +7869,6 @@ var ag;
                 }
             };
             BorderLayout.prototype.overlayEventThrough = function (event) {
-                // console.dir(event);
                 // relay mouse events to underlying element
                 var coordinates;
                 event.target.style.display = 'none';
@@ -7866,7 +7879,6 @@ var ag;
                     };
                 }
                 var underEl = document.elementFromPoint(event.clientX, event.clientY);
-                // console.log(underEl);
                 if (underEl)
                     _.simulateEvent(underEl, event.type, coordinates);
                 event.target.style.display = '';
@@ -8267,7 +8279,7 @@ var ag;
                     },
                     rowActionListener: function (ev, key) {
                         ev.preventDefault();
-                        var selected = [that.rowRenderer.getHoveredOn()];
+                        var selected = [that.rowRenderer.getHoveredOn().node];
                         var multitoolParams = {
                             name: key,
                             items: selected
@@ -8631,6 +8643,8 @@ var ag;
                 }
             };
             GridPanel.prototype.sizeHeaderAndBodyNormal = function () {
+                console.log(this.eBody);
+                console.log(this.eBodyContainer);
                 var heightOfContainer = this.layout.getCentreHeight();
                 if (!heightOfContainer) {
                     return;
