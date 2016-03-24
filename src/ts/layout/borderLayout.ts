@@ -23,6 +23,12 @@ module ag.grid {
         private eWestChildLayout: any;
         private eCenterChildLayout: any;
 
+        private rootEl: HTMLElement;
+        private containerPinnedEl: HTMLElement;
+        private containerBodyEl: HTMLElement;
+        private viewportBodyEl: HTMLElement;
+        private headerEl: HTMLElement;
+
         private isLayoutPanel: any;
         private fullHeight: any;
         private layoutActive: any;
@@ -57,10 +63,10 @@ module ag.grid {
             if (!params.dontFill) {
                 if (this.fullHeight) {
                     template =
-                        '<div style="height: 100%; overflow: auto; position: relative;">' +
+                        '<div style="height: 100%; position: relative;">' +
                         '<div id="west" style="height: 100%; float: left;"></div>' +
                         '<div id="east" style="height: 100%; float: right;"></div>' +
-                        '<div id="center" style="height: 100%;"></div>' +
+                        '<div id="centerA" style="height: 100%;"></div>' +
                         '<div id="overlay" class="ag-overlay"></div>' +
                         '</div>';
                 } else {
@@ -70,7 +76,7 @@ module ag.grid {
                         '<div id="centerRow" style="height: 100%; overflow: hidden;">' +
                         '<div id="west" style="height: 100%; float: left;"></div>' +
                         '<div id="east" style="height: 100%; float: right;"></div>' +
-                        '<div id="center" style="height: 100%;"></div>' +
+                        '<div id="centerB" style="height: 100%;"></div>' +
                         '</div>' +
                         '<div id="south"></div>' +
                         '<div id="overlay" class="ag-overlay"></div>' +
@@ -84,7 +90,7 @@ module ag.grid {
                     '<div id="centerRow">' +
                     '<div id="west"></div>' +
                     '<div id="east"></div>' +
-                    '<div id="center"></div>' +
+                    '<div id="centerC"></div>' +
                     '</div>' +
                     '<div id="south"></div>' +
                     '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
@@ -145,7 +151,7 @@ module ag.grid {
             this.eSouthWrapper = this.eGui.querySelector('#south');
             this.eEastWrapper = this.eGui.querySelector('#east');
             this.eWestWrapper = this.eGui.querySelector('#west');
-            this.eCenterWrapper = this.eGui.querySelector('#center');
+            this.eCenterWrapper = this.eGui.querySelector('#centerA') || this.eGui.querySelector('#centerB') || this.eGui.querySelector('#centerC');
             this.eOverlayWrapper = this.eGui.querySelector('#overlay');
             this.eCenterRow = this.eGui.querySelector('#centerRow');
 
@@ -155,7 +161,13 @@ module ag.grid {
             this.eWestChildLayout = this.setupPanel(params.west, this.eWestWrapper);
             this.eCenterChildLayout = this.setupPanel(params.center, this.eCenterWrapper);
 
-
+            this.rootEl = this.gridPanel ? this.gridPanel.getRoot() : null;
+            if (this.rootEl) {
+                this.containerPinnedEl = <HTMLElement>this.rootEl.getElementsByClassName('ag-pinned-cols-container')[0];
+                this.viewportBodyEl = <HTMLElement>this.rootEl.getElementsByClassName('ag-body-viewport')[0];
+                this.containerBodyEl = <HTMLElement>this.rootEl.getElementsByClassName('ag-body-container')[0];
+                this.headerEl = <HTMLElement>this.rootEl.getElementsByClassName('ag-header')[0];
+            }
         }
 
         private addOverlayRowZone(): void {
@@ -193,7 +205,8 @@ module ag.grid {
 
         }
 
-        public positionOverlayRowZone(offsetTopY: number) {
+        public positionOverlayRowZone() {
+            if (!this.gridOptionsWrapper) return;
 
             var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
             var eBodyViewport = this.gridPanel.getBodyContainer().parentElement;
@@ -207,8 +220,8 @@ module ag.grid {
             var curRowEl: HTMLElement;
             var curRowBottomPx = 0;
 
-            var rightGap = this.gridPanel.getRightGap();
-            var rightPosition = eBodyViewport.offsetWidth - eBodyViewport.clientWidth + (rightGap > 0 ? rightGap : 0);
+            var rightGap = this.getScrollWidth();
+            var rightPosition = rightGap > 0 ? rightGap : 0;
 
             while (rowsInViewIdx) {
                 curRow = rowsInView[rowsInViewIdx]
@@ -302,8 +315,14 @@ module ag.grid {
             return this.eGui;
         }
 
+        private getScrollWidth(): number {
+            var el = this.viewportBodyEl;
+            return el.getBoundingClientRect().width - el.clientWidth;
+        }
+
         // returns true if any item changed size, otherwise returns false
         public doLayout() {
+
 
             if (!_.isVisible(this.eGui)) {
                 return false;
@@ -338,14 +357,27 @@ module ag.grid {
                 this.fireSizeChanged();
             }
 
-            var rootEl = document.getElementsByClassName('ag-basic')[0];
-            var rootWidth = 600;
-            if (rootEl) {
-                rootWidth = rootEl.offsetWidth + 'px';
+            if (this.rootEl) {
+                var lastHeaderEl = <HTMLElement>this.rootEl.querySelector('.ag-header-container .ag-header-cell:last-child');
+                var scrollWidth = this.getScrollWidth();
+                
+                if (scrollWidth) {
+                    lastHeaderEl.style.width = (this.headerEl.offsetWidth - lastHeaderEl.offsetLeft) + 'px';
+                }
+                // console.log(
+                //     this.gridPanel.getRootPanel()
+                // );
+                // console.log(
+                //     this
+                // );
+                var rootWidth = Math.min(
+                    this.containerBodyEl.offsetWidth + this.containerPinnedEl.offsetWidth + scrollWidth,
+                    this.gridPanel.getRootPanel().offsetWidth
+                ) + 'px';
+
+                this.eGui.style.width = rootWidth;
+                this.positionOverlayRowZone();
             }
-            this.eGui.style.width = rootWidth;
-            // this.eGui.style.width = '1300px';
-            // debugger;
 
             return atLeastOneChanged;
         }
@@ -387,7 +419,13 @@ module ag.grid {
             var northHeight = _.offsetHeight(this.eNorthWrapper);
             var southHeight = _.offsetHeight(this.eSouthWrapper);
 
+            var insertionPointEl = <HTMLElement>document.getElementById(this.gridPanel.getId());
+            var compStyleInsertEl = window.getComputedStyle(insertionPointEl);
+
             var centerHeight = totalHeight - northHeight - southHeight;
+            if (compStyleInsertEl.display !== 'flex') {
+                centerHeight = parseInt(compStyleInsertEl.height);
+            }
             if (centerHeight < 0) {
                 centerHeight = 0;
             }
@@ -471,6 +509,19 @@ module ag.grid {
             // `;
             return this.getOverlayRowWrapper(template.join(''));
         }
+
+    // <div class="k-visible pi-dropdown-options btn-group k-action-elem_more" >
+    //     <span class="b-options-btn dropdown-toggle" data- toggle="dropdown" data- hover="dropdown" aria- expanded="true" >...</span>
+    //         <ul class="dropdown-menu">
+    //             <li>
+    //             <a class="link-icon link-message k-visible  k-action-elem js-work-message"  href= "\\#" >
+    //                 <span class="content-center" >На согласование</span>
+    //             </a >
+    //             </li>
+    //         </ul>
+    // </div>
+
+
 
         public showOverlayRow() {
             if (this.eOverlayRowZoneWrapper === void 0) return;

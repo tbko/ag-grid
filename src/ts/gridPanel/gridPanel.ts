@@ -92,8 +92,10 @@ module ag.grid {
         private eFloatingBottomContainer: HTMLElement;
 
         private eOverlayRow: HTMLElement;
+        private grid: Grid;
 
-        public init(gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService) {
+        public init(grid: Grid, gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService) {
+            this.grid = grid;
             this.gridOptionsWrapper = gridOptionsWrapper;
             this.eventService = eventService;
             // makes code below more readable if we pull 'forPrint' out
@@ -105,6 +107,7 @@ module ag.grid {
             this.rowRenderer = rowRenderer;
             this.masterSlaveService = masterSlaveService;
             this.sizeHeaderAndBody();
+
         }
 
         public getLayout(): BorderLayout {
@@ -223,9 +226,7 @@ module ag.grid {
         }
 
         public initRowOverlay() {
-            this.layout.positionOverlayRowZone(
-                this.eBodyViewport.scrollTop || 0
-            );
+            this.layout.positionOverlayRowZone();
         }
 
         public getPinnedFloatingTop(): HTMLElement {
@@ -459,6 +460,16 @@ module ag.grid {
             return this.eRoot;
         }
 
+        public getId() {
+            if (!this.grid) return;
+            return this.grid.getId();
+        }
+
+        public getRootPanel() {
+            if (!this.grid) return;
+            return this.grid.getRootPanel();
+        }
+
         public getPinnedHeader() {
             return this.ePinnedHeader;
         }
@@ -511,8 +522,8 @@ module ag.grid {
         }
 
         public getRightGap(): number {
-            // return this.eHeader.clientWidth - this.eHeaderContainer.clientWidth - this.ePinnedHeader.clientWidth;
-            return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
+            // return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
+            return 0;
         }
 
         private mouseWheelListener(event: any): boolean {
@@ -669,7 +680,7 @@ module ag.grid {
 
                 this.masterSlaveService.fireHorizontalScrollEvent(newLeftPosition);
 
-                this.layout.positionOverlayRowZone(newTopPosition);
+                this.layout.positionOverlayRowZone();
             });
 
             this.ePinnedColsViewport.addEventListener('scroll', () => {

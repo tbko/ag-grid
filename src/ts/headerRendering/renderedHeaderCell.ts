@@ -227,6 +227,9 @@ module ag.grid {
 
             if (this.headerElements.frame) {
                 this.eHeaderCell.appendChild(headerCellLabel);
+                // if (!this.headerElements.last) {
+                //     this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
+                // }
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
             } else {
                 this.eHeaderCell = headerCellLabel;

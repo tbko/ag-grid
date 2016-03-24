@@ -1246,6 +1246,11 @@ declare module ag.grid {
         private eEastChildLayout;
         private eWestChildLayout;
         private eCenterChildLayout;
+        private rootEl;
+        private containerPinnedEl;
+        private containerBodyEl;
+        private viewportBodyEl;
+        private headerEl;
         private isLayoutPanel;
         private fullHeight;
         private layoutActive;
@@ -1269,13 +1274,14 @@ declare module ag.grid {
         fireSizeChanged(): void;
         private setupPanels(params);
         private addOverlayRowZone();
-        positionOverlayRowZone(offsetTopY: number): void;
+        positionOverlayRowZone(): void;
         switchExtraButton(rowObj: any): void;
         private overlayEventThrough(event);
         private rowOverlayLeaveListener(event);
         private rowOverlayEnterListener(event);
         private setupPanel(content, ePanel);
         getGui(): any;
+        private getScrollWidth();
         doLayout(): boolean;
         private layoutChild(childPanel);
         private layoutHeight();
@@ -1341,7 +1347,8 @@ declare module ag.grid {
         private ePinnedFloatingBottom;
         private eFloatingBottomContainer;
         private eOverlayRow;
-        init(gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService): void;
+        private grid;
+        init(grid: Grid, gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService): void;
         getLayout(): BorderLayout;
         private setupComponents();
         initRowOverlay(): void;
@@ -1369,6 +1376,8 @@ declare module ag.grid {
         getPinnedColsContainer(): HTMLElement;
         getHeaderContainer(): HTMLElement;
         getRoot(): HTMLElement;
+        getId(): string;
+        getRootPanel(): HTMLElement;
         getPinnedHeader(): HTMLElement;
         getRowsParent(): HTMLElement[];
         private queryHtmlElement(selector);
@@ -1887,6 +1896,7 @@ declare module ag.grid {
         private addWindowResizeListener();
         getRowModel(): any;
         getId(): string;
+        getRootPanel(): HTMLElement;
         private periodicallyDoLayout();
         private setupComponents($scope, $compile, eUserProvidedDiv, globalEventListener);
         private onRowsMouseIn(rowObj);

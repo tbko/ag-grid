@@ -142,6 +142,11 @@ module ag.grid {
             return this.eUserProvidedDiv.id
         }
 
+        public getRootPanel(): HTMLElement {
+            if (!this.eRootPanel) return;
+            return this.eRootPanel.getGui();
+        }
+
         private periodicallyDoLayout() {
             if (!this.finished) {
                 var that = this;
@@ -184,7 +189,7 @@ module ag.grid {
 
             dragAndDropService.init(loggerFactory);
             eventService.init(loggerFactory);
-            gridPanel.init(gridOptionsWrapper, columnController, rowRenderer, masterSlaveService, eventService);
+            gridPanel.init(this, gridOptionsWrapper, columnController, rowRenderer, masterSlaveService, eventService);
             templateService.init($scope);
             expressionService.init(loggerFactory);
             selectionController.init(this, gridPanel, gridOptionsWrapper, $scope, rowRenderer, eventService);
@@ -257,7 +262,8 @@ module ag.grid {
                 east: toolPanelLayout,
                 south: paginationGui,
                 dontFill: gridOptionsWrapper.isForPrint(),
-                name: 'eRootPanel'
+                name: 'eRootPanel',
+                gridPanel: this.gridPanel
             });
             popupService.init(this.eRootPanel.getGui());
 

@@ -6432,7 +6432,9 @@ var ag;
             };
             HeaderRenderer.prototype.insertHeadersWithoutGrouping = function () {
                 var _this = this;
-                this.columnController.getDisplayedColumns().forEach(function (column) {
+                var displayedColumns = this.columnController.getDisplayedColumns();
+                var lastIndex = displayedColumns.length - 1;
+                displayedColumns.forEach(function (column, idx) {
                     // only include the first x cols
                     var headerCellRenderer = grid.RenderedHeaderCell;
                     if (column.colDef.checkboxSelection) {
@@ -6444,6 +6446,7 @@ var ag;
                         'sort': true,
                         'freeze': true,
                         'resize': true,
+                        'last': idx == lastIndex,
                         'drag': !column.colDef.noDrag
                     }, null, _this.gridOptionsWrapper, _this.$scope, _this.filterManager, _this.columnController, _this.$compile, _this.angularGrid, _this.eRoot, _this.popupService);
                     _this.headerElements.push(renderedHeaderCell);
@@ -7715,10 +7718,10 @@ var ag;
                 if (!params.dontFill) {
                     if (this.fullHeight) {
                         template =
-                            '<div style="height: 100%; overflow: auto; position: relative;">' +
+                            '<div style="height: 100%; position: relative;">' +
                                 '<div id="west" style="height: 100%; float: left;"></div>' +
                                 '<div id="east" style="height: 100%; float: right;"></div>' +
-                                '<div id="center" style="height: 100%;"></div>' +
+                                '<div id="centerA" style="height: 100%;"></div>' +
                                 '<div id="overlay" class="ag-overlay"></div>' +
                                 '</div>';
                     }
@@ -7729,7 +7732,7 @@ var ag;
                                 '<div id="centerRow" style="height: 100%; overflow: hidden;">' +
                                 '<div id="west" style="height: 100%; float: left;"></div>' +
                                 '<div id="east" style="height: 100%; float: right;"></div>' +
-                                '<div id="center" style="height: 100%;"></div>' +
+                                '<div id="centerB" style="height: 100%;"></div>' +
                                 '</div>' +
                                 '<div id="south"></div>' +
                                 '<div id="overlay" class="ag-overlay"></div>' +
@@ -7744,7 +7747,7 @@ var ag;
                             '<div id="centerRow">' +
                             '<div id="west"></div>' +
                             '<div id="east"></div>' +
-                            '<div id="center"></div>' +
+                            '<div id="centerC"></div>' +
                             '</div>' +
                             '<div id="south"></div>' +
                             '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
@@ -7792,7 +7795,7 @@ var ag;
                 this.eSouthWrapper = this.eGui.querySelector('#south');
                 this.eEastWrapper = this.eGui.querySelector('#east');
                 this.eWestWrapper = this.eGui.querySelector('#west');
-                this.eCenterWrapper = this.eGui.querySelector('#center');
+                this.eCenterWrapper = this.eGui.querySelector('#centerA') || this.eGui.querySelector('#centerB') || this.eGui.querySelector('#centerC');
                 this.eOverlayWrapper = this.eGui.querySelector('#overlay');
                 this.eCenterRow = this.eGui.querySelector('#centerRow');
                 this.eNorthChildLayout = this.setupPanel(params.north, this.eNorthWrapper);
@@ -7800,6 +7803,13 @@ var ag;
                 this.eEastChildLayout = this.setupPanel(params.east, this.eEastWrapper);
                 this.eWestChildLayout = this.setupPanel(params.west, this.eWestWrapper);
                 this.eCenterChildLayout = this.setupPanel(params.center, this.eCenterWrapper);
+                this.rootEl = this.gridPanel ? this.gridPanel.getRoot() : null;
+                if (this.rootEl) {
+                    this.containerPinnedEl = this.rootEl.getElementsByClassName('ag-pinned-cols-container')[0];
+                    this.viewportBodyEl = this.rootEl.getElementsByClassName('ag-body-viewport')[0];
+                    this.containerBodyEl = this.rootEl.getElementsByClassName('ag-body-container')[0];
+                    this.headerEl = this.rootEl.getElementsByClassName('ag-header')[0];
+                }
             };
             BorderLayout.prototype.addOverlayRowZone = function () {
                 var rowOverlay = document.createElement('div');
@@ -7826,7 +7836,9 @@ var ag;
                 this.eOverlayRowWrapper = rowOverlay;
                 this.eOverlayRowZoneWrapper = rowOverlayZone;
             };
-            BorderLayout.prototype.positionOverlayRowZone = function (offsetTopY) {
+            BorderLayout.prototype.positionOverlayRowZone = function () {
+                if (!this.gridOptionsWrapper)
+                    return;
                 var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
                 var eBodyViewport = this.gridPanel.getBodyContainer().parentElement;
                 var rowsInView = this.gridPanel.rowRenderer.getRenderedRows();
@@ -7836,8 +7848,8 @@ var ag;
                 var curRow;
                 var curRowEl;
                 var curRowBottomPx = 0;
-                var rightGap = this.gridPanel.getRightGap();
-                var rightPosition = eBodyViewport.offsetWidth - eBodyViewport.clientWidth + (rightGap > 0 ? rightGap : 0);
+                var rightGap = this.getScrollWidth();
+                var rightPosition = rightGap > 0 ? rightGap : 0;
                 while (rowsInViewIdx) {
                     curRow = rowsInView[rowsInViewIdx];
                     if (!curRow || !curRow.vBodyRow)
@@ -7926,6 +7938,10 @@ var ag;
             BorderLayout.prototype.getGui = function () {
                 return this.eGui;
             };
+            BorderLayout.prototype.getScrollWidth = function () {
+                var el = this.viewportBodyEl;
+                return el.getBoundingClientRect().width - el.clientWidth;
+            };
             // returns true if any item changed size, otherwise returns false
             BorderLayout.prototype.doLayout = function () {
                 if (!_.isVisible(this.eGui)) {
@@ -7954,14 +7970,22 @@ var ag;
                 if (atLeastOneChanged) {
                     this.fireSizeChanged();
                 }
-                var rootEl = document.getElementsByClassName('ag-basic')[0];
-                var rootWidth = 600;
-                if (rootEl) {
-                    rootWidth = rootEl.offsetWidth + 'px';
+                if (this.rootEl) {
+                    var lastHeaderEl = this.rootEl.querySelector('.ag-header-container .ag-header-cell:last-child');
+                    var scrollWidth = this.getScrollWidth();
+                    if (scrollWidth) {
+                        lastHeaderEl.style.width = (this.headerEl.offsetWidth - lastHeaderEl.offsetLeft) + 'px';
+                    }
+                    // console.log(
+                    //     this.gridPanel.getRootPanel()
+                    // );
+                    // console.log(
+                    //     this
+                    // );
+                    var rootWidth = Math.min(this.containerBodyEl.offsetWidth + this.containerPinnedEl.offsetWidth + scrollWidth, this.gridPanel.getRootPanel().offsetWidth) + 'px';
+                    this.eGui.style.width = rootWidth;
+                    this.positionOverlayRowZone();
                 }
-                this.eGui.style.width = rootWidth;
-                // this.eGui.style.width = '1300px';
-                // debugger;
                 return atLeastOneChanged;
             };
             BorderLayout.prototype.layoutChild = function (childPanel) {
@@ -7999,7 +8023,12 @@ var ag;
                 var totalHeight = _.offsetHeight(this.eGui);
                 var northHeight = _.offsetHeight(this.eNorthWrapper);
                 var southHeight = _.offsetHeight(this.eSouthWrapper);
+                var insertionPointEl = document.getElementById(this.gridPanel.getId());
+                var compStyleInsertEl = window.getComputedStyle(insertionPointEl);
                 var centerHeight = totalHeight - northHeight - southHeight;
+                if (compStyleInsertEl.display !== 'flex') {
+                    centerHeight = parseInt(compStyleInsertEl.height);
+                }
                 if (centerHeight < 0) {
                     centerHeight = 0;
                 }
@@ -8067,6 +8096,16 @@ var ag;
                 // `;
                 return this.getOverlayRowWrapper(template.join(''));
             };
+            // <div class="k-visible pi-dropdown-options btn-group k-action-elem_more" >
+            //     <span class="b-options-btn dropdown-toggle" data- toggle="dropdown" data- hover="dropdown" aria- expanded="true" >...</span>
+            //         <ul class="dropdown-menu">
+            //             <li>
+            //             <a class="link-icon link-message k-visible  k-action-elem js-work-message"  href= "\\#" >
+            //                 <span class="content-center" >На согласование</span>
+            //             </a >
+            //             </li>
+            //         </ul>
+            // </div>
             BorderLayout.prototype.showOverlayRow = function () {
                 if (this.eOverlayRowZoneWrapper === void 0)
                     return;
@@ -8217,7 +8256,7 @@ var ag;
 var ag;
 (function (ag) {
     var grid;
-    (function (grid) {
+    (function (grid_1) {
         var gridHtml = "<div>\n                <!-- header -->\n                <div class=\"ag-header\">\n                    <div class=\"ag-pinned-header\"></div><div class=\"ag-header-viewport\"><div class=\"ag-header-container\"></div></div>\n                </div>\n                <!-- floating top -->\n                <div class=\"ag-floating-top\">\n                    <div class=\"ag-pinned-floating-top\"></div><div class=\"ag-floating-top-viewport\"><div class=\"ag-floating-top-container\"></div></div>\n                </div>\n                <!-- floating bottom -->\n                <div class=\"ag-floating-bottom\">\n                    <div class=\"ag-pinned-floating-bottom\"></div><div class=\"ag-floating-bottom-viewport\"><div class=\"ag-floating-bottom-container\"></div></div>\n                </div>\n                <!-- body -->\n                <div class=\"ag-body\">\n                    <div class=\"ag-pinned-cols-viewport\">\n                        <div class=\"ag-pinned-cols-container\"></div>\n                    </div>\n                    <div class=\"ag-body-viewport-wrapper\">\n                        <div class=\"ag-body-viewport\">\n                            <div class=\"ag-body-container\"></div>\n                        </div>\n                    </div>\n                </div>\n            </div>";
         var gridForPrintHtml = "<div>\n                <!-- header -->\n                <div class=\"ag-header-container\"></div>\n                <!-- floating top -->\n                <div class=\"ag-floating-top-container\"></div>\n                <!-- body -->\n                <div class=\"ag-body-container\"></div>\n                <!-- floating bottom -->\n                <div class=\"ag-floating-bottom-container\"></div>\n            </div>";
         // wrapping in outer div, and wrapper, is needed to center the loading icon
@@ -8228,12 +8267,13 @@ var ag;
         var defaultLoadingOverlayTemplate = '<span class="ag-overlay-loading-center">[LOADING...]</span>';
         var defaultNoRowsOverlayTemplate = '<span class="ag-overlay-no-rows-center">[NO_ROWS_TO_SHOW]</span>';
         var defaultToolOverlayTemplate = '[COUNTER_PLACEHOLDER]<span style="pointer-events:all; opacity: 1.0;" class="ag-overlay-no-rows-center"><a class="k-grid-Delete" title= "Удалить" href= "#" > <span class="i-delete" > </span></a></span>';
-        var _ = grid.Utils;
+        var _ = grid_1.Utils;
         var GridPanel = (function () {
             function GridPanel() {
                 this.scrollLagCounter = 0;
             }
-            GridPanel.prototype.init = function (gridOptionsWrapper, columnModel, rowRenderer, masterSlaveService, eventService) {
+            GridPanel.prototype.init = function (grid, gridOptionsWrapper, columnModel, rowRenderer, masterSlaveService, eventService) {
+                this.grid = grid;
                 this.gridOptionsWrapper = gridOptionsWrapper;
                 this.eventService = eventService;
                 // makes code below more readable if we pull 'forPrint' out
@@ -8259,7 +8299,7 @@ var ag;
                     _.addCssClass(this.eRoot, 'ag-root ag-scrolls');
                 }
                 this.findElements();
-                this.layout = new grid.BorderLayout({
+                this.layout = new grid_1.BorderLayout({
                     overlays: {
                         loading: _.loadTemplate(this.createLoadingOverlayTemplate()),
                         noRows: _.loadTemplate(this.createNoRowsOverlayTemplate()),
@@ -8275,7 +8315,7 @@ var ag;
                             name: 'delete',
                             items: selected
                         };
-                        that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                        that.eventService.dispatchEvent(grid_1.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                     },
                     rowActionListener: function (ev, key) {
                         ev.preventDefault();
@@ -8284,7 +8324,7 @@ var ag;
                             name: key,
                             items: selected
                         };
-                        that.eventService.dispatchEvent(grid.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                        that.eventService.dispatchEvent(grid_1.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                     },
                     getHoveredOn: function () {
                         return that.rowRenderer.getHoveredOn();
@@ -8335,7 +8375,7 @@ var ag;
                         }
                     }
                     selectionParams.countSelected = selectedLength;
-                    that.eventService.dispatchEvent(grid.Events.EVENT_SELECTION_STATE_CHANGED, selectionParams);
+                    that.eventService.dispatchEvent(grid_1.Events.EVENT_SELECTION_STATE_CHANGED, selectionParams);
                     if (selectedLength > 1) {
                         that.showToolOverlay(selectedLength);
                     }
@@ -8349,7 +8389,7 @@ var ag;
                 }
             };
             GridPanel.prototype.initRowOverlay = function () {
-                this.layout.positionOverlayRowZone(this.eBodyViewport.scrollTop || 0);
+                this.layout.positionOverlayRowZone();
             };
             GridPanel.prototype.getPinnedFloatingTop = function () {
                 return this.ePinnedFloatingTop;
@@ -8524,6 +8564,16 @@ var ag;
             GridPanel.prototype.getRoot = function () {
                 return this.eRoot;
             };
+            GridPanel.prototype.getId = function () {
+                if (!this.grid)
+                    return;
+                return this.grid.getId();
+            };
+            GridPanel.prototype.getRootPanel = function () {
+                if (!this.grid)
+                    return;
+                return this.grid.getRootPanel();
+            };
             GridPanel.prototype.getPinnedHeader = function () {
                 return this.ePinnedHeader;
             };
@@ -8567,8 +8617,8 @@ var ag;
                 }
             };
             GridPanel.prototype.getRightGap = function () {
-                // return this.eHeader.clientWidth - this.eHeaderContainer.clientWidth - this.ePinnedHeader.clientWidth;
-                return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
+                // return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
+                return 0;
             };
             GridPanel.prototype.mouseWheelListener = function (event) {
                 var delta;
@@ -8643,8 +8693,6 @@ var ag;
                 }
             };
             GridPanel.prototype.sizeHeaderAndBodyNormal = function () {
-                console.log(this.eBody);
-                console.log(this.eBodyContainer);
                 var heightOfContainer = this.layout.getCentreHeight();
                 if (!heightOfContainer) {
                     return;
@@ -8703,7 +8751,7 @@ var ag;
                         _this.requestDrawVirtualRows();
                     }
                     _this.masterSlaveService.fireHorizontalScrollEvent(newLeftPosition);
-                    _this.layout.positionOverlayRowZone(newTopPosition);
+                    _this.layout.positionOverlayRowZone();
                 });
                 this.ePinnedColsViewport.addEventListener('scroll', function () {
                     // this means the pinned panel was moved, which can only
@@ -8756,7 +8804,7 @@ var ag;
             };
             return GridPanel;
         })();
-        grid.GridPanel = GridPanel;
+        grid_1.GridPanel = GridPanel;
     })(grid = ag.grid || (ag.grid = {}));
 })(ag || (ag = {}));
 /// <reference path="../utils.ts" />
@@ -9417,7 +9465,7 @@ var ag;
 var ag;
 (function (ag) {
     var grid;
-    (function (grid_1) {
+    (function (grid_2) {
         var LINE_SEPARATOR = '\r\n';
         var CsvCreator = (function () {
             function CsvCreator(rowController, columnController, grid, valueService) {
@@ -9538,7 +9586,7 @@ var ag;
             };
             return CsvCreator;
         })();
-        grid_1.CsvCreator = CsvCreator;
+        grid_2.CsvCreator = CsvCreator;
     })(grid = ag.grid || (ag.grid = {}));
 })(ag || (ag = {}));
 /// <reference path="grid.ts" />
@@ -9548,7 +9596,7 @@ var ag;
 var ag;
 (function (ag) {
     var grid;
-    (function (grid_2) {
+    (function (grid_3) {
         var GridApi = (function () {
             function GridApi(grid, rowRenderer, headerRenderer, filterManager, columnController, inMemoryRowController, selectionController, gridOptionsWrapper, gridPanel, valueService, masterSlaveService, eventService) {
                 this.grid = grid;
@@ -9563,7 +9611,7 @@ var ag;
                 this.valueService = valueService;
                 this.masterSlaveService = masterSlaveService;
                 this.eventService = eventService;
-                this.csvCreator = new grid_2.CsvCreator(this.inMemoryRowController, this.columnController, this.grid, this.valueService);
+                this.csvCreator = new grid_3.CsvCreator(this.inMemoryRowController, this.columnController, this.grid, this.valueService);
             }
             /** Used internally by grid. Not intended to be used by the client. Interface may change between releases. */
             GridApi.prototype.__getMasterSlaveService = function () {
@@ -9650,15 +9698,15 @@ var ag;
                 return this.grid.getRowModel();
             };
             GridApi.prototype.onGroupExpandedOrCollapsed = function (refreshFromIndex) {
-                this.grid.updateModelAndRefresh(grid_2.Constants.STEP_MAP, refreshFromIndex);
+                this.grid.updateModelAndRefresh(grid_3.Constants.STEP_MAP, refreshFromIndex);
             };
             GridApi.prototype.expandAll = function () {
                 this.inMemoryRowController.expandOrCollapseAll(true, null);
-                this.grid.updateModelAndRefresh(grid_2.Constants.STEP_MAP);
+                this.grid.updateModelAndRefresh(grid_3.Constants.STEP_MAP);
             };
             GridApi.prototype.collapseAll = function () {
                 this.inMemoryRowController.expandOrCollapseAll(false, null);
-                this.grid.updateModelAndRefresh(grid_2.Constants.STEP_MAP);
+                this.grid.updateModelAndRefresh(grid_3.Constants.STEP_MAP);
             };
             GridApi.prototype.addVirtualRowListener = function (rowIndex, callback) {
                 this.grid.addVirtualRowListener(rowIndex, callback);
@@ -9867,7 +9915,7 @@ var ag;
             };
             return GridApi;
         })();
-        grid_2.GridApi = GridApi;
+        grid_3.GridApi = GridApi;
     })(grid = ag.grid || (ag.grid = {}));
 })(ag || (ag = {}));
 /// <reference path="gridOptionsWrapper.ts" />
@@ -10245,6 +10293,11 @@ var ag;
             Grid.prototype.getId = function () {
                 return this.eUserProvidedDiv.id;
             };
+            Grid.prototype.getRootPanel = function () {
+                if (!this.eRootPanel)
+                    return;
+                return this.eRootPanel.getGui();
+            };
             Grid.prototype.periodicallyDoLayout = function () {
                 if (!this.finished) {
                     var that = this;
@@ -10283,7 +10336,7 @@ var ag;
                 this.logger.log('initialising');
                 dragAndDropService.init(loggerFactory);
                 eventService.init(loggerFactory);
-                gridPanel.init(gridOptionsWrapper, columnController, rowRenderer, masterSlaveService, eventService);
+                gridPanel.init(this, gridOptionsWrapper, columnController, rowRenderer, masterSlaveService, eventService);
                 templateService.init($scope);
                 expressionService.init(loggerFactory);
                 selectionController.init(this, gridPanel, gridOptionsWrapper, $scope, rowRenderer, eventService);
@@ -10344,7 +10397,8 @@ var ag;
                     east: toolPanelLayout,
                     south: paginationGui,
                     dontFill: gridOptionsWrapper.isForPrint(),
-                    name: 'eRootPanel'
+                    name: 'eRootPanel',
+                    gridPanel: this.gridPanel
                 });
                 popupService.init(this.eRootPanel.getGui());
                 // default is we don't show paging panel, this is set to true when datasource is set
@@ -10783,8 +10837,8 @@ var ag;
 var ag;
 (function (ag) {
     var grid;
-    (function (grid_3) {
-        var _ = grid_3.Utils;
+    (function (grid_4) {
+        var _ = grid_4.Utils;
         var FilterManager = (function () {
             function FilterManager() {
             }
@@ -11048,13 +11102,13 @@ var ag;
                     filterWrapper.filter = new colDef.filter();
                 }
                 else if (colDef.filter === 'text') {
-                    filterWrapper.filter = new grid_3.TextFilter();
+                    filterWrapper.filter = new grid_4.TextFilter();
                 }
                 else if (colDef.filter === 'number') {
-                    filterWrapper.filter = new grid_3.NumberFilter();
+                    filterWrapper.filter = new grid_4.NumberFilter();
                 }
                 else {
-                    filterWrapper.filter = new grid_3.SetFilter();
+                    filterWrapper.filter = new grid_4.SetFilter();
                 }
                 var filterChangedCallback = this.grid.onFilterChanged.bind(this.grid);
                 var filterModifiedCallback = this.grid.onFilterModified.bind(this.grid);
@@ -11123,7 +11177,7 @@ var ag;
             };
             return FilterManager;
         })();
-        grid_3.FilterManager = FilterManager;
+        grid_4.FilterManager = FilterManager;
     })(grid = ag.grid || (ag.grid = {}));
 })(ag || (ag = {}));
 /// <reference path='../utils.ts' />
@@ -11283,6 +11337,9 @@ var ag;
                 }
                 if (this.headerElements.frame) {
                     this.eHeaderCell.appendChild(headerCellLabel);
+                    // if (!this.headerElements.last) {
+                    //     this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
+                    // }
                     this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
                 }
                 else {
@@ -13019,7 +13076,7 @@ var ag;
 var ag;
 (function (ag) {
     var grid;
-    (function (grid_4) {
+    (function (grid_5) {
         // provide a reference to angular
         var angular = window.angular;
         // if angular is present, register the directive - checking for 'module' and 'directive' also to make
@@ -13037,7 +13094,7 @@ var ag;
                 };
             });
         }
-        grid_4.initialiseAgGridWithAngular1 = initialiseAgGridWithAngular1;
+        grid_5.initialiseAgGridWithAngular1 = initialiseAgGridWithAngular1;
         function AngularDirectiveController($element, $scope, $compile, $attrs) {
             var gridOptions;
             var quickFilterOnScope;
