@@ -35,6 +35,7 @@ module ag.grid {
 
         private eGui: any;
         private id: any;
+        private name: string;
         private childPanels: any;
         private centerHeightLastTime: any;
 
@@ -58,6 +59,7 @@ module ag.grid {
             this.eventService = params.eventService;
             this.gridOptionsWrapper = params.gridOptionsWrapper;
             this.gridPanel = params.gridPanel;
+            this.name = params.name;
 
             var template: any;
             if (!params.dontFill) {
@@ -206,7 +208,7 @@ module ag.grid {
         }
 
         public positionOverlayRowZone() {
-            if (!this.gridOptionsWrapper) return;
+            if (!this.gridOptionsWrapper || !this.getHoveredOn || !this.gridPanel) return;
 
             var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
             var eBodyViewport = this.gridPanel.getBodyContainer().parentElement;
@@ -218,17 +220,31 @@ module ag.grid {
 
             var curRow: RenderedRow;
             var curRowEl: HTMLElement;
+            var curRowTopPx = null;
             var curRowBottomPx = 0;
 
             var rightGap = this.getScrollWidth();
             var rightPosition = rightGap > 0 ? rightGap : 0;
 
-            while (rowsInViewIdx) {
+            // if (eBodyViewport.scrollTop > 70) {
+            //         debugger;
+            // }
+            var row2 = document.querySelector('[row="2"]');
+            var bodyRect = eBodyViewport.getBoundingClientRect();
+            var firstRowIdx = document.elementFromPoint(bodyRect.left, bodyRect.top + 1).parentElement.getAttribute('row');
+            var lastRowIdx = document.elementFromPoint(bodyRect.left, bodyRect.top + eBodyViewport.clientHeight - 1).parentElement.getAttribute('row');
+            console.log(firstRowIdx, lastRowIdx);
+            while (rowsInViewIdx >= 0) {
                 curRow = rowsInView[rowsInViewIdx]
                 if (!curRow || !curRow.vBodyRow) break;
                 curRowEl = curRow.vBodyRow.element;
-                curRowBottomPx = curRowEl.offsetTop - eBodyViewport.scrollTop + curRowEl.offsetHeight;
-                if ( curRowBottomPx <= visibleHeight + 1) break;
+                if (curRowTopPx == null) {
+                    curRowBottomPx = curRowEl.offsetTop - eBodyViewport.scrollTop + curRowEl.offsetHeight;
+                }
+                if (curRowBottomPx <= visibleHeight + 1) {
+                    curRowTopPx = curRowEl.offsetTop - eBodyViewport.scrollTop;
+                    if (curRowTopPx < curRowEl.offsetHeight) break;
+                }
                 rowsInViewIdx--;
             }
 
@@ -236,7 +252,7 @@ module ag.grid {
             if (rowUnderCursor && this.gridPanel.rowRenderer.isListenMouseMove) rowUnderCursor.listenMoveRef();
 
 
-            this.setRowOverlayTop(headerHeight);
+            this.setRowOverlayTop(curRowTopPx || headerHeight);
             this.setRowOverlayRowHeight(curRowBottomPx);            
             this.setRowOverlayRight(rightPosition);
         }
@@ -357,19 +373,13 @@ module ag.grid {
                 this.fireSizeChanged();
             }
 
-            if (this.rootEl) {
+            if (this.name != 'eRootPanel') {
                 var lastHeaderEl = <HTMLElement>this.rootEl.querySelector('.ag-header-container .ag-header-cell:last-child');
                 var scrollWidth = this.getScrollWidth();
                 
                 if (scrollWidth) {
                     lastHeaderEl.style.width = (this.headerEl.offsetWidth - lastHeaderEl.offsetLeft) + 'px';
                 }
-                // console.log(
-                //     this.gridPanel.getRootPanel()
-                // );
-                // console.log(
-                //     this
-                // );
                 var rootWidth = Math.min(
                     this.containerBodyEl.offsetWidth + this.containerPinnedEl.offsetWidth + scrollWidth,
                     this.gridPanel.getRootPanel().offsetWidth
@@ -415,17 +425,25 @@ module ag.grid {
 
         private layoutHeightNormal() {
 
+            if (!this.gridPanel) return;
+
             var totalHeight = _.offsetHeight(this.eGui);
             var northHeight = _.offsetHeight(this.eNorthWrapper);
             var southHeight = _.offsetHeight(this.eSouthWrapper);
-
-            var insertionPointEl = <HTMLElement>document.getElementById(this.gridPanel.getId());
-            var compStyleInsertEl = window.getComputedStyle(insertionPointEl);
-
             var centerHeight = totalHeight - northHeight - southHeight;
-            if (compStyleInsertEl.display !== 'flex') {
+
+            var compStyleInsertEl: any;
+
+            if (this.gridOptionsWrapper.isHeightUnspecified()) {
+                this.eCenterRow.style.height = '100%';
+
+            } else if (this.gridOptionsWrapper.isHeightGiven()) {
+                compStyleInsertEl = window.getComputedStyle(
+                    <HTMLElement>document.getElementById(this.gridPanel.getId());
+                );
                 centerHeight = parseInt(compStyleInsertEl.height);
             }
+
             if (centerHeight < 0) {
                 centerHeight = 0;
             }
@@ -452,9 +470,6 @@ module ag.grid {
             if (centerWidth < 0) {
                 centerWidth = 0;
             }
-
-            // console.log(this.eGui);
-            // console.log(totalWidth);
 
             this.eCenterWrapper.style.width = centerWidth + 'px';
         }

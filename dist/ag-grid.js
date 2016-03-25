@@ -2028,6 +2028,21 @@ var ag;
                     }
                 };
             };
+            GridOptionsWrapper.prototype.getHeightOption = function () {
+                return this.gridOptions.heightOption;
+            };
+            GridOptionsWrapper.prototype.isHeightMixed = function () {
+                return this.gridOptions.heightOption.toString(2).split('').filter(function (el) { return el != '0'; }).length > 1;
+            };
+            GridOptionsWrapper.prototype.isHeightUnspecified = function () {
+                return this.gridOptions.heightOption == 0;
+            };
+            GridOptionsWrapper.prototype.isHeightGiven = function () {
+                return !!(this.gridOptions.heightOption & 1);
+            };
+            GridOptionsWrapper.prototype.isHeightFullScreen = function () {
+                return !!(this.gridOptions.heightOption & 2);
+            };
             // responsible for calling the onXXX functions on gridOptions
             GridOptionsWrapper.prototype.globalEventHandler = function (eventName, event) {
                 var callbackMethodName = this.getCallbackForEvent(eventName);
@@ -7714,6 +7729,7 @@ var ag;
                 this.eventService = params.eventService;
                 this.gridOptionsWrapper = params.gridOptionsWrapper;
                 this.gridPanel = params.gridPanel;
+                this.name = params.name;
                 var template;
                 if (!params.dontFill) {
                     if (this.fullHeight) {
@@ -7837,7 +7853,7 @@ var ag;
                 this.eOverlayRowZoneWrapper = rowOverlayZone;
             };
             BorderLayout.prototype.positionOverlayRowZone = function () {
-                if (!this.gridOptionsWrapper)
+                if (!this.gridOptionsWrapper || !this.getHoveredOn || !this.gridPanel)
                     return;
                 var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
                 var eBodyViewport = this.gridPanel.getBodyContainer().parentElement;
@@ -7847,23 +7863,37 @@ var ag;
                 var visibleHeight = eBodyViewport.clientHeight;
                 var curRow;
                 var curRowEl;
+                var curRowTopPx = null;
                 var curRowBottomPx = 0;
                 var rightGap = this.getScrollWidth();
                 var rightPosition = rightGap > 0 ? rightGap : 0;
-                while (rowsInViewIdx) {
+                // if (eBodyViewport.scrollTop > 70) {
+                //         debugger;
+                // }
+                var row2 = document.querySelector('[row="2"]');
+                var bodyRect = eBodyViewport.getBoundingClientRect();
+                var firstRowIdx = document.elementFromPoint(bodyRect.left, bodyRect.top + 1).parentElement.getAttribute('row');
+                var lastRowIdx = document.elementFromPoint(bodyRect.left, bodyRect.top + eBodyViewport.clientHeight - 1).parentElement.getAttribute('row');
+                console.log(firstRowIdx, lastRowIdx);
+                while (rowsInViewIdx >= 0) {
                     curRow = rowsInView[rowsInViewIdx];
                     if (!curRow || !curRow.vBodyRow)
                         break;
                     curRowEl = curRow.vBodyRow.element;
-                    curRowBottomPx = curRowEl.offsetTop - eBodyViewport.scrollTop + curRowEl.offsetHeight;
-                    if (curRowBottomPx <= visibleHeight + 1)
-                        break;
+                    if (curRowTopPx == null) {
+                        curRowBottomPx = curRowEl.offsetTop - eBodyViewport.scrollTop + curRowEl.offsetHeight;
+                    }
+                    if (curRowBottomPx <= visibleHeight + 1) {
+                        curRowTopPx = curRowEl.offsetTop - eBodyViewport.scrollTop;
+                        if (curRowTopPx < curRowEl.offsetHeight)
+                            break;
+                    }
                     rowsInViewIdx--;
                 }
                 var rowUnderCursor = this.getHoveredOn();
                 if (rowUnderCursor && this.gridPanel.rowRenderer.isListenMouseMove)
                     rowUnderCursor.listenMoveRef();
-                this.setRowOverlayTop(headerHeight);
+                this.setRowOverlayTop(curRowTopPx || headerHeight);
                 this.setRowOverlayRowHeight(curRowBottomPx);
                 this.setRowOverlayRight(rightPosition);
             };
@@ -7970,18 +8000,12 @@ var ag;
                 if (atLeastOneChanged) {
                     this.fireSizeChanged();
                 }
-                if (this.rootEl) {
+                if (this.name != 'eRootPanel') {
                     var lastHeaderEl = this.rootEl.querySelector('.ag-header-container .ag-header-cell:last-child');
                     var scrollWidth = this.getScrollWidth();
                     if (scrollWidth) {
                         lastHeaderEl.style.width = (this.headerEl.offsetWidth - lastHeaderEl.offsetLeft) + 'px';
                     }
-                    // console.log(
-                    //     this.gridPanel.getRootPanel()
-                    // );
-                    // console.log(
-                    //     this
-                    // );
                     var rootWidth = Math.min(this.containerBodyEl.offsetWidth + this.containerPinnedEl.offsetWidth + scrollWidth, this.gridPanel.getRootPanel().offsetWidth) + 'px';
                     this.eGui.style.width = rootWidth;
                     this.positionOverlayRowZone();
@@ -8020,13 +8044,19 @@ var ag;
                 }
             };
             BorderLayout.prototype.layoutHeightNormal = function () {
+                if (!this.gridPanel)
+                    return;
                 var totalHeight = _.offsetHeight(this.eGui);
                 var northHeight = _.offsetHeight(this.eNorthWrapper);
                 var southHeight = _.offsetHeight(this.eSouthWrapper);
-                var insertionPointEl = document.getElementById(this.gridPanel.getId());
-                var compStyleInsertEl = window.getComputedStyle(insertionPointEl);
                 var centerHeight = totalHeight - northHeight - southHeight;
-                if (compStyleInsertEl.display !== 'flex') {
+                var compStyleInsertEl;
+                if (this.gridOptionsWrapper.isHeightUnspecified()) {
+                    this.eCenterRow.style.height = '100%';
+                }
+                else if (this.gridOptionsWrapper.isHeightGiven()) {
+                    compStyleInsertEl = window.getComputedStyle(document.getElementById(this.gridPanel.getId()));
+                    ;
                     centerHeight = parseInt(compStyleInsertEl.height);
                 }
                 if (centerHeight < 0) {
@@ -8052,8 +8082,6 @@ var ag;
                 if (centerWidth < 0) {
                     centerWidth = 0;
                 }
-                // console.log(this.eGui);
-                // console.log(totalWidth);
                 this.eCenterWrapper.style.width = centerWidth + 'px';
             };
             BorderLayout.prototype.setEastVisible = function (visible) {
@@ -10307,6 +10335,14 @@ var ag;
                     }, 500);
                 }
             };
+            Grid.prototype.selectHeightOption = function (heightClasses, eUserProvidedDiv) {
+                var userProvidedClasses = this.eUserProvidedDiv.classList;
+                var heightOptionsFlags = 0;
+                (heightClasses || []).forEach(function (classHeightName, idx) {
+                    heightOptionsFlags += userProvidedClasses.contains(classHeightName) ? 1 << idx : 0;
+                });
+                return heightOptionsFlags;
+            };
             Grid.prototype.setupComponents = function ($scope, $compile, eUserProvidedDiv, globalEventListener) {
                 this.eUserProvidedDiv = eUserProvidedDiv;
                 // create all the beans
@@ -10330,7 +10366,11 @@ var ag;
                 var loggerFactory = new grid.LoggerFactory();
                 var dragAndDropService = new grid.DragAndDropService();
                 // initialise all the beans
+                this.gridOptions.heightOption = this.selectHeightOption(this.gridOptions.heightClasses, eUserProvidedDiv);
                 gridOptionsWrapper.init(this.gridOptions, eventService);
+                if (gridOptionsWrapper.isHeightMixed()) {
+                    console.warn("Grid \"" + this.getId() + "\" is given ambiguous hegiht options");
+                }
                 loggerFactory.init(gridOptionsWrapper);
                 this.logger = loggerFactory.create('Grid');
                 this.logger.log('initialising');
@@ -10398,7 +10438,8 @@ var ag;
                     south: paginationGui,
                     dontFill: gridOptionsWrapper.isForPrint(),
                     name: 'eRootPanel',
-                    gridPanel: this.gridPanel
+                    gridPanel: this.gridPanel,
+                    gridOptionsWrapper: gridOptionsWrapper
                 });
                 popupService.init(this.eRootPanel.getGui());
                 // default is we don't show paging panel, this is set to true when datasource is set
@@ -10407,7 +10448,7 @@ var ag;
                 this.showToolPanel(gridOptionsWrapper.isShowToolPanel());
                 eUserProvidedDiv.appendChild(this.eRootPanel.getGui());
                 this.logger.log('grid DOM added');
-                this.eRootPanel.getGui().style.width = this.eRootPanel.getGui().offsetWidth + 'px';
+                // this.eRootPanel.getGui().style.width = this.eRootPanel.getGui().offsetWidth + 'px';
                 this.eventService.addEventListener('selectionStateChanged', function (pamparams) {
                     // relay "selection change" message to header
                     headerRenderer.toggleSelectAll(pamparams);

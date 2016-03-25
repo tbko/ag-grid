@@ -249,6 +249,26 @@ module ag.grid {
             };
         }
 
+        public getHeightOption(): number {
+            return this.gridOptions.heightOption;
+        }
+
+        public isHeightMixed(): boolean {
+            return this.gridOptions.heightOption.toString(2).split('').filter((el) =>{return el != '0' }).length > 1;
+        }
+
+        public isHeightUnspecified(): boolean {
+            return this.gridOptions.heightOption == 0;
+        }
+
+        public isHeightGiven(): boolean {
+            return !!(this.gridOptions.heightOption & 1);
+        }
+
+        public isHeightFullScreen(): boolean {
+            return !!(this.gridOptions.heightOption & 2);
+        }
+
         // responsible for calling the onXXX functions on gridOptions
         public globalEventHandler(eventName: string, event?: any): void {
             var callbackMethodName = this.getCallbackForEvent(eventName);

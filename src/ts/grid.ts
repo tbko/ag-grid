@@ -58,6 +58,7 @@ module ag.grid {
         private eUserProvidedDiv: HTMLElement;
         private logger: Logger;
 
+
         constructor(eGridDiv: any, gridOptions: any, globalEventListener: Function = null, $scope: any = null, $compile: any = null, quickFilterOnScope: any = null) {
 
             this.gridOptions = gridOptions;
@@ -157,8 +158,18 @@ module ag.grid {
             }
         }
 
+        private selectHeightOption(heightClasses: string[], eUserProvidedDiv: HTMLElement): number {
+            var userProvidedClasses = this.eUserProvidedDiv.classList;
+            var heightOptionsFlags = 0;
+            (heightClasses || []).forEach((classHeightName, idx) => {
+                heightOptionsFlags += userProvidedClasses.contains(classHeightName) ? 1 << idx : 0;
+            });
+            return heightOptionsFlags;
+        }
+
         private setupComponents($scope: any, $compile: any, eUserProvidedDiv: HTMLElement, globalEventListener: Function) {
             this.eUserProvidedDiv = eUserProvidedDiv;
+
 
             // create all the beans
             var eventService = new EventService();
@@ -182,7 +193,11 @@ module ag.grid {
             var dragAndDropService = new DragAndDropService();
 
             // initialise all the beans
+            this.gridOptions.heightOption = this.selectHeightOption(this.gridOptions.heightClasses, eUserProvidedDiv);
             gridOptionsWrapper.init(this.gridOptions, eventService);
+            if (gridOptionsWrapper.isHeightMixed()) {
+                console.warn(`Grid "${this.getId()}" is given ambiguous hegiht options`);
+            }
             loggerFactory.init(gridOptionsWrapper);
             this.logger = loggerFactory.create('Grid');
             this.logger.log('initialising');
@@ -263,7 +278,8 @@ module ag.grid {
                 south: paginationGui,
                 dontFill: gridOptionsWrapper.isForPrint(),
                 name: 'eRootPanel',
-                gridPanel: this.gridPanel
+                gridPanel: this.gridPanel,
+                gridOptionsWrapper: gridOptionsWrapper
             });
             popupService.init(this.eRootPanel.getGui());
 
@@ -276,7 +292,7 @@ module ag.grid {
 
             eUserProvidedDiv.appendChild(this.eRootPanel.getGui());
             this.logger.log('grid DOM added');
-            this.eRootPanel.getGui().style.width = this.eRootPanel.getGui().offsetWidth + 'px';
+            // this.eRootPanel.getGui().style.width = this.eRootPanel.getGui().offsetWidth + 'px';
 
             this.eventService.addEventListener('selectionStateChanged', function(pamparams: any) {
                 // relay "selection change" message to header

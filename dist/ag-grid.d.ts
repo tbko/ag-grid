@@ -519,6 +519,11 @@ declare module ag.grid {
         private checkForDeprecated();
         getPinnedColCount(): number;
         getLocaleTextFunc(): Function;
+        getHeightOption(): number;
+        isHeightMixed(): boolean;
+        isHeightUnspecified(): boolean;
+        isHeightGiven(): boolean;
+        isHeightFullScreen(): boolean;
         globalEventHandler(eventName: string, event?: any): void;
         private getCallbackForEvent(eventName);
     }
@@ -1256,6 +1261,7 @@ declare module ag.grid {
         private layoutActive;
         private eGui;
         private id;
+        private name;
         private childPanels;
         private centerHeightLastTime;
         private sizeChangeListeners;
@@ -1545,6 +1551,7 @@ declare module ag.grid {
 }
 declare module ag.grid {
     interface GridOptions {
+        heightClasses: string[];
         virtualPaging?: boolean;
         toolPanelSuppressPivot?: boolean;
         toolPanelSuppressValues?: boolean;
@@ -1583,6 +1590,7 @@ declare module ag.grid {
         isRowDrug: any;
         isRowDrop: any;
         metrics: any;
+        heightOption: number;
         localeText?: any;
         localeTextFunc?: Function;
         suppressScrollLag?: boolean;
@@ -1898,6 +1906,7 @@ declare module ag.grid {
         getId(): string;
         getRootPanel(): HTMLElement;
         private periodicallyDoLayout();
+        private selectHeightOption(heightClasses, eUserProvidedDiv);
         private setupComponents($scope, $compile, eUserProvidedDiv, globalEventListener);
         private onRowsMouseIn(rowObj);
         private onRowsListenMouseMove();
