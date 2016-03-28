@@ -1272,6 +1272,8 @@ declare module ag.grid {
         private eventService;
         private gridOptionsWrapper;
         private gridPanel;
+        private eBodyViewport;
+        private headerHeight;
         constructor(params: any);
         getOverlays(): any;
         getOverlayRow(): any;
@@ -1288,6 +1290,7 @@ declare module ag.grid {
         private setupPanel(content, ePanel);
         getGui(): any;
         private getScrollWidth();
+        private getScrollHeight();
         doLayout(): boolean;
         private layoutChild(childPanel);
         private layoutHeight();
@@ -1305,7 +1308,7 @@ declare module ag.grid {
         private pXhelper(value);
         setRowOverlayTop(offsetY: number): void;
         setRowOverlayRight(offsetRight: number): void;
-        setRowOverlayRowHeight(height: number): void;
+        setRowOverlayHeight(height: number): void;
         setSouthVisible(visible: any): void;
     }
 }

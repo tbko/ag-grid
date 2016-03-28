@@ -7730,6 +7730,8 @@ var ag;
                 this.gridOptionsWrapper = params.gridOptionsWrapper;
                 this.gridPanel = params.gridPanel;
                 this.name = params.name;
+                this.eBodyViewport = this.gridPanel ? this.gridPanel.getBodyContainer().parentElement : null;
+                this.headerHeight = this.gridOptionsWrapper ? this.gridOptionsWrapper.getHeaderHeight() : null;
                 var template;
                 if (!params.dontFill) {
                     if (this.fullHeight) {
@@ -7785,9 +7787,6 @@ var ag;
                 }
                 this.overlays = params.overlays;
                 this.setupOverlays();
-                // this.eGui.style.width = '1630px';
-                // document.getElementsByClassName('work-space-content-body')[0].offsetWidth + 'px';
-                // console.log(document.getElementsByClassName('work-space-content-body')[0].offsetWidth + 'px');
             }
             BorderLayout.prototype.getOverlays = function () {
                 return this.overlays;
@@ -7835,17 +7834,14 @@ var ag;
                 rowOverlayZone.id = 'ag-overlay-row-zone';
                 rowOverlayZone.className = rowOverlayZone.id;
                 rowOverlayZone.appendChild(rowOverlay);
-                // rowOverlayZone.style.top = `${this.gridOptionsWrapper.getFullHeaderHeight()}px`;
-                rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
-                // rowOverlayZone.addEventListener('pointerdown', this.overlayEventThrough.bind(this));
-                rowOverlayZone.addEventListener('scroll', this.overlayEventThrough.bind(this));
-                rowOverlayZone.addEventListener('mousemove', this.overlayEventThrough.bind(this));
-                rowOverlayZone.addEventListener('mouseup', this.overlayEventThrough.bind(this));
-                rowOverlayZone.addEventListener('mousedown', this.overlayEventThrough.bind(this));
-                rowOverlayZone.addEventListener('DOMMouseScroll', this.overlayEventThrough.bind(this));
-                rowOverlayZone.addEventListener('MSPointerMove', this.overlayEventThrough.bind(this));
-                rowOverlayZone.addEventListener('mousewheel', this.overlayEventThrough.bind(this));
-                rowOverlayZone.addEventListener('wheel', this.overlayEventThrough.bind(this));
+                for (var _i = 0, _a = [
+                    'click', 'scroll', 'mousemove',
+                    'mouseup', 'mousedown', 'DOMMouseScroll',
+                    'MSPointerMove', 'mousewheel', 'wheel'
+                ]; _i < _a.length; _i++) {
+                    var eventName = _a[_i];
+                    rowOverlayZone.addEventListener(eventName, this.overlayEventThrough.bind(this));
+                }
                 rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
                 rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
                 rowOverlay.style.display = 'none';
@@ -7855,47 +7851,71 @@ var ag;
             BorderLayout.prototype.positionOverlayRowZone = function () {
                 if (!this.gridOptionsWrapper || !this.getHoveredOn || !this.gridPanel)
                     return;
-                var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
-                var eBodyViewport = this.gridPanel.getBodyContainer().parentElement;
+                // vertically position action row overlay
+                // from top of the first fully visible row to bottom of the last visible one
+                // right side shift by the width of sroll bar if it is visible
+                // viewport where rows and action row zone appears to calculate visibility
+                var bodyRect = this.eBodyViewport.getBoundingClientRect();
+                var visibleHeight = this.eBodyViewport.clientHeight;
+                // rendered rows and their attributes
                 var rowsInView = this.gridPanel.rowRenderer.getRenderedRows();
                 var rowKeys = Object.keys(rowsInView);
-                var rowsInViewIdx = Math.max.apply(null, rowKeys);
-                var visibleHeight = eBodyViewport.clientHeight;
-                var curRow;
-                var curRowEl;
-                var curRowTopPx = null;
-                var curRowBottomPx = 0;
-                var rightGap = this.getScrollWidth();
-                var rightPosition = rightGap > 0 ? rightGap : 0;
-                // if (eBodyViewport.scrollTop > 70) {
-                //         debugger;
-                // }
-                var row2 = document.querySelector('[row="2"]');
-                var bodyRect = eBodyViewport.getBoundingClientRect();
-                var firstRowIdx = document.elementFromPoint(bodyRect.left, bodyRect.top + 1).parentElement.getAttribute('row');
-                var lastRowIdx = document.elementFromPoint(bodyRect.left, bodyRect.top + eBodyViewport.clientHeight - 1).parentElement.getAttribute('row');
-                console.log(firstRowIdx, lastRowIdx);
-                while (rowsInViewIdx >= 0) {
-                    curRow = rowsInView[rowsInViewIdx];
-                    if (!curRow || !curRow.vBodyRow)
-                        break;
-                    curRowEl = curRow.vBodyRow.element;
-                    if (curRowTopPx == null) {
-                        curRowBottomPx = curRowEl.offsetTop - eBodyViewport.scrollTop + curRowEl.offsetHeight;
+                var firstRenderedIndex = Math.min.apply(null, rowKeys);
+                var lastRenderedIndex = Math.max.apply(null, rowKeys);
+                var hScrollHeight = this.getScrollHeight();
+                // result: first/last visible rows and their boundaries
+                var eFirstRowEl;
+                var firstRowTop = 0;
+                var eLastRowEl;
+                var lastRowBottom = 0;
+                var heightDiff = 0;
+                var extraTop = 0;
+                var extraBottom = 0;
+                // it make sense if only there is rendered rows
+                if (rowKeys && rowKeys.length) {
+                    // get elements that occupies first/last pixel in body view (parent of element in this point)
+                    // if its class is not row one considering first visible row is the first/last rendered one
+                    _a = [{
+                            pointToCheck: [bodyRect.left, bodyRect.top + 1],
+                            fallbackRowIdx: firstRenderedIndex
+                        }, {
+                            pointToCheck: [bodyRect.left, bodyRect.bottom - 1 - hScrollHeight],
+                            fallbackRowIdx: lastRenderedIndex
+                        }].map(function (params) {
+                        var curEl = document.elementFromPoint.apply(document, params.pointToCheck);
+                        curEl = curEl ? (curEl.parentElement || null) : null;
+                        curEl = curEl.classList.contains('ag-row') ? curEl : (rowsInView[params.fallbackRowIdx] ? rowsInView[params.fallbackRowIdx].vBodyRow.element : null);
+                        return curEl;
+                    }), eFirstRowEl = _a[0], eLastRowEl = _a[1];
+                    // get Y coordinate of first visible row; top one if its visible and bottom one if it is mostly hidden
+                    firstRowTop = this.eBodyViewport.scrollTop - eFirstRowEl.offsetTop;
+                    // console.log(eFirstRowEl.offsetTop, this.eBodyViewport.scrollTop);
+                    // heightDiff = firstRowTop;
+                    if (firstRowTop > 10) {
+                        firstRowTop += eFirstRowEl.offsetHeight;
                     }
-                    if (curRowBottomPx <= visibleHeight + 1) {
-                        curRowTopPx = curRowEl.offsetTop - eBodyViewport.scrollTop;
-                        if (curRowTopPx < curRowEl.offsetHeight)
-                            break;
+                    else {
+                        extraTop = firstRowTop;
                     }
-                    rowsInViewIdx--;
+                    firstRowTop += this.headerHeight;
+                    // get Y coordinate of last visible row; bottom one if its visible and top one if it is mostly hidden
+                    lastRowBottom = eLastRowEl.offsetTop + eLastRowEl.offsetHeight;
+                    heightDiff = lastRowBottom - (this.eBodyViewport.scrollTop + visibleHeight - hScrollHeight);
+                    if (heightDiff > 0) {
+                        lastRowBottom -= eLastRowEl.offsetHeight;
+                    }
+                    else {
+                        extraBottom = heightDiff;
+                    }
+                    lastRowBottom -= (this.eBodyViewport.scrollTop - this.headerHeight);
                 }
+                this.setRowOverlayTop(firstRowTop + extraTop);
+                this.setRowOverlayHeight(lastRowBottom - firstRowTop + extraTop);
+                this.setRowOverlayRight(this.getScrollWidth());
                 var rowUnderCursor = this.getHoveredOn();
                 if (rowUnderCursor && this.gridPanel.rowRenderer.isListenMouseMove)
                     rowUnderCursor.listenMoveRef();
-                this.setRowOverlayTop(curRowTopPx || headerHeight);
-                this.setRowOverlayRowHeight(curRowBottomPx);
-                this.setRowOverlayRight(rightPosition);
+                var _a;
             };
             BorderLayout.prototype.switchExtraButton = function (rowObj) {
                 // var row = this.getOverlayRow();
@@ -7971,6 +7991,10 @@ var ag;
             BorderLayout.prototype.getScrollWidth = function () {
                 var el = this.viewportBodyEl;
                 return el.getBoundingClientRect().width - el.clientWidth;
+            };
+            BorderLayout.prototype.getScrollHeight = function () {
+                var el = this.viewportBodyEl;
+                return el.getBoundingClientRect().height - el.clientHeight;
             };
             // returns true if any item changed size, otherwise returns false
             BorderLayout.prototype.doLayout = function () {
@@ -8206,7 +8230,7 @@ var ag;
                     this.eOverlayRowZoneWrapper.style.right = this.pXhelper(offsetRight);
                 }
             };
-            BorderLayout.prototype.setRowOverlayRowHeight = function (height) {
+            BorderLayout.prototype.setRowOverlayHeight = function (height) {
                 if (this.eOverlayRowZoneWrapper) {
                     this.eOverlayRowZoneWrapper.style.height = this.pXhelper(height);
                 }
@@ -10336,6 +10360,7 @@ var ag;
                 }
             };
             Grid.prototype.selectHeightOption = function (heightClasses, eUserProvidedDiv) {
+                console.log(heightClasses);
                 var userProvidedClasses = this.eUserProvidedDiv.classList;
                 var heightOptionsFlags = 0;
                 (heightClasses || []).forEach(function (classHeightName, idx) {
@@ -10366,7 +10391,7 @@ var ag;
                 var loggerFactory = new grid.LoggerFactory();
                 var dragAndDropService = new grid.DragAndDropService();
                 // initialise all the beans
-                this.gridOptions.heightOption = this.selectHeightOption(this.gridOptions.heightClasses, eUserProvidedDiv);
+                this.gridOptions.heightOption = this.selectHeightOption(this.gridOptions.heightClasses || ['ag-height-limit', 'ag-height-fullscreen'], eUserProvidedDiv);
                 gridOptionsWrapper.init(this.gridOptions, eventService);
                 if (gridOptionsWrapper.isHeightMixed()) {
                     console.warn("Grid \"" + this.getId() + "\" is given ambiguous hegiht options");
