@@ -159,7 +159,6 @@ module ag.grid {
         }
 
         private selectHeightOption(heightClasses: string[], eUserProvidedDiv: HTMLElement): number {
-            console.log(heightClasses);
             var userProvidedClasses = this.eUserProvidedDiv.classList;
             var heightOptionsFlags = 0;
             (heightClasses || []).forEach((classHeightName, idx) => {

@@ -7887,7 +7887,7 @@ var ag;
                         }].map(function (params) {
                         var curEl = document.elementFromPoint.apply(document, params.pointToCheck);
                         curEl = curEl ? (curEl.parentElement || null) : null;
-                        curEl = curEl.classList.contains('ag-row') ? curEl : (rowsInView[params.fallbackRowIdx] ? rowsInView[params.fallbackRowIdx].vBodyRow.element : null);
+                        curEl = (curEl && curEl.classList.contains('ag-row')) ? curEl : (rowsInView[params.fallbackRowIdx] ? rowsInView[params.fallbackRowIdx].vBodyRow.element : null);
                         return curEl;
                     }), eFirstRowEl = _a[0], eLastRowEl = _a[1];
                     // get Y coordinate of first visible row; top one if its visible and bottom one if it is mostly hidden
@@ -10361,7 +10361,6 @@ var ag;
                 }
             };
             Grid.prototype.selectHeightOption = function (heightClasses, eUserProvidedDiv) {
-                console.log(heightClasses);
                 var userProvidedClasses = this.eUserProvidedDiv.classList;
                 var heightOptionsFlags = 0;
                 (heightClasses || []).forEach(function (classHeightName, idx) {

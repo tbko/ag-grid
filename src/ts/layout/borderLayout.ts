@@ -241,7 +241,7 @@ module ag.grid {
                     var curEl = <HTMLElement>document.elementFromPoint(...params.pointToCheck);
 
                     curEl = curEl ? (curEl.parentElement || null) : null;
-                    curEl = curEl.classList.contains('ag-row') ? curEl : (
+                    curEl = (curEl && curEl.classList.contains('ag-row')) ? curEl : (
                         rowsInView[params.fallbackRowIdx] ? rowsInView[params.fallbackRowIdx].vBodyRow.element : null
                     );
 
