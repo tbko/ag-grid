@@ -249,30 +249,28 @@ module ag.grid {
                 })
 
                 // get Y coordinate of first visible row; top one if its visible and bottom one if it is mostly hidden
-                firstRowTop = this.eBodyViewport.scrollTop - eFirstRowEl.offsetTop;
-                // console.log(eFirstRowEl.offsetTop, this.eBodyViewport.scrollTop);
-                // heightDiff = firstRowTop;
-
-                if (firstRowTop > 10) {
+                firstRowTop = eFirstRowEl.offsetTop - this.eBodyViewport.scrollTop;
+                if (firstRowTop < 0) {
+                    if (firstRowTop > -15) {
+                        extraTop = eFirstRowEl.offsetHeight + firstRowTop;
+                    }
                     firstRowTop += eFirstRowEl.offsetHeight;
-                } else {
-                    extraTop = firstRowTop;
                 }
-                firstRowTop += this.headerHeight;
+                firstRowTop += this.headerHeight - extraTop;
+
                 // get Y coordinate of last visible row; bottom one if its visible and top one if it is mostly hidden
-                lastRowBottom = eLastRowEl.offsetTop + eLastRowEl.offsetHeight;
-                heightDiff = lastRowBottom - (this.eBodyViewport.scrollTop + visibleHeight - hScrollHeight);
-                if (heightDiff > 0) {
-                    lastRowBottom -= eLastRowEl.offsetHeight;
-                } else {
-                    extraBottom = heightDiff;
+                lastRowBottom = eLastRowEl.offsetTop - this.eBodyViewport.scrollTop;
+                heightDiff = visibleHeight - (lastRowBottom + eLastRowEl.offsetHeight);
+                if (heightDiff >= 0) {
+                    lastRowBottom += eLastRowEl.offsetHeight;
+                } else if (heightDiff > -15) {
+                    lastRowBottom += eLastRowEl.offsetHeight + heightDiff;
                 }
-                lastRowBottom -= (this.eBodyViewport.scrollTop - this.headerHeight);
+                lastRowBottom += this.headerHeight;
             }
 
-
-            this.setRowOverlayTop(firstRowTop + extraTop);
-            this.setRowOverlayHeight(lastRowBottom - firstRowTop + extraTop);
+            this.setRowOverlayTop(firstRowTop);
+            this.setRowOverlayHeight(lastRowBottom - firstRowTop);
             this.setRowOverlayRight(this.getScrollWidth());
 
             var rowUnderCursor = this.getHoveredOn();

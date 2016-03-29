@@ -3588,7 +3588,10 @@ var ag;
                 var that = this;
                 function listenMove(event) {
                     var eRoot = _.findParentWithClass(that.eBodyContainer, 'ag-root');
+                    var eOverlayZone = eRoot.querySelector('.ag-overlay-row-zone');
                     var eRowOverlay = document.querySelector('#ag-overlay-row');
+                    var headerHeight = (this.gridOptionsWrapper && this.gridOptionsWrapper.getHeaderHeight()) || 0;
+                    var thisRowElement = vRow.getElement();
                     // event.stopPropagation();
                     // event.preventDefault();
                     that.rowRenderer.setHoveredOn(null);
@@ -3598,7 +3601,7 @@ var ag;
                         }
                         else {
                             eRowOverlay.style.display = '';
-                            eRowOverlay.style.top = (that.vBodyRow.element.offsetTop - that.eBodyContainer.parentElement.scrollTop - 1) + "px";
+                            eRowOverlay.style.top = (thisRowElement.offsetTop - that.eBodyContainer.parentElement.scrollTop - 1 - eOverlayZone.offsetTop + headerHeight) + "px";
                             eRowOverlay.style.height = that.heightPX;
                             that.rowRenderer.setHoveredOn(that);
                         }
@@ -7888,29 +7891,27 @@ var ag;
                         return curEl;
                     }), eFirstRowEl = _a[0], eLastRowEl = _a[1];
                     // get Y coordinate of first visible row; top one if its visible and bottom one if it is mostly hidden
-                    firstRowTop = this.eBodyViewport.scrollTop - eFirstRowEl.offsetTop;
-                    // console.log(eFirstRowEl.offsetTop, this.eBodyViewport.scrollTop);
-                    // heightDiff = firstRowTop;
-                    if (firstRowTop > 10) {
+                    firstRowTop = eFirstRowEl.offsetTop - this.eBodyViewport.scrollTop;
+                    if (firstRowTop < 0) {
+                        if (firstRowTop > -15) {
+                            extraTop = eFirstRowEl.offsetHeight + firstRowTop;
+                        }
                         firstRowTop += eFirstRowEl.offsetHeight;
                     }
-                    else {
-                        extraTop = firstRowTop;
-                    }
-                    firstRowTop += this.headerHeight;
+                    firstRowTop += this.headerHeight - extraTop;
                     // get Y coordinate of last visible row; bottom one if its visible and top one if it is mostly hidden
-                    lastRowBottom = eLastRowEl.offsetTop + eLastRowEl.offsetHeight;
-                    heightDiff = lastRowBottom - (this.eBodyViewport.scrollTop + visibleHeight - hScrollHeight);
-                    if (heightDiff > 0) {
-                        lastRowBottom -= eLastRowEl.offsetHeight;
+                    lastRowBottom = eLastRowEl.offsetTop - this.eBodyViewport.scrollTop;
+                    heightDiff = visibleHeight - (lastRowBottom + eLastRowEl.offsetHeight);
+                    if (heightDiff >= 0) {
+                        lastRowBottom += eLastRowEl.offsetHeight;
                     }
-                    else {
-                        extraBottom = heightDiff;
+                    else if (heightDiff > -15) {
+                        lastRowBottom += eLastRowEl.offsetHeight + heightDiff;
                     }
-                    lastRowBottom -= (this.eBodyViewport.scrollTop - this.headerHeight);
+                    lastRowBottom += this.headerHeight;
                 }
-                this.setRowOverlayTop(firstRowTop + extraTop);
-                this.setRowOverlayHeight(lastRowBottom - firstRowTop + extraTop);
+                this.setRowOverlayTop(firstRowTop);
+                this.setRowOverlayHeight(lastRowBottom - firstRowTop);
                 this.setRowOverlayRight(this.getScrollWidth());
                 var rowUnderCursor = this.getHoveredOn();
                 if (rowUnderCursor && this.gridPanel.rowRenderer.isListenMouseMove)

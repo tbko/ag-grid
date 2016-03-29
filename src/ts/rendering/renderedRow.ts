@@ -534,7 +534,10 @@ module ag.grid {
 
             function listenMove(event: any) {
                 var eRoot:HTMLElement = _.findParentWithClass(that.eBodyContainer, 'ag-root');
+                var eOverlayZone: HTMLElement = <HTMLElement>eRoot.querySelector('.ag-overlay-row-zone');
                 var eRowOverlay:HTMLElement = <HTMLElement>document.querySelector('#ag-overlay-row');
+                var headerHeight = (this.gridOptionsWrapper && this.gridOptionsWrapper.getHeaderHeight()) || 0;
+                var thisRowElement = vRow.getElement();
 
                 // event.stopPropagation();
                 // event.preventDefault();
@@ -547,7 +550,9 @@ module ag.grid {
                     } else {
                         eRowOverlay.style.display = '';
 
-                        eRowOverlay.style.top = `${that.vBodyRow.element.offsetTop - that.eBodyContainer.parentElement.scrollTop - 1}px`;
+                        eRowOverlay.style.top = `${
+                            thisRowElement.offsetTop - that.eBodyContainer.parentElement.scrollTop - 1 - eOverlayZone.offsetTop + headerHeight
+                        }px`;
                         eRowOverlay.style.height = that.heightPX;
                         that.rowRenderer.setHoveredOn(that);
                     }
