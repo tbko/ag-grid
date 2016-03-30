@@ -4810,12 +4810,7 @@ var ag;
                 if (realDraw) {
                     renderedRow.setMainRowWidth(mainRowWidth);
                     this.renderedRows[rowIndex] = renderedRow;
-                    // debugger;
-                    var dragHandler = (renderedRow.vBodyRow.element.classList.contains('ag-js-draghandler') ?
-                        renderedRow.vBodyRow.element : renderedRow.vBodyRow.element.querySelector('.ag-js-draghandler'));
-                    // if (this.headerElements.drag) {
-                    if (dragHandler)
-                        this.setupDND(dragHandler, renderedRow);
+                    this.setupDND(renderedRow);
                 }
                 return renderedRow;
             };
@@ -4877,83 +4872,141 @@ var ag;
                     hasChildren: isParent
                 };
             };
-            RowRenderer.prototype.setupDND = function (dragHandler, thisRow) {
-                var _this = this;
+            RowRenderer.prototype.setupDND = function (thisRow) {
                 var that = this;
                 var thisRowIndex = thisRow.getRowIndex();
-                dragHandler.setAttribute('draggable', 'true');
-                // start/stop dragging row
-                dragHandler.addEventListener('dragstart', function (event) {
+                // react to drag header over header
+                var lastenter;
+                var ePinRow = thisRow.vPinnedRow ? thisRow.vPinnedRow.element : null;
+                var eBodyRow = thisRow.vBodyRow.element;
+                var _a = ['ag-js-draghandler', 'ag-js-dragtarget'].map(function (styleName) {
+                    return (ePinRow ? [].slice.call(ePinRow.querySelectorAll('.' + styleName)) : []).concat((ePinRow ? ePinRow.classList.contains(styleName) : false) ? ePinRow : []).concat([].slice.call(eBodyRow.querySelectorAll('.' + styleName))).concat(eBodyRow.classList.contains(styleName) ? eBodyRow : []);
+                }), dragHandlers = _a[0], dragTargets = _a[1];
+                if (!dragHandlers || !dragHandlers.length)
+                    return;
+                for (var _i = 0; _i < dragHandlers.length; _i++) {
+                    var dragEl = dragHandlers[_i];
+                    dragEl.setAttribute('draggable', 'true');
+                    dragEl.addEventListener('dragstart', (function (curDragEl) {
+                        return function (ev) {
+                            onDragStart(ev, curDragEl);
+                        };
+                    })(dragEl));
+                    dragEl.addEventListener('dragover', onDragOver);
+                    dragEl.addEventListener('dragend', onDragEnd);
+                    dragEl.addEventListener('dragenter', (function (curDragEl) {
+                        return function (ev) {
+                            onDragEnter(ev, curDragEl);
+                        };
+                    })(dragEl));
+                    dragEl.addEventListener('dragleave', (function (curDragEl) {
+                        return function (ev) {
+                            onDragLeave(ev, curDragEl);
+                        };
+                    })(dragEl));
+                    dragEl.addEventListener('drop', function (ev) {
+                        onDragDrop(ev, 'level');
+                    });
+                }
+                for (var _b = 0; _b < dragTargets.length; _b++) {
+                    var dragEl = dragTargets[_b];
+                    dragEl.addEventListener('dragover', onDragOverTarget);
+                    dragEl.addEventListener('drop', function (ev) {
+                        onDragDrop(ev, 'inside');
+                    });
+                }
+                function isLowerHalf(event) {
+                    return ((event.currentTarget.offsetHeight / 2) <
+                        (event.pageY - event.currentTarget.getBoundingClientRect().top));
+                }
+                function clearAllDragStyles() {
+                    var stylesToClear = ['ag-dragging-over', 'ag-dragging-over-up', 'ag-dragging-over-down'];
+                    var rowContainersToClear = [that.eBodyContainer, that.ePinnedColsContainer];
+                    stylesToClear.forEach(function (styleName) {
+                        rowContainersToClear.forEach(function (eRowContainer) {
+                            Array.prototype.forEach.call(eRowContainer.querySelectorAll('.' + styleName), function (element) {
+                                element.classList.remove(styleName);
+                            });
+                        });
+                    });
+                }
+                function onDragStart(event, dragHandler) {
                     var rowEl = that.findParentRow(dragHandler);
                     rowEl.classList.add('ag-dragging');
                     var rowIndex = rowEl.getAttribute('row');
                     event.dataTransfer.setData('text', rowIndex);
                     // store node data as it can be in not rendered state when drag is dropped (went out of visual scope)
                     that.rowModel.setDragSource(that.getRenderedRows()[rowIndex].getNode().data.order.orderNumber);
-                });
-                dragHandler.addEventListener('dragover', function (event) {
+                }
+                function onDragOver(event) {
                     event.preventDefault();
-                    // debugger;
+                    var eCurRow = event.currentTarget;
+                    var eCurRowComplement;
+                    if (eCurRow.parentElement.classList.contains('ag-body-container')) {
+                        eCurRowComplement = that.ePinnedColsContainer.querySelector(".ag-row[row=\"" + eCurRow.getAttribute('row') + "\"]");
+                    }
+                    if (eCurRow.parentElement.classList.contains('ag-pinned-cols-container')) {
+                        eCurRowComplement = that.eBodyContainer.querySelector(".ag-row[row=\"" + eCurRow.getAttribute('row') + "\"]");
+                    }
                     if (that.canDrop(that.getSourceOrderIndex(), that.getOrderIndex(thisRowIndex))) {
-                        // console.log(event.offsetY);
+                        clearAllDragStyles();
+                        [eCurRow, eCurRowComplement].forEach(function (el) {
+                            el.classList.add('ag-dragging-over');
+                            el.classList.add("ag-dragging-over-" + (isLowerHalf(event) ? 'down' : 'up'));
+                        });
+                        if (event.target.classList.contains('ag-group-name') ||
+                            event.target.classList.contains('ag-group-parent-name')) {
+                            return;
+                        }
                         event.dataTransfer.dropEffect = 'move';
                     }
                     else {
                         event.dataTransfer.dropEffect = 'none';
                     }
-                });
-                dragHandler.addEventListener('dragend', function () {
+                }
+                function onDragOverTarget(event) {
+                    event.preventDefault();
+                    event.dataTransfer.dropEffect = 'copy';
+                }
+                function onDragEnd() {
                     var draggingElement = that.eBodyContainer.querySelector('.ag-dragging');
                     if (draggingElement) {
                         draggingElement.classList.remove('ag-dragging');
                     }
                     clearAllDragStyles();
-                });
-                // react to drag header over header
-                var lastenter;
-                var clearAllDragStyles = function () {
-                    var stylesToClear = ['ag-dragging-over', 'ag-dragging-over-up', 'ag-dragging-over-down'];
-                    stylesToClear.forEach(function (styleName) {
-                        Array.prototype.forEach.call(_this.eBodyContainer.querySelectorAll('.' + styleName), function (element) {
-                            element.classList.remove(styleName);
-                        });
-                    });
-                };
-                var dragEnterHandler = function (event) {
+                }
+                function onDragEnter(event, dragHandler) {
                     // check if can drop
                     // set classes for row drag styling if positive
-                    // if (thisRowIndex !== that.previousRowIndex) {
-                    //     that.prePreviousRowIndex = that.previousRowIndex;
-                    //     that.previousRowIndex = thisRowIndex;
+                    // var sourceOrderIndex = that.getSourceOrderIndex();
+                    // var destOrderIndex = that.getOrderIndex(thisRowIndex);
+                    // var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex);
+                    // if (
+                    //     !lastenter &&
+                    //     !that.eBodyContainer.classList.contains('ag-dragging-over') &&
+                    //     canDrop
+                    // ) {
+                    //     var sourceParentIndex = sourceOrderIndex.split('.').slice(0, -1).join('.');
+                    //     var destParentIndex = destOrderIndex.split('.').slice(0, -1).join('.');
+                    //     var sourceLevelIndex = parseInt(sourceOrderIndex.split('.').slice(-1)[0]);
+                    //     var destLevelIndex = parseInt(destOrderIndex.split('.').slice(-1)[0]);
+                    //     var dragStyleSuffix = (sourceParentIndex == destParentIndex && sourceLevelIndex < destLevelIndex) ? 'down' : 'up';
+                    //     var host: Element = that.findParentRow(dragHandler);
+                    //     clearAllDragStyles();
+                    //     host.classList.add('ag-dragging-over');
+                    //     host.classList.add(`ag-dragging-over-${dragStyleSuffix}`);
                     // }
-                    // var dragDirection = that.prePreviousRowIndex > thisRowIndex;
-                    var sourceOrderIndex = that.getSourceOrderIndex();
-                    var destOrderIndex = that.getOrderIndex(thisRowIndex);
-                    var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex);
-                    if (!lastenter &&
-                        !that.eBodyContainer.classList.contains('ag-dragging-over') &&
-                        canDrop) {
-                        var sourceParentIndex = sourceOrderIndex.split('.').slice(0, -1).join('.');
-                        var destParentIndex = destOrderIndex.split('.').slice(0, -1).join('.');
-                        var sourceLevelIndex = parseInt(sourceOrderIndex.split('.').slice(-1)[0]);
-                        var destLevelIndex = parseInt(destOrderIndex.split('.').slice(-1)[0]);
-                        var dragStyleSuffix = (sourceParentIndex == destParentIndex && sourceLevelIndex < destLevelIndex) ? 'down' : 'up';
-                        var host = _this.findParentRow(dragHandler);
-                        clearAllDragStyles();
-                        host.classList.add('ag-dragging-over');
-                        host.classList.add("ag-dragging-over-" + dragStyleSuffix);
-                    }
                     lastenter = event.target;
                     event.stopPropagation();
                     event.preventDefault();
                     return false;
-                };
-                var dragLeaveHandler = function (event) {
+                }
+                function onDragLeave(event, dragHandler) {
                     // clear classes for row drag styling
                     var styleName = 'ag-dragging-over';
                     var hostId = that.findParentRow(dragHandler).getAttribute('row');
                     if (lastenter === event.target) {
-                        var othersDragging = Array.prototype.filter.call(_this.eBodyContainer.querySelectorAll('.' + styleName), function (element) {
+                        var othersDragging = Array.prototype.filter.call(that.eBodyContainer.querySelectorAll('.' + styleName), function (element) {
                             return element.getAttribute('row') !== hostId;
                         });
                         if (!othersDragging.length) {
@@ -4961,11 +5014,9 @@ var ag;
                         }
                         lastenter = null;
                     }
-                };
-                dragHandler.addEventListener('dragenter', dragEnterHandler);
-                dragHandler.addEventListener('dragleave', dragLeaveHandler);
-                // swap columns on drop
-                dragHandler.addEventListener('drop', function (event) {
+                }
+                function onDragDrop(event, dropType) {
+                    // debugger
                     var maxLevels = that.gridOptionsWrapper.getGroupKeys().length;
                     var sourceOrderIndex = that.getSourceOrderIndex();
                     var destOrderIndex = that.getOrderIndex(thisRowIndex);
@@ -4983,8 +5034,13 @@ var ag;
                     };
                     // turn to app for server call
                     // need 2 know: 1. source id; 2. destination parent id; 3. order in new parent
-                    // var sourceNodeId = that.getRenderedRows()[event.dataTransfer.getData('text')].node.data.id;
-                    // var destinationNodeId = that.getRenderedRows()[event.dataTransfer.getData('text')].node.data.id;
+                    var sourceNodeId = that.getRenderedRows()[event.dataTransfer.getData('text')].node.data.id;
+                    var destinationNodeId = that.getRenderedRows()[thisRowIndex].node.data.id;
+                    var destinationParentId = (flatData.filter(function (el) { return el.order.orderNumber == destParentIndex; })[0] || { id: 0 }).id;
+                    var destOrderAtLevel = parseInt(destOrderIndex.slice(-1));
+                    var wannaBeShifted = (sourceParentIndex == destParentIndex &&
+                        sourceOrderIndex < destOrderIndex);
+                    // console.log(`Порядок назанчения: ${destOrderAtLevel};\nПод: ${isLowerHalf(event)}\nСброс: ${dropType}\nПосле в том же: ${wannaBeShifted}`);
                     // debugger;
                     // 1. Для элементов с порядковым номером источника и всех его дочерних элементов
                     // (все элементы, имеющие префикс с номером источника в порядковом номере и следующие за ним, если есть такие)
@@ -5087,13 +5143,21 @@ var ag;
                     that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, 24 + maxLevels * 17 * 2);
                     that.gridOptionsWrapper.gridOptions.wrapper.reGroup(newGroupingKeys);
                     // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
-                    // debugger;
                     // that.gridOptionsWrapper.getApi().refreshPivot();
-                    that.eventService.dispatchEvent(grid.Events.EVENT_ROW_REORDER, { curNode: curNode, flatData: flatData });
+                    var moveData = {
+                        flatData: flatData,
+                        sourceNodeId: sourceNodeId,
+                        destinationNodeId: dropType == 'level' ? destinationParentId : destinationNodeId,
+                        destinationOrder: (destOrderAtLevel && dropType == 'level' ?
+                            (isLowerHalf(event) ? destOrderAtLevel + (wannaBeShifted ? 0 : 1) : destOrderAtLevel) :
+                            null)
+                    };
+                    moveData.curNode = curNode;
+                    that.eventService.dispatchEvent(grid.Events.EVENT_ROW_REORDER, moveData);
                     event.stopPropagation();
                     event.preventDefault();
                     return false;
-                });
+                }
             };
             /***********************************************
             * END of DND BLOCK

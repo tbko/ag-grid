@@ -904,7 +904,7 @@ declare module ag.grid {
         private canDrop(sourceOrderIndex, destOrderIndex);
         private findParentRow(startEl);
         private draggingNodeInfo(el);
-        private setupDND(dragHandler, thisRow);
+        private setupDND(thisRow);
         /***********************************************
         * END of DND BLOCK
         ************************************************/
