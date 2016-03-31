@@ -186,25 +186,29 @@ var ag;
                 }
                 var tail = '…';
                 var text;
+                var lastWord;
+                var lastPart = '';
+                var ltterToAdd;
+                var isOverflown = function (elText) { return Math.abs(elText.scrollHeight - elText.clientHeight) > 2; };
                 var cutPoint = words.length;
-                while (Math.abs(elText.scrollHeight - elText.clientHeight) > 2) {
+                while (isOverflown(elText)) {
                     text = words.slice(0, cutPoint--).join(' ');
-                    elText.innerHTML = text;
+                    elText.innerHTML = text + tail;
                 }
-                if (cutPoint < words.length) {
-                    // var lastWord = words[cutPoint + 2] || words[cutPoint + 1]
-                    var lastWord = words[cutPoint + 1];
-                    cutPoint = 0;
-                    while (lastWord && cutPoint < lastWord.length && Math.abs(elText.scrollHeight - elText.clientHeight) <= 2) {
-                        console.log(lastWord, cutPoint);
-                        elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint++) + tail;
+                lastWord = (' ' + (words[cutPoint + 1] || '')).split('');
+                if (lastWord && lastWord.length > 1) {
+                    // if (lastPart.length > 2) {
+                    //     debugger;
+                    // }
+                    console.log('*********************');
+                    while (!isOverflown(elText) && lastWord.length) {
+                        elText.innerHTML = text + lastPart + tail;
+                        ltterToAdd = lastWord.shift();
+                        console.log("'" + lastPart + "' <= '" + ltterToAdd + "' <= '" + lastWord + "'");
+                        lastPart += ltterToAdd;
                     }
-                    if (cutPoint < 2) {
-                        elText.innerHTML = text + tail;
-                    }
-                    else {
-                        elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint - 2) + tail;
-                    }
+                    elText.innerHTML = text + lastPart.slice(0, -2) + tail;
+                    console.log(elText.innerHTML);
                 }
                 // elText.innerHTML = words[0];
                 // // find the word that breaks last allowed line
