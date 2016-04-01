@@ -901,9 +901,8 @@ declare module ag.grid {
         private isParentByIndex(parentOrderIndex, childOrderIndex);
         private getOrderIndex(rowIndex);
         private getSourceOrderIndex();
-        private canDrop(sourceOrderIndex, destOrderIndex);
+        private canDrop(sourceOrderIndex, destOrderIndex, target);
         private findParentRow(startEl);
-        private draggingNodeInfo(el);
         private setupDND(thisRow);
         /***********************************************
         * END of DND BLOCK

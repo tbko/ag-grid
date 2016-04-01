@@ -4838,17 +4838,16 @@ var ag;
             RowRenderer.prototype.getSourceOrderIndex = function () {
                 return this.rowModel.getDragSource();
             };
-            RowRenderer.prototype.canDrop = function (sourceOrderIndex, destOrderIndex) {
+            RowRenderer.prototype.canDrop = function (sourceOrderIndex, destOrderIndex, target) {
+                var targetIsAdd = (target.classList.contains('ag-group-name') ||
+                    target.classList.contains('ag-group-parent-name'));
                 var isDrop = this.gridOptionsWrapper.isRowDrop({
                     sourceOrderIndex: sourceOrderIndex,
-                    destOrderIndex: destOrderIndex
+                    destOrderIndex: destOrderIndex,
+                    isAdd: targetIsAdd
                 });
-                if (isDrop === void 0) {
-                    return (!this.isParentByIndex(sourceOrderIndex, destOrderIndex));
-                }
-                else {
-                    return isDrop;
-                }
+                isDrop = (isDrop === void 0) ? true : isDrop;
+                return !this.isParentByIndex(sourceOrderIndex, destOrderIndex) && isDrop;
             };
             RowRenderer.prototype.findParentRow = function (startEl) {
                 var rowEl = startEl;
@@ -4857,21 +4856,21 @@ var ag;
                 }
                 return rowEl;
             };
-            RowRenderer.prototype.draggingNodeInfo = function (el) {
-                var rowObj = this.renderedRows[el.getAttribute('row')];
-                var rowNode = rowObj.node;
-                var lvl = (rowNode.data.order.orderNumber.match(/\./g) || []).length;
-                var isParent = rowNode.data.order.isParent;
-                while (rowNode.parent && rowNode.level != lvl) {
-                    rowNode = rowNode.parent;
-                }
-                return {
-                    row: rowObj,
-                    level: lvl,
-                    parentId: rowNode.parent ? rowNode.parent.id : 0,
-                    hasChildren: isParent
-                };
-            };
+            // private draggingNodeInfo(el: Element): any {
+            //     var rowObj = this.renderedRows[el.getAttribute('row')];
+            //     var rowNode = rowObj.node;
+            //     var lvl = (rowNode.data.order.orderNumber.match(/\./g) || []).length
+            //     var isParent = rowNode.data.order.isParent;
+            //     while (rowNode.parent && rowNode.level != lvl) {
+            //         rowNode = rowNode.parent;
+            //     }
+            //     return {
+            //         row: rowObj,
+            //         level: lvl,
+            //         parentId: rowNode.parent ? rowNode.parent.id : 0,
+            //         hasChildren: isParent
+            //     };
+            // }
             RowRenderer.prototype.setupDND = function (thisRow) {
                 var that = this;
                 var thisRowIndex = thisRow.getRowIndex();
@@ -4910,7 +4909,7 @@ var ag;
                 }
                 for (var _b = 0; _b < dragTargets.length; _b++) {
                     var dragEl = dragTargets[_b];
-                    dragEl.addEventListener('dragover', onDragOverTarget);
+                    dragEl.addEventListener('dragover', onDragOver);
                     dragEl.addEventListener('drop', function (ev) {
                         onDragDrop(ev, 'inside');
                     });
@@ -4942,32 +4941,41 @@ var ag;
                     event.preventDefault();
                     var eCurRow = event.currentTarget;
                     var eCurRowComplement;
+                    var dropType;
                     if (eCurRow.parentElement.classList.contains('ag-body-container')) {
                         eCurRowComplement = that.ePinnedColsContainer.querySelector(".ag-row[row=\"" + eCurRow.getAttribute('row') + "\"]");
                     }
                     if (eCurRow.parentElement.classList.contains('ag-pinned-cols-container')) {
                         eCurRowComplement = that.eBodyContainer.querySelector(".ag-row[row=\"" + eCurRow.getAttribute('row') + "\"]");
                     }
-                    if (that.canDrop(that.getSourceOrderIndex(), that.getOrderIndex(thisRowIndex))) {
+                    if (dropType = that.canDrop(that.getSourceOrderIndex(), that.getOrderIndex(thisRowIndex), event.target)) {
                         clearAllDragStyles();
-                        [eCurRow, eCurRowComplement].forEach(function (el) {
-                            el.classList.add('ag-dragging-over');
-                            el.classList.add("ag-dragging-over-" + (isLowerHalf(event) ? 'down' : 'up'));
-                        });
-                        if (event.target.classList.contains('ag-group-name') ||
-                            event.target.classList.contains('ag-group-parent-name')) {
-                            return;
+                        if (eCurRow && eCurRowComplement) {
+                            [eCurRow, eCurRowComplement].forEach(function (el) {
+                                el.classList.add('ag-dragging-over');
+                                el.classList.add("ag-dragging-over-" + (isLowerHalf(event) ? 'down' : 'up'));
+                            });
                         }
-                        event.dataTransfer.dropEffect = 'move';
+                        event.dataTransfer.dropEffect = ((typeof dropType == 'string') ? dropType : 'move');
                     }
                     else {
                         event.dataTransfer.dropEffect = 'none';
                     }
                 }
-                function onDragOverTarget(event) {
-                    event.preventDefault();
-                    event.dataTransfer.dropEffect = 'copy';
-                }
+                // function onDragOverTarget(event: DragEvent) {
+                //     event.preventDefault();
+                //     var draggingElement = that.eBodyContainer.querySelector('.ag-dragging');
+                //     if (draggingElement) {
+                //         draggingElement.getAttribute('row')
+                //         if (that.renderedRows[draggingElement.getAttribute('row')].node.data.automatic) {
+                //             event.dataTransfer.dropEffect = 'none';
+                //         } else {
+                //             event.dataTransfer.dropEffect = 'copy';
+                //         }
+                //     } else {
+                //         event.dataTransfer.dropEffect = 'none';
+                //     }
+                // }
                 function onDragEnd() {
                     var draggingElement = that.eBodyContainer.querySelector('.ag-dragging');
                     if (draggingElement) {
@@ -4976,26 +4984,6 @@ var ag;
                     clearAllDragStyles();
                 }
                 function onDragEnter(event, dragHandler) {
-                    // check if can drop
-                    // set classes for row drag styling if positive
-                    // var sourceOrderIndex = that.getSourceOrderIndex();
-                    // var destOrderIndex = that.getOrderIndex(thisRowIndex);
-                    // var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex);
-                    // if (
-                    //     !lastenter &&
-                    //     !that.eBodyContainer.classList.contains('ag-dragging-over') &&
-                    //     canDrop
-                    // ) {
-                    //     var sourceParentIndex = sourceOrderIndex.split('.').slice(0, -1).join('.');
-                    //     var destParentIndex = destOrderIndex.split('.').slice(0, -1).join('.');
-                    //     var sourceLevelIndex = parseInt(sourceOrderIndex.split('.').slice(-1)[0]);
-                    //     var destLevelIndex = parseInt(destOrderIndex.split('.').slice(-1)[0]);
-                    //     var dragStyleSuffix = (sourceParentIndex == destParentIndex && sourceLevelIndex < destLevelIndex) ? 'down' : 'up';
-                    //     var host: Element = that.findParentRow(dragHandler);
-                    //     clearAllDragStyles();
-                    //     host.classList.add('ag-dragging-over');
-                    //     host.classList.add(`ag-dragging-over-${dragStyleSuffix}`);
-                    // }
                     lastenter = event.target;
                     event.stopPropagation();
                     event.preventDefault();
@@ -5020,7 +5008,9 @@ var ag;
                     var maxLevels = that.gridOptionsWrapper.getGroupKeys().length;
                     var sourceOrderIndex = that.getSourceOrderIndex();
                     var destOrderIndex = that.getOrderIndex(thisRowIndex);
-                    var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex);
+                    var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex, event.target);
+                    if (!canDrop)
+                        return;
                     var sourceLevel = (sourceOrderIndex.match(/\./g) || []).length;
                     var destLevel = (destOrderIndex.match(/\./g) || []).length;
                     var sourceParentIndex = sourceOrderIndex.split('.').slice(0, -1).join('.');

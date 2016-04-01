@@ -674,18 +674,20 @@ module ag.grid {
             return this.rowModel.getDragSource();
         }
         
-        private canDrop(sourceOrderIndex: string, destOrderIndex: string): boolean {
-            var isDrop = this.gridOptionsWrapper.isRowDrop({
-                sourceOrderIndex: sourceOrderIndex,
-                destOrderIndex: destOrderIndex
-            });
-            if (isDrop === void 0) {
-                return (
-                    !this.isParentByIndex(sourceOrderIndex, destOrderIndex)
+        private canDrop(sourceOrderIndex: string, destOrderIndex: string, target: HTMLElement): boolean {
+            let targetIsAdd = (
+                    target.classList.contains('ag-group-name') ||
+                    target.classList.contains('ag-group-parent-name')
                 );
-            } else {
-                return isDrop;
-            }
+
+            let isDrop = this.gridOptionsWrapper.isRowDrop({
+                sourceOrderIndex: sourceOrderIndex,
+                destOrderIndex: destOrderIndex,
+                isAdd: targetIsAdd
+            });
+            isDrop = (isDrop === void 0) ? true : isDrop;
+                
+            return !this.isParentByIndex(sourceOrderIndex, destOrderIndex) && isDrop;
         }
 
         private findParentRow(startEl: Element): Element {
@@ -696,21 +698,21 @@ module ag.grid {
             return rowEl;
         }
 
-        private draggingNodeInfo(el: Element): any {
-            var rowObj = this.renderedRows[el.getAttribute('row')];
-            var rowNode = rowObj.node;
-            var lvl = (rowNode.data.order.orderNumber.match(/\./g) || []).length
-            var isParent = rowNode.data.order.isParent;
-            while (rowNode.parent && rowNode.level != lvl) {
-                rowNode = rowNode.parent;
-            }
-            return {
-                row: rowObj,
-                level: lvl,
-                parentId: rowNode.parent ? rowNode.parent.id : 0,
-                hasChildren: isParent
-            };
-        }
+        // private draggingNodeInfo(el: Element): any {
+        //     var rowObj = this.renderedRows[el.getAttribute('row')];
+        //     var rowNode = rowObj.node;
+        //     var lvl = (rowNode.data.order.orderNumber.match(/\./g) || []).length
+        //     var isParent = rowNode.data.order.isParent;
+        //     while (rowNode.parent && rowNode.level != lvl) {
+        //         rowNode = rowNode.parent;
+        //     }
+        //     return {
+        //         row: rowObj,
+        //         level: lvl,
+        //         parentId: rowNode.parent ? rowNode.parent.id : 0,
+        //         hasChildren: isParent
+        //     };
+        // }
 
         private setupDND(thisRow: RenderedRow) {
             var that = this;
@@ -758,7 +760,7 @@ module ag.grid {
 
 
             for (let dragEl of dragTargets) {
-                dragEl.addEventListener('dragover', onDragOverTarget);
+                dragEl.addEventListener('dragover', onDragOver);
                 dragEl.addEventListener('drop', function(ev: DragEvent) {
                     onDragDrop(ev, 'inside');
                 });
@@ -795,8 +797,9 @@ module ag.grid {
             function onDragOver(event: DragEvent) {
                 event.preventDefault();
 
-                var eCurRow: HTMLElement = <HTMLElement>event.currentTarget;
-                var eCurRowComplement: HTMLElement;
+                let eCurRow: HTMLElement = <HTMLElement>event.currentTarget;
+                let eCurRowComplement: HTMLElement;
+                let dropType: boolean | string;
 
                 if (eCurRow.parentElement.classList.contains('ag-body-container') {
                     eCurRowComplement = <HTMLElement>that.ePinnedColsContainer.querySelector(`.ag-row[row="${eCurRow.getAttribute('row')}"]`)
@@ -805,29 +808,35 @@ module ag.grid {
                     eCurRowComplement = <HTMLElement>that.eBodyContainer.querySelector(`.ag-row[row="${eCurRow.getAttribute('row')}"]`)
                 }
 
-                if (that.canDrop(that.getSourceOrderIndex(), that.getOrderIndex(thisRowIndex))) {
+                if (dropType = that.canDrop(that.getSourceOrderIndex(), that.getOrderIndex(thisRowIndex), <HTMLElement>event.target)) {
                     clearAllDragStyles();
-                    [eCurRow, eCurRowComplement].forEach((el)=>{
-                        el.classList.add('ag-dragging-over');
-                        el.classList.add(`ag-dragging-over-${isLowerHalf(event) ? 'down' : 'up'}`);
-                    });
-                    if (
-                        (<HTMLElement>event.target).classList.contains('ag-group-name') ||
-                        (<HTMLElement>event.target).classList.contains('ag-group-parent-name')
-                    ) {
-                        return;
+                    if (eCurRow && eCurRowComplement) {
+                        [eCurRow, eCurRowComplement].forEach((el)=>{
+                            el.classList.add('ag-dragging-over');
+                            el.classList.add(`ag-dragging-over-${isLowerHalf(event) ? 'down' : 'up'}`);
+                        });
                     }
-                    event.dataTransfer.dropEffect = 'move';
+                    event.dataTransfer.dropEffect = <string>((typeof dropType == 'string') ? dropType : 'move');
                 } else {
                     event.dataTransfer.dropEffect = 'none';
                 }
 
             }
 
-            function onDragOverTarget(event: DragEvent) {
-                event.preventDefault();
-                event.dataTransfer.dropEffect = 'copy';
-            }
+            // function onDragOverTarget(event: DragEvent) {
+            //     event.preventDefault();
+            //     var draggingElement = that.eBodyContainer.querySelector('.ag-dragging');
+            //     if (draggingElement) {
+            //         draggingElement.getAttribute('row')
+            //         if (that.renderedRows[draggingElement.getAttribute('row')].node.data.automatic) {
+            //             event.dataTransfer.dropEffect = 'none';
+            //         } else {
+            //             event.dataTransfer.dropEffect = 'copy';
+            //         }
+            //     } else {
+            //         event.dataTransfer.dropEffect = 'none';
+            //     }
+            // }
 
             function onDragEnd() {
                 var draggingElement = that.eBodyContainer.querySelector('.ag-dragging');
@@ -838,33 +847,6 @@ module ag.grid {
             }
 
             function onDragEnter(event: DragEvent, dragHandler: Element) {
-                // check if can drop
-                // set classes for row drag styling if positive
-
-                // var sourceOrderIndex = that.getSourceOrderIndex();
-                // var destOrderIndex = that.getOrderIndex(thisRowIndex);
-                // var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex);
-
-                // if (
-                //     !lastenter &&
-                //     !that.eBodyContainer.classList.contains('ag-dragging-over') &&
-                //     canDrop
-                // ) {
-                //     var sourceParentIndex = sourceOrderIndex.split('.').slice(0, -1).join('.');
-                //     var destParentIndex = destOrderIndex.split('.').slice(0, -1).join('.');
-                //     var sourceLevelIndex = parseInt(sourceOrderIndex.split('.').slice(-1)[0]);
-                //     var destLevelIndex = parseInt(destOrderIndex.split('.').slice(-1)[0]);
-
-                //     var dragStyleSuffix = (sourceParentIndex == destParentIndex && sourceLevelIndex < destLevelIndex) ? 'down' : 'up';
-
-                //     var host: Element = that.findParentRow(dragHandler);
-
-                //     clearAllDragStyles();
-
-                //     host.classList.add('ag-dragging-over');
-                //     host.classList.add(`ag-dragging-over-${dragStyleSuffix}`);
-                // }
-
                 lastenter = event.target;
                 event.stopPropagation();
                 event.preventDefault();
@@ -893,9 +875,9 @@ module ag.grid {
 
                 var sourceOrderIndex = that.getSourceOrderIndex();
                 var destOrderIndex = that.getOrderIndex(thisRowIndex);
-                var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex);
-
-                var sourceLevel = (sourceOrderIndex.match(/\./g) || []).length;
+                var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex, <HTMLElement>event.target);
+                if (!canDrop) return;
+               var sourceLevel = (sourceOrderIndex.match(/\./g) || []).length;
                 var destLevel = (destOrderIndex.match(/\./g) || []).length;
                 var sourceParentIndex = sourceOrderIndex.split('.').slice(0, -1).join('.');
                 var destParentIndex = destOrderIndex.split('.').slice(0, -1).join('.');
