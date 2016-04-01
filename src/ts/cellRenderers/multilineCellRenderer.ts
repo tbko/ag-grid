@@ -17,7 +17,6 @@ module ag.grid {
             var shiftWidth = gridOptionsWrapper.getGroupShiftWidth();
             var controlWidth = gridOptionsWrapper.getGroupControlWidth();
 
-            // debugger;
             return params.value;
 
             // consider group shifter width in cell one

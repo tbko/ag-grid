@@ -200,15 +200,12 @@ var ag;
                     // if (lastPart.length > 2) {
                     //     debugger;
                     // }
-                    console.log('*********************');
                     while (!isOverflown(elText) && lastWord.length) {
                         elText.innerHTML = text + lastPart + tail;
                         ltterToAdd = lastWord.shift();
-                        console.log("'" + lastPart + "' <= '" + ltterToAdd + "' <= '" + lastWord + "'");
                         lastPart += ltterToAdd;
                     }
                     elText.innerHTML = text + lastPart.slice(0, -2) + tail;
-                    console.log(elText.innerHTML);
                 }
                 // elText.innerHTML = words[0];
                 // // find the word that breaks last allowed line
@@ -4053,7 +4050,6 @@ var ag;
                 var width = params.column.actualWidth - gridOptionsWrapper.getWidthGap();
                 var shiftWidth = gridOptionsWrapper.getGroupShiftWidth();
                 var controlWidth = gridOptionsWrapper.getGroupControlWidth();
-                // debugger;
                 return params.value;
                 // consider group shifter width in cell one
                 if (shiftWidth && params.node && params.node.level) {
