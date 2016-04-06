@@ -844,6 +844,7 @@ module ag.grid {
                     draggingElement.classList.remove('ag-dragging');
                 }
                 clearAllDragStyles();
+                that.eventService.dispatchEvent(Events.EVENT_ROW_REORDER);
             }
 
             function onDragEnter(event: DragEvent, dragHandler: Element) {

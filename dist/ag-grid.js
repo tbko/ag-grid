@@ -4982,6 +4982,7 @@ var ag;
                         draggingElement.classList.remove('ag-dragging');
                     }
                     clearAllDragStyles();
+                    that.eventService.dispatchEvent(grid.Events.EVENT_ROW_REORDER);
                 }
                 function onDragEnter(event, dragHandler) {
                     lastenter = event.target;
