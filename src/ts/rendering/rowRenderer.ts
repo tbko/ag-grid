@@ -58,6 +58,10 @@ module ag.grid {
         private previousRowIndex: number;
         private prePreviousRowIndex: number;
 
+        private maxOrderColumnWidth: number;
+        private orderColumn: Column;
+        private canOrderResize: boolean;
+
 
         public init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel,
                     angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any,
@@ -87,6 +91,10 @@ module ag.grid {
 
             this.previousRowIndex = null;
             this.prePreviousRowIndex = null;
+            
+            this.maxOrderColumnWidth = null;
+            this.orderColumn = null;
+            this.canOrderResize = true;
 
             this.cellRendererMap = {
                 'group': groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
@@ -111,6 +119,8 @@ module ag.grid {
         }
 
         public onIndividualColumnResized(column: Column) {
+            debugger
+            this.canOrderResize = false;
             var newWidthPx = column.actualWidth + "px";
             var selectorForAllColsInCell = ".cell-col-" + column.index;
             this.eParentsOfRows.forEach( function(rowContainer: HTMLElement) {
@@ -121,6 +131,7 @@ module ag.grid {
                 }
             });
             this.refreshView();
+            this.canOrderResize = true;
         }
 
         public setMainRowWidths() {
@@ -477,6 +488,11 @@ module ag.grid {
             // at the end, this array will contain the items we need to remove
             var rowsToRemove = Object.keys(this.renderedRows);
 
+            this.maxOrderColumnWidth = 50;
+            if (!this.orderColumn) {
+                this.orderColumn = this.columnModel.getColumn('order');
+            }
+
             var totalRows = this.rowModel.getVirtualRowCount();
             var maxRows: number = this.gridOptionsWrapper.getMaxRows();
             var minRows: number = this.gridOptionsWrapper.getMinRows();
@@ -605,6 +621,10 @@ module ag.grid {
             // at this point, everything in our 'rowsToRemove' . . .
             this.removeVirtualRow(rowsToRemove);
 
+            if (this.canOrderResize) {
+                that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(this.orderColumn, this.maxOrderColumnWidth);
+            }
+
 
             // if we are doing angular compiling, then do digest the scope here
             if (this.gridOptionsWrapper.isAngularCompileRows()) {
@@ -622,6 +642,12 @@ module ag.grid {
 
         private insertRow(node: any, rowIndex: any, mainRowWidth: any, rowsBefore: number, topPx: number, realDraw: boolean = true) {
             var columns = this.columnModel.getDisplayedColumns();
+            var orderCellEl: HTMLElement;
+            var orderCellElNumber: HTMLElement;
+            var renderedOrderNumberWidth: number;
+            var renderedOrderShiftWidth: number;
+            var renderedOrderCellLeftPadding: number;
+
             // if no cols, don't draw row
             if (!columns || columns.length == 0) {
                 return;
@@ -636,6 +662,22 @@ module ag.grid {
             if (realDraw) {
                 renderedRow.setMainRowWidth(mainRowWidth);
                 this.renderedRows[rowIndex] = renderedRow;
+
+                orderCellEl = renderedRow.renderedCells[this.orderColumn.index].vGridCell.element;
+                orderCellElNumber = <HTMLElement>orderCellEl.querySelector('.pi-table');
+
+                if (orderCellEl && orderCellElNumber) {
+                    renderedOrderNumberWidth = orderCellElNumber.offsetWidth;
+                    renderedOrderShiftWidth = orderCellElNumber.offsetLeft;
+                    renderedOrderCellLeftPadding = parseInt(
+                        window.getComputedStyle(orderCellEl, null).getPropertyValue('padding-left')
+                    );
+
+                    this.maxOrderColumnWidth = Math.max(
+                        renderedOrderNumberWidth + renderedOrderShiftWidth + renderedOrderCellLeftPadding,
+                        this.maxOrderColumnWidth
+                    );
+                }
 
                 this.setupDND(renderedRow);
             }
@@ -1014,8 +1056,8 @@ module ag.grid {
                     newGroupingKeys.push(`order_${i}`);
                 }
 
-                var col = that.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
-                that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, 24 + maxLevels * 17 * 2);
+                // var col = that.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
+                // that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, 24 + maxLevels * 17 * 2);
                 that.gridOptionsWrapper.gridOptions.wrapper.reGroup(newGroupingKeys);
                 // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
 

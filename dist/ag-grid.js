@@ -4352,6 +4352,9 @@ var ag;
                 this.heightFromLastRow = 0;
                 this.previousRowIndex = null;
                 this.prePreviousRowIndex = null;
+                this.maxOrderColumnWidth = null;
+                this.orderColumn = null;
+                this.canOrderResize = true;
                 this.cellRendererMap = {
                     'group': grid.groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
                     'groupHeader': grid.groupHeaderFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
@@ -4371,6 +4374,8 @@ var ag;
                 this.rowModel = rowModel;
             };
             RowRenderer.prototype.onIndividualColumnResized = function (column) {
+                debugger;
+                this.canOrderResize = false;
                 var newWidthPx = column.actualWidth + "px";
                 var selectorForAllColsInCell = ".cell-col-" + column.index;
                 this.eParentsOfRows.forEach(function (rowContainer) {
@@ -4381,6 +4386,7 @@ var ag;
                     }
                 });
                 this.refreshView();
+                this.canOrderResize = true;
             };
             RowRenderer.prototype.setMainRowWidths = function () {
                 var mainRowWidth = this.columnModel.getBodyContainerWidth() + "px";
@@ -4677,6 +4683,10 @@ var ag;
                 var that = this;
                 // at the end, this array will contain the items we need to remove
                 var rowsToRemove = Object.keys(this.renderedRows);
+                this.maxOrderColumnWidth = 50;
+                if (!this.orderColumn) {
+                    this.orderColumn = this.columnModel.getColumn('order');
+                }
                 var totalRows = this.rowModel.getVirtualRowCount();
                 var maxRows = this.gridOptionsWrapper.getMaxRows();
                 var minRows = this.gridOptionsWrapper.getMinRows();
@@ -4788,6 +4798,9 @@ var ag;
                 // console.log('Including lines reflow (ms): ', timingReflow);
                 // at this point, everything in our 'rowsToRemove' . . .
                 this.removeVirtualRow(rowsToRemove);
+                if (this.canOrderResize) {
+                    that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(this.orderColumn, this.maxOrderColumnWidth);
+                }
                 // if we are doing angular compiling, then do digest the scope here
                 if (this.gridOptionsWrapper.isAngularCompileRows()) {
                     // we do it in a timeout, in case we are already in an apply
@@ -4802,6 +4815,11 @@ var ag;
             RowRenderer.prototype.insertRow = function (node, rowIndex, mainRowWidth, rowsBefore, topPx, realDraw) {
                 if (realDraw === void 0) { realDraw = true; }
                 var columns = this.columnModel.getDisplayedColumns();
+                var orderCellEl;
+                var orderCellElNumber;
+                var renderedOrderNumberWidth;
+                var renderedOrderShiftWidth;
+                var renderedOrderCellLeftPadding;
                 // if no cols, don't draw row
                 if (!columns || columns.length == 0) {
                     return;
@@ -4810,6 +4828,14 @@ var ag;
                 if (realDraw) {
                     renderedRow.setMainRowWidth(mainRowWidth);
                     this.renderedRows[rowIndex] = renderedRow;
+                    orderCellEl = renderedRow.renderedCells[this.orderColumn.index].vGridCell.element;
+                    orderCellElNumber = orderCellEl.querySelector('.pi-table');
+                    if (orderCellEl && orderCellElNumber) {
+                        renderedOrderNumberWidth = orderCellElNumber.offsetWidth;
+                        renderedOrderShiftWidth = orderCellElNumber.offsetLeft;
+                        renderedOrderCellLeftPadding = parseInt(window.getComputedStyle(orderCellEl, null).getPropertyValue('padding-left'));
+                        this.maxOrderColumnWidth = Math.max(renderedOrderNumberWidth + renderedOrderShiftWidth + renderedOrderCellLeftPadding, this.maxOrderColumnWidth);
+                    }
                     this.setupDND(renderedRow);
                 }
                 return renderedRow;
@@ -5130,8 +5156,8 @@ var ag;
                     for (var i = 0; i < maxLevels; i++) {
                         newGroupingKeys.push("order_" + i);
                     }
-                    var col = that.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
-                    that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, 24 + maxLevels * 17 * 2);
+                    // var col = that.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
+                    // that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, 24 + maxLevels * 17 * 2);
                     that.gridOptionsWrapper.gridOptions.wrapper.reGroup(newGroupingKeys);
                     // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
                     // that.gridOptionsWrapper.getApi().refreshPivot();
