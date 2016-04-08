@@ -11443,12 +11443,12 @@ var ag;
                 // this.addMenu();
                 // label div
                 var headerCellLabel = document.createElement("div");
-                if (this.column.colDef.suppressResize) {
-                    headerCellLabel.className = "ag-header-cell-label ag-header-cell-fullsize";
-                }
-                else {
-                    headerCellLabel.className = "ag-header-cell-label";
-                }
+                // if (this.column.colDef.suppressResize) {
+                //     headerCellLabel.className = "ag-header-cell-label ag-header-cell-fullsize";
+                // } else {
+                //     headerCellLabel.className = "ag-header-cell-label";
+                // }
+                headerCellLabel.className = "ag-header-cell-label";
                 if (this.gridOptionsWrapper.isGroupHeaders() && this.parentGroup && this.parentGroup.getVisibleColumnsCount() > 1) {
                     headerCellLabel.setAttribute('colId', this.column.colId);
                 }
