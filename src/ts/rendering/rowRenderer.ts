@@ -119,7 +119,6 @@ module ag.grid {
         }
 
         public onIndividualColumnResized(column: Column) {
-            debugger
             this.canOrderResize = false;
             var newWidthPx = column.actualWidth + "px";
             var selectorForAllColsInCell = ".cell-col-" + column.index;
@@ -472,6 +471,7 @@ module ag.grid {
             // console.log(first, last);
             // this.ensureRowsRendered(preparedRows);
             this.ensureRowsRendered(countLinesBefore);
+
         }
 
         public getFirstVirtualRenderedRow() {
@@ -488,10 +488,9 @@ module ag.grid {
             // at the end, this array will contain the items we need to remove
             var rowsToRemove = Object.keys(this.renderedRows);
 
-            this.maxOrderColumnWidth = 50;
-            if (!this.orderColumn) {
-                this.orderColumn = this.columnModel.getColumn('order');
-            }
+            this.maxOrderColumnWidth = 0;
+
+            this.orderColumn = this.columnModel.getColumn('order');
 
             var totalRows = this.rowModel.getVirtualRowCount();
             var maxRows: number = this.gridOptionsWrapper.getMaxRows();
@@ -514,13 +513,9 @@ module ag.grid {
             var baseHeight = this.gridOptionsWrapper.getRowHeight();
             var verticalGap = 15; // top/bottom padding + borders (px) default: 15
             var assumedRowHeghtPx = (baseHeight - verticalGap) * minRows + verticalGap;
-            // console.log('assumed height', assumedRowHeghtPx);
 
             var timing = 0;
             var timingReflow = 0;
-
-            // debugger;
-            // console.log(this.firstVirtualRenderedRow, Math.min.apply(null, rowsToRemove));
 
             rowsBeforeCount = this.firstVirtualRenderedRow;
             linesBeforeCount = countLinesBefore || Math.round(rowsBeforeCount * linesPerRow);
@@ -611,20 +606,9 @@ module ag.grid {
             this.beforeCalculatedHeight = this.renderedAverageHeight * rowsBeforeCount;
             rowsAfterCount = totalRows - rowKeys.length - rowsBeforeCount;
             this.afterCalculatedHeight = this.renderedAverageHeight * rowsAfterCount; 
-            // console.log(renderedAverageHeight, this.renderedTotalHeight, this.beforeCalculatedHeight, this.afterCalculatedHeight);
-            // console.log(this.renderedTotalHeight + this.beforeCalculatedHeight + this.afterCalculatedHeight);
-            
-
-            // console.log('Total time taken for lines rendering (ms): ', timing);
-            // console.log('Including lines reflow (ms): ', timingReflow);
 
             // at this point, everything in our 'rowsToRemove' . . .
             this.removeVirtualRow(rowsToRemove);
-
-            if (this.canOrderResize) {
-                that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(this.orderColumn, this.maxOrderColumnWidth);
-            }
-
 
             // if we are doing angular compiling, then do digest the scope here
             if (this.gridOptionsWrapper.isAngularCompileRows()) {
@@ -643,10 +627,17 @@ module ag.grid {
         private insertRow(node: any, rowIndex: any, mainRowWidth: any, rowsBefore: number, topPx: number, realDraw: boolean = true) {
             var columns = this.columnModel.getDisplayedColumns();
             var orderCellEl: HTMLElement;
+            var orderCellElContainer: HTMLElement;
+            var orderCellElShift: HTMLElement;
             var orderCellElNumber: HTMLElement;
-            var renderedOrderNumberWidth: number;
-            var renderedOrderShiftWidth: number;
-            var renderedOrderCellLeftPadding: number;
+            var orderCellElArrow: HTMLElement;
+
+            var orderCellElShiftWidth: number;
+            var orderCellElNumberWidth: number;
+            var orderCellElArrowWidth: number;
+            var orderCellLeftPadding: number;
+            var orderCellRightPadding: number;
+            var currentWidth: number;
 
             // if no cols, don't draw row
             if (!columns || columns.length == 0) {
@@ -663,18 +654,37 @@ module ag.grid {
                 renderedRow.setMainRowWidth(mainRowWidth);
                 this.renderedRows[rowIndex] = renderedRow;
 
-                orderCellEl = renderedRow.renderedCells[this.orderColumn.index].vGridCell.element;
-                orderCellElNumber = <HTMLElement>orderCellEl.querySelector('.pi-table');
+                if (this.orderColumn) {
+                    orderCellEl = renderedRow.renderedCells[this.orderColumn.index].vGridCell.element;
+                }
+                if (orderCellEl) {
+                    orderCellElContainer = <HTMLElement>orderCellEl.querySelector('.pi-table');
 
-                if (orderCellEl && orderCellElNumber) {
-                    renderedOrderNumberWidth = orderCellElNumber.offsetWidth;
-                    renderedOrderShiftWidth = orderCellElNumber.offsetLeft;
-                    renderedOrderCellLeftPadding = parseInt(
+                    orderCellElShift = <HTMLElement>orderCellElContainer.querySelector('span');
+                    orderCellElNumber = <HTMLElement>orderCellElContainer.querySelector('.ag-group-name');
+                    if (!orderCellElNumber) {
+                        orderCellElNumber = <HTMLElement>orderCellElContainer.querySelector('.ag-group-parent-name');
+                    }
+                    orderCellElArrow = <HTMLElement>orderCellElContainer.querySelector('.group-expand-control');
+
+                    orderCellElShiftWidth = orderCellElShift ? orderCellElShift.offsetWidth : 0;
+                    orderCellElNumberWidth = orderCellElNumber ? orderCellElNumber.offsetWidth : 0;
+                    orderCellElArrowWidth = orderCellElArrow ? orderCellElArrow.offsetWidth : 0;
+                    orderCellLeftPadding = parseInt(
                         window.getComputedStyle(orderCellEl, null).getPropertyValue('padding-left')
+                    ) || 0;
+                    orderCellRightPadding = parseInt(
+                        window.getComputedStyle(orderCellEl, null).getPropertyValue('padding-right')
+                    ) || 0;
+
+                    currentWidth = (
+                        orderCellLeftPadding +
+                        orderCellElShiftWidth + orderCellElNumberWidth + orderCellElArrowWidth +
+                        orderCellRightPadding
                     );
 
                     this.maxOrderColumnWidth = Math.max(
-                        renderedOrderNumberWidth + renderedOrderShiftWidth + renderedOrderCellLeftPadding,
+                        currentWidth,
                         this.maxOrderColumnWidth
                     );
                 }
@@ -843,10 +853,10 @@ module ag.grid {
                 let eCurRowComplement: HTMLElement;
                 let dropType: boolean | string;
 
-                if (eCurRow.parentElement.classList.contains('ag-body-container') {
+                if (eCurRow.parentElement.classList.contains('ag-body-container')) {
                     eCurRowComplement = <HTMLElement>that.ePinnedColsContainer.querySelector(`.ag-row[row="${eCurRow.getAttribute('row')}"]`)
                 }
-                if (eCurRow.parentElement.classList.contains('ag-pinned-cols-container') {
+                if (eCurRow.parentElement.classList.contains('ag-pinned-cols-container')) {
                     eCurRowComplement = <HTMLElement>that.eBodyContainer.querySelector(`.ag-row[row="${eCurRow.getAttribute('row')}"]`)
                 }
 

@@ -464,7 +464,7 @@ module ag.grid {
 
             } else if (this.gridOptionsWrapper.isHeightGiven()) {
                 compStyleInsertEl = window.getComputedStyle(
-                    <HTMLElement>document.getElementById(this.gridPanel.getId());
+                    <HTMLElement>document.getElementById(this.gridPanel.getId())
                 );
                 centerHeight = parseInt(compStyleInsertEl.height);
             }

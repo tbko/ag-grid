@@ -451,6 +451,7 @@ module ag.grid {
             this.gridPanel.setBodyContainerWidth();
             this.gridPanel.setPinnedColContainerWidth();
             this.rowRenderer.refreshView();
+
         }
 
         public destroy() {
@@ -561,6 +562,13 @@ module ag.grid {
         public updateModelAndRefresh(step: any, refreshFromIndex?: any) {
             this.inMemoryRowController.updateModel(step);
             this.rowRenderer.refreshView(refreshFromIndex);
+            var orderColumn = this.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
+            if (orderColumn && this.rowRenderer.maxOrderColumnWidth) {
+                this.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(
+                    orderColumn,
+                    this.rowRenderer.maxOrderColumnWidth
+                );
+            }
         }
 
         public setRowData(rows?: any, firstId?: any) {
@@ -753,6 +761,7 @@ module ag.grid {
             // need to do layout first, as drawVirtualRows and setPinnedColHeight
             // need to know the result of the resizing of the panels.
             var sizeChanged = this.eRootPanel.doLayout();
+
             // both of the two below should be done in gridPanel, the gridPanel should register 'resize' to the panel
             if (sizeChanged) {
                 this.rowRenderer.drawVirtualRows();

@@ -4374,7 +4374,6 @@ var ag;
                 this.rowModel = rowModel;
             };
             RowRenderer.prototype.onIndividualColumnResized = function (column) {
-                debugger;
                 this.canOrderResize = false;
                 var newWidthPx = column.actualWidth + "px";
                 var selectorForAllColsInCell = ".cell-col-" + column.index;
@@ -4683,10 +4682,8 @@ var ag;
                 var that = this;
                 // at the end, this array will contain the items we need to remove
                 var rowsToRemove = Object.keys(this.renderedRows);
-                this.maxOrderColumnWidth = 50;
-                if (!this.orderColumn) {
-                    this.orderColumn = this.columnModel.getColumn('order');
-                }
+                this.maxOrderColumnWidth = 0;
+                this.orderColumn = this.columnModel.getColumn('order');
                 var totalRows = this.rowModel.getVirtualRowCount();
                 var maxRows = this.gridOptionsWrapper.getMaxRows();
                 var minRows = this.gridOptionsWrapper.getMinRows();
@@ -4706,11 +4703,8 @@ var ag;
                 var baseHeight = this.gridOptionsWrapper.getRowHeight();
                 var verticalGap = 15; // top/bottom padding + borders (px) default: 15
                 var assumedRowHeghtPx = (baseHeight - verticalGap) * minRows + verticalGap;
-                // console.log('assumed height', assumedRowHeghtPx);
                 var timing = 0;
                 var timingReflow = 0;
-                // debugger;
-                // console.log(this.firstVirtualRenderedRow, Math.min.apply(null, rowsToRemove));
                 rowsBeforeCount = this.firstVirtualRenderedRow;
                 linesBeforeCount = countLinesBefore || Math.round(rowsBeforeCount * linesPerRow);
                 linesBeforePlusRenderedCount = linesBeforeCount;
@@ -4792,15 +4786,8 @@ var ag;
                 this.beforeCalculatedHeight = this.renderedAverageHeight * rowsBeforeCount;
                 rowsAfterCount = totalRows - rowKeys.length - rowsBeforeCount;
                 this.afterCalculatedHeight = this.renderedAverageHeight * rowsAfterCount;
-                // console.log(renderedAverageHeight, this.renderedTotalHeight, this.beforeCalculatedHeight, this.afterCalculatedHeight);
-                // console.log(this.renderedTotalHeight + this.beforeCalculatedHeight + this.afterCalculatedHeight);
-                // console.log('Total time taken for lines rendering (ms): ', timing);
-                // console.log('Including lines reflow (ms): ', timingReflow);
                 // at this point, everything in our 'rowsToRemove' . . .
                 this.removeVirtualRow(rowsToRemove);
-                if (this.canOrderResize) {
-                    that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(this.orderColumn, this.maxOrderColumnWidth);
-                }
                 // if we are doing angular compiling, then do digest the scope here
                 if (this.gridOptionsWrapper.isAngularCompileRows()) {
                     // we do it in a timeout, in case we are already in an apply
@@ -4816,10 +4803,16 @@ var ag;
                 if (realDraw === void 0) { realDraw = true; }
                 var columns = this.columnModel.getDisplayedColumns();
                 var orderCellEl;
+                var orderCellElContainer;
+                var orderCellElShift;
                 var orderCellElNumber;
-                var renderedOrderNumberWidth;
-                var renderedOrderShiftWidth;
-                var renderedOrderCellLeftPadding;
+                var orderCellElArrow;
+                var orderCellElShiftWidth;
+                var orderCellElNumberWidth;
+                var orderCellElArrowWidth;
+                var orderCellLeftPadding;
+                var orderCellRightPadding;
+                var currentWidth;
                 // if no cols, don't draw row
                 if (!columns || columns.length == 0) {
                     return;
@@ -4828,13 +4821,26 @@ var ag;
                 if (realDraw) {
                     renderedRow.setMainRowWidth(mainRowWidth);
                     this.renderedRows[rowIndex] = renderedRow;
-                    orderCellEl = renderedRow.renderedCells[this.orderColumn.index].vGridCell.element;
-                    orderCellElNumber = orderCellEl.querySelector('.pi-table');
-                    if (orderCellEl && orderCellElNumber) {
-                        renderedOrderNumberWidth = orderCellElNumber.offsetWidth;
-                        renderedOrderShiftWidth = orderCellElNumber.offsetLeft;
-                        renderedOrderCellLeftPadding = parseInt(window.getComputedStyle(orderCellEl, null).getPropertyValue('padding-left'));
-                        this.maxOrderColumnWidth = Math.max(renderedOrderNumberWidth + renderedOrderShiftWidth + renderedOrderCellLeftPadding, this.maxOrderColumnWidth);
+                    if (this.orderColumn) {
+                        orderCellEl = renderedRow.renderedCells[this.orderColumn.index].vGridCell.element;
+                    }
+                    if (orderCellEl) {
+                        orderCellElContainer = orderCellEl.querySelector('.pi-table');
+                        orderCellElShift = orderCellElContainer.querySelector('span');
+                        orderCellElNumber = orderCellElContainer.querySelector('.ag-group-name');
+                        if (!orderCellElNumber) {
+                            orderCellElNumber = orderCellElContainer.querySelector('.ag-group-parent-name');
+                        }
+                        orderCellElArrow = orderCellElContainer.querySelector('.group-expand-control');
+                        orderCellElShiftWidth = orderCellElShift ? orderCellElShift.offsetWidth : 0;
+                        orderCellElNumberWidth = orderCellElNumber ? orderCellElNumber.offsetWidth : 0;
+                        orderCellElArrowWidth = orderCellElArrow ? orderCellElArrow.offsetWidth : 0;
+                        orderCellLeftPadding = parseInt(window.getComputedStyle(orderCellEl, null).getPropertyValue('padding-left')) || 0;
+                        orderCellRightPadding = parseInt(window.getComputedStyle(orderCellEl, null).getPropertyValue('padding-right')) || 0;
+                        currentWidth = (orderCellLeftPadding +
+                            orderCellElShiftWidth + orderCellElNumberWidth + orderCellElArrowWidth +
+                            orderCellRightPadding);
+                        this.maxOrderColumnWidth = Math.max(currentWidth, this.maxOrderColumnWidth);
                     }
                     this.setupDND(renderedRow);
                 }
@@ -8162,7 +8168,6 @@ var ag;
                 }
                 else if (this.gridOptionsWrapper.isHeightGiven()) {
                     compStyleInsertEl = window.getComputedStyle(document.getElementById(this.gridPanel.getId()));
-                    ;
                     centerHeight = parseInt(compStyleInsertEl.height);
                 }
                 if (centerHeight < 0) {
@@ -10786,6 +10791,10 @@ var ag;
             Grid.prototype.updateModelAndRefresh = function (step, refreshFromIndex) {
                 this.inMemoryRowController.updateModel(step);
                 this.rowRenderer.refreshView(refreshFromIndex);
+                var orderColumn = this.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
+                if (orderColumn && this.rowRenderer.maxOrderColumnWidth) {
+                    this.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(orderColumn, this.rowRenderer.maxOrderColumnWidth);
+                }
             };
             Grid.prototype.setRowData = function (rows, firstId) {
                 if (rows) {
@@ -12364,7 +12373,6 @@ var ag;
                 return this.allColumns;
             };
             ColumnController.prototype.setColumnVisible = function (column, visible) {
-                // debugger;
                 column.visible = visible;
                 this.updateModel();
                 var event = new grid.ColumnChangeEvent(grid.Events.EVENT_COLUMN_VISIBLE).withColumn(column);
@@ -12584,7 +12592,6 @@ var ag;
             // called from API
             ColumnController.prototype.hideColumns = function (colIds, hide) {
                 var _this = this;
-                // debugger;
                 var updatedCols = [];
                 this.allColumns.forEach(function (column) {
                     var idThisCol = column.colId;
@@ -12707,7 +12714,6 @@ var ag;
                     this.columnGroups = null;
                     return;
                 }
-                // debugger;
                 // split the columns into groups
                 var currentGroup = null;
                 this.columnGroups = [];

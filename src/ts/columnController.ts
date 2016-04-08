@@ -285,7 +285,6 @@ module ag.grid {
         }
 
         public setColumnVisible(column: Column, visible: boolean): void {
-            // debugger;
             column.visible = visible;
 
             this.updateModel();
@@ -520,7 +519,6 @@ module ag.grid {
 
         // called from API
         public hideColumns(colIds: any, hide: any) {
-            // debugger;
             var updatedCols: Column[] = [];
             this.allColumns.forEach( (column: Column) => {
                 var idThisCol = column.colId;
@@ -651,7 +649,6 @@ module ag.grid {
                 return;
             }
 
-            // debugger;
 
             // split the columns into groups
             var currentGroup = <any> null;
