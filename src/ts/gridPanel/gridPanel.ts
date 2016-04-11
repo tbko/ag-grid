@@ -693,6 +693,21 @@ module ag.grid {
 
         }
 
+        private debounce(func: Function, wait: number, immediate?:boolean) {
+            var timeout;
+            return function() {
+                var context = this, args = arguments;
+                var later = function() {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) func.apply(context, args);
+            };
+        };
+
         private requestDrawVirtualRows() {
             // if we are in IE or Safari, then we only redraw if there was no scroll event
             // in the 50ms following this scroll event. without this, these browsers have
@@ -713,12 +728,12 @@ module ag.grid {
                 var scrollLagCounterCopy = this.scrollLagCounter;
                 setTimeout( ()=> {
                     if (this.scrollLagCounter === scrollLagCounterCopy) {
-                        this.rowRenderer.drawVirtualRows();
+                        this.debounce(this.rowRenderer.drawVirtualRows.bind(this.rowRenderer), 500, true)();
                     }
                 }, 50);
             // all other browsers, afaik, are fine, so just do the redraw
             } else {
-                this.rowRenderer.drawVirtualRows();
+                this.debounce(this.rowRenderer.drawVirtualRows.bind(this.rowRenderer), 500, true)();
             }
         }
 

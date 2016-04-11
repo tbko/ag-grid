@@ -711,6 +711,8 @@ declare module ag.grid {
         constructor(gridOptionsWrapper: GridOptionsWrapper, valueService: ValueService, parentScope: any, angularGrid: Grid, columnController: ColumnController, expressionService: ExpressionService, cellRendererMap: {
             [key: string]: any;
         }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService, rowsBefore?: number, topPx?: number, readyToDraw?: boolean);
+        private renderAndMeasureHeight(totalLineHeight, singleLineHeight, baseHeight, rowHeight, maxRows, minRows, verticalGap);
+        private renderAndMeasureHeightSome(totalLineHeight, singleLineHeight, baseHeight, rowHeight, maxRows, minRows, verticalGap);
         positionTop(px: number): void;
         getHeight(): number;
         getVerticalFrame(): any;
@@ -1404,6 +1406,7 @@ declare module ag.grid {
         private sizeHeaderAndBodyForPrint();
         setHorizontalScrollPosition(hScrollPosition: number): void;
         private addScrollListener();
+        private debounce(func, wait, immediate?);
         private requestDrawVirtualRows();
         private scrollHeader(bodyLeftPosition);
         private scrollPinned(bodyTopPosition);

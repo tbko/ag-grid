@@ -191,61 +191,89 @@ module ag.grid {
             this.rowHeight = 0;
             if (readyToDraw) {
                 this.insertInDOM();
-                var startTs = new Date();
-                for (var key in this.renderedCells) {
-                    var cellObj: RenderedCell = this.renderedCells[key];
-                    var cellObjEl: HTMLElement = <HTMLElement>cellObj
-                        .getVGridCell()
-                        .getElement()
-                    var foundElementToWrap = <HTMLElement> cellObjEl
-                        .querySelector('.ag-text-wrap');
-                    if (!foundElementToWrap) {
-                        continue;
-                    }
-                    // var styles = window.getComputedStyle(cellObjEl);
-                    // var verticalGap = parseInt(styles.paddingTop) + parseInt(styles.paddingBottom) + parseInt(styles.borderTopWidth) + parseInt(styles.borderBottomWidth);
-
-                    // if (maxRows == minRows) {
-                    // fixed lines count - reflow up to...
-                    // var maxLinesHeight = Math.max(maxRows, minRows) * baseHeight - verticalGap;
-                    if (maxRows == minRows) {
-                        foundElementToWrap.style['max-height'] = `${totalLineHeight}px`;
-                        foundElementToWrap.style['height'] = `${totalLineHeight}px`;
-                        foundElementToWrap.style['line-height'] = `${singleLineHeight}px`;
-
-                        var startReflowTs = new Date();
-                        _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
-                        var endReflowTs = new Date();
-                        this.rowHeight = rowHeight;
-                    } else {
-                        foundElementToWrap.style['max-height'] = ``;
-                        foundElementToWrap.style['height'] = ``;
-                        foundElementToWrap.style['line-height'] = `${singleLineHeight}px`;
-                        foundElementToWrap.style['overflow'] = `visible`;
-                        var requiredHeight = foundElementToWrap.scrollHeight + verticalGap;
-                        // debugger
-                        this.rowHeight = requiredHeight > this.rowHeight ? requiredHeight : this.rowHeight;
-                    }
-
-
-                };
-                if (!this.rowHeight) {
-                    this.rowHeight = baseHeight;
-                }
-
-                this.height = this.rowHeight;
-                this.heightPX = `${this.height}px`;
-                this.vBodyRow.element.style.height =  this.heightPX;
-                if (this.pinning) {
-                    this.vPinnedRow.element.style.height = this.heightPX;
-                }
+                this.renderAndMeasureHeight(
+                    totalLineHeight,
+                    singleLineHeight,
+                    baseHeight,
+                    rowHeight,
+                    maxRows,
+                    minRows,
+                    verticalGap
+                );
 
             }
+        }
+
+        private renderAndMeasureHeight(
+            totalLineHeight: number, singleLineHeight: number,
+            baseHeight: number, rowHeight: number,
+            maxRows: number, minRows: number,
+            verticalGap: number,
+
+        ) {
+
+            var keys = Object.keys(this.renderedCells);
+            for (let idx = keys.length; idx-- > 0; ) {
+            // for (var key in this.renderedCells) {
+
+                var cellObj: RenderedCell = this.renderedCells[keys[idx]];
+                var cellObjEl: any = cellObj.getVGridCell();
+                cellObjEl = cellObjEl.getElement();
+                // var foundElementToWrap = cellObjEl.querySelector('.ag-text-wrap');
+                var foundElementToWrap = cellObjEl.getElementsByClassName('ag-text-wrap')[0];
+
+                if (!foundElementToWrap) {
+                    continue;
+                }
+
+                if (maxRows == minRows) {
+                    foundElementToWrap.style['max-height'] = `${totalLineHeight}px`;
+                    foundElementToWrap.style['height'] = `${totalLineHeight}px`;
+                    foundElementToWrap.style['line-height'] = `${singleLineHeight}px`;
+
+                    _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
+                    this.rowHeight = rowHeight;
+                } else {
+                    foundElementToWrap.style['max-height'] = ``;
+                    foundElementToWrap.style['height'] = ``;
+                    foundElementToWrap.style['line-height'] = `${singleLineHeight}px`;
+                    foundElementToWrap.style['overflow'] = `visible`;
+                    var requiredHeight = foundElementToWrap.scrollHeight + verticalGap;
+                    this.rowHeight = requiredHeight > this.rowHeight ? requiredHeight : this.rowHeight;
+                }
 
 
-            var endTs = new Date();
-            this.timing = endTs - startTs;
-            this.timingReflow = endReflowTs - startReflowTs;
+            };
+
+            if (!this.rowHeight) {
+                this.rowHeight = baseHeight;
+            }
+
+            this.height = this.rowHeight;
+            this.heightPX = `${this.height}px`;
+            this.vBodyRow.element.style.height =  this.heightPX;
+            if (this.pinning) {
+                this.vPinnedRow.element.style.height = this.heightPX;
+            }
+            
+        }
+
+        private renderAndMeasureHeightSome(
+            totalLineHeight: number, singleLineHeight: number,
+            baseHeight: number, rowHeight: number,
+            maxRows: number, minRows: number,
+            verticalGap: number,
+
+        ) {
+            if (!this.rowHeight) {
+                this.rowHeight = baseHeight;
+            }
+            this.height = this.rowHeight;
+            this.heightPX = `${this.height}px`;
+            this.vBodyRow.element.style.height =  this.heightPX;
+            if (this.pinning) {
+                this.vPinnedRow.element.style.height = this.heightPX;
+            }
         }
 
         public positionTop(px: number) {

@@ -2621,8 +2621,6 @@ var ag;
                 }
             };
             RenderedCell.prototype.setupComponents = function () {
-                if (document.querySelector('.ag-body .ag-cell[colid="order"]') && this.column.colId === 'order') {
-                }
                 this.vGridCell = new ag.vdom.VHtmlElement("div");
                 this.vGridCell.setAttribute("col", (this.column.index !== undefined && this.column.index !== null) ? this.column.index.toString() : '');
                 this.vGridCell.setAttribute("colId", this.column.colId);
@@ -3284,56 +3282,59 @@ var ag;
                 this.rowHeight = 0;
                 if (readyToDraw) {
                     this.insertInDOM();
-                    var startTs = new Date();
-                    for (var key in this.renderedCells) {
-                        var cellObj = this.renderedCells[key];
-                        var cellObjEl = cellObj
-                            .getVGridCell()
-                            .getElement();
-                        var foundElementToWrap = cellObjEl
-                            .querySelector('.ag-text-wrap');
-                        if (!foundElementToWrap) {
-                            continue;
-                        }
-                        // var styles = window.getComputedStyle(cellObjEl);
-                        // var verticalGap = parseInt(styles.paddingTop) + parseInt(styles.paddingBottom) + parseInt(styles.borderTopWidth) + parseInt(styles.borderBottomWidth);
-                        // if (maxRows == minRows) {
-                        // fixed lines count - reflow up to...
-                        // var maxLinesHeight = Math.max(maxRows, minRows) * baseHeight - verticalGap;
-                        if (maxRows == minRows) {
-                            foundElementToWrap.style['max-height'] = totalLineHeight + "px";
-                            foundElementToWrap.style['height'] = totalLineHeight + "px";
-                            foundElementToWrap.style['line-height'] = singleLineHeight + "px";
-                            var startReflowTs = new Date();
-                            _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
-                            var endReflowTs = new Date();
-                            this.rowHeight = rowHeight;
-                        }
-                        else {
-                            foundElementToWrap.style['max-height'] = "";
-                            foundElementToWrap.style['height'] = "";
-                            foundElementToWrap.style['line-height'] = singleLineHeight + "px";
-                            foundElementToWrap.style['overflow'] = "visible";
-                            var requiredHeight = foundElementToWrap.scrollHeight + verticalGap;
-                            // debugger
-                            this.rowHeight = requiredHeight > this.rowHeight ? requiredHeight : this.rowHeight;
-                        }
+                    this.renderAndMeasureHeight(totalLineHeight, singleLineHeight, baseHeight, rowHeight, maxRows, minRows, verticalGap);
+                }
+            }
+            RenderedRow.prototype.renderAndMeasureHeight = function (totalLineHeight, singleLineHeight, baseHeight, rowHeight, maxRows, minRows, verticalGap) {
+                var keys = Object.keys(this.renderedCells);
+                for (var idx = keys.length; idx-- > 0;) {
+                    // for (var key in this.renderedCells) {
+                    var cellObj = this.renderedCells[keys[idx]];
+                    var cellObjEl = cellObj.getVGridCell();
+                    cellObjEl = cellObjEl.getElement();
+                    // var foundElementToWrap = cellObjEl.querySelector('.ag-text-wrap');
+                    var foundElementToWrap = cellObjEl.getElementsByClassName('ag-text-wrap')[0];
+                    if (!foundElementToWrap) {
+                        continue;
                     }
-                    ;
-                    if (!this.rowHeight) {
-                        this.rowHeight = baseHeight;
+                    if (maxRows == minRows) {
+                        foundElementToWrap.style['max-height'] = totalLineHeight + "px";
+                        foundElementToWrap.style['height'] = totalLineHeight + "px";
+                        foundElementToWrap.style['line-height'] = singleLineHeight + "px";
+                        _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
+                        this.rowHeight = rowHeight;
                     }
-                    this.height = this.rowHeight;
-                    this.heightPX = this.height + "px";
-                    this.vBodyRow.element.style.height = this.heightPX;
-                    if (this.pinning) {
-                        this.vPinnedRow.element.style.height = this.heightPX;
+                    else {
+                        foundElementToWrap.style['max-height'] = "";
+                        foundElementToWrap.style['height'] = "";
+                        foundElementToWrap.style['line-height'] = singleLineHeight + "px";
+                        foundElementToWrap.style['overflow'] = "visible";
+                        var requiredHeight = foundElementToWrap.scrollHeight + verticalGap;
+                        this.rowHeight = requiredHeight > this.rowHeight ? requiredHeight : this.rowHeight;
                     }
                 }
-                var endTs = new Date();
-                this.timing = endTs - startTs;
-                this.timingReflow = endReflowTs - startReflowTs;
-            }
+                ;
+                if (!this.rowHeight) {
+                    this.rowHeight = baseHeight;
+                }
+                this.height = this.rowHeight;
+                this.heightPX = this.height + "px";
+                this.vBodyRow.element.style.height = this.heightPX;
+                if (this.pinning) {
+                    this.vPinnedRow.element.style.height = this.heightPX;
+                }
+            };
+            RenderedRow.prototype.renderAndMeasureHeightSome = function (totalLineHeight, singleLineHeight, baseHeight, rowHeight, maxRows, minRows, verticalGap) {
+                if (!this.rowHeight) {
+                    this.rowHeight = baseHeight;
+                }
+                this.height = this.rowHeight;
+                this.heightPX = this.height + "px";
+                this.vBodyRow.element.style.height = this.heightPX;
+                if (this.pinning) {
+                    this.vPinnedRow.element.style.height = this.heightPX;
+                }
+            };
             RenderedRow.prototype.positionTop = function (px) {
                 this.top = px;
                 this.topPX = this.top + "px";
@@ -8900,6 +8901,23 @@ var ag;
                     _this.ePinnedColsViewport.scrollTop = 0;
                 });
             };
+            GridPanel.prototype.debounce = function (func, wait, immediate) {
+                var timeout;
+                return function () {
+                    var context = this, args = arguments;
+                    var later = function () {
+                        timeout = null;
+                        if (!immediate)
+                            func.apply(context, args);
+                    };
+                    var callNow = immediate && !timeout;
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                    if (callNow)
+                        func.apply(context, args);
+                };
+            };
+            ;
             GridPanel.prototype.requestDrawVirtualRows = function () {
                 var _this = this;
                 // if we are in IE or Safari, then we only redraw if there was no scroll event
@@ -8923,12 +8941,12 @@ var ag;
                     var scrollLagCounterCopy = this.scrollLagCounter;
                     setTimeout(function () {
                         if (_this.scrollLagCounter === scrollLagCounterCopy) {
-                            _this.rowRenderer.drawVirtualRows();
+                            _this.debounce(_this.rowRenderer.drawVirtualRows.bind(_this.rowRenderer), 500, true)();
                         }
                     }, 50);
                 }
                 else {
-                    this.rowRenderer.drawVirtualRows();
+                    this.debounce(this.rowRenderer.drawVirtualRows.bind(this.rowRenderer), 500, true)();
                 }
             };
             GridPanel.prototype.scrollHeader = function (bodyLeftPosition) {
