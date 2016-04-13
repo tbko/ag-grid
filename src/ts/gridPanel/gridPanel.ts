@@ -305,7 +305,7 @@ module ag.grid {
         public ensureIndexVisible(index: any) {
             var lastRow = this.rowModel.getVirtualRowCount();
             if (typeof index !== 'number' || index < 0 || index >= lastRow) {
-                console.warn('invalid row index for ensureIndexVisible: ' + index);
+                // console.warn('invalid row index for ensureIndexVisible: ' + index);
                 return;
             }
 

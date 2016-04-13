@@ -8579,7 +8579,7 @@ var ag;
             GridPanel.prototype.ensureIndexVisible = function (index) {
                 var lastRow = this.rowModel.getVirtualRowCount();
                 if (typeof index !== 'number' || index < 0 || index >= lastRow) {
-                    console.warn('invalid row index for ensureIndexVisible: ' + index);
+                    // console.warn('invalid row index for ensureIndexVisible: ' + index);
                     return;
                 }
                 var rowHeight = this.gridOptionsWrapper.getRowHeight();
