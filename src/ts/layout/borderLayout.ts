@@ -398,7 +398,7 @@ module ag.grid {
                 this.fireSizeChanged();
             }
 
-            if (this.name != 'eRootPanel') {
+            if (this.name != 'eRootPanel' && this.rootEl) {
                 var lastHeaderEl = <HTMLElement>this.rootEl.querySelector('.ag-header-container .ag-header-cell:last-child');
                 var scrollWidth = this.getScrollWidth();
                 

@@ -8113,7 +8113,7 @@ var ag;
                 if (atLeastOneChanged) {
                     this.fireSizeChanged();
                 }
-                if (this.name != 'eRootPanel') {
+                if (this.name != 'eRootPanel' && this.rootEl) {
                     var lastHeaderEl = this.rootEl.querySelector('.ag-header-container .ag-header-cell:last-child');
                     var scrollWidth = this.getScrollWidth();
                     if (scrollWidth) {
