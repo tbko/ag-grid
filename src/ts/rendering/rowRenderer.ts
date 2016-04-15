@@ -638,6 +638,7 @@ module ag.grid {
             var orderCellLeftPadding: number;
             var orderCellRightPadding: number;
             var currentWidth: number;
+            var orderedCell: RenderedCell;
 
             // if no cols, don't draw row
             if (!columns || columns.length == 0) {
@@ -655,7 +656,8 @@ module ag.grid {
                 this.renderedRows[rowIndex] = renderedRow;
 
                 if (this.orderColumn) {
-                    orderCellEl = renderedRow.renderedCells[this.orderColumn.index].vGridCell.element;
+                    orderedCell = renderedRow.renderedCells[this.orderColumn.index];
+                    if (orderedCell) orderCellEl = orderedCell.vGridCell.element;
                 }
                 if (orderCellEl) {
                     orderCellElContainer = <HTMLElement>orderCellEl.querySelector('.pi-table');
@@ -842,6 +844,7 @@ module ag.grid {
                 rowEl.classList.add('ag-dragging');
                 var rowIndex = rowEl.getAttribute('row')
                 event.dataTransfer.setData('text', rowIndex);
+                // event.dataTransfer.effectAllowed('all');
                 // store node data as it can be in not rendered state when drag is dropped (went out of visual scope)
                 that.rowModel.setDragSource(that.getRenderedRows()[rowIndex].getNode().data.order.orderNumber)
             }
