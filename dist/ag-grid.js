@@ -3625,23 +3625,33 @@ var ag;
                     that.eventService.dispatchEvent(grid.Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
                 });
                 vRow.addEventListener("mouseenter", function (event) {
+                    var counterpartEl;
                     this.isHovered = true;
                     vRow.addClass('ag-row-hover');
                     if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
-                        vRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]").classList.add('ag-row-hover');
+                        counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]");
+                        if (counterpartEl)
+                            counterpartEl.classList.add('ag-row-hover');
                     }
                     else if (vRow.element.parentElement.classList.contains('ag-body-container')) {
-                        vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(".ag-pinned-cols-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]").classList.add('ag-row-hover');
+                        counterpartEl = vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(".ag-pinned-cols-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]");
+                        if (counterpartEl)
+                            counterpartEl.classList.add('ag-row-hover');
                     }
                 });
                 vRow.addEventListener("mouseleave", function (event) {
+                    var counterpartEl;
                     this.isHovered = false;
                     vRow.removeClass('ag-row-hover');
                     if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
-                        vRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]").classList.remove('ag-row-hover');
+                        counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]");
+                        if (counterpartEl)
+                            counterpartEl.classList.remove('ag-row-hover');
                     }
                     else if (vRow.element.parentElement.classList.contains('ag-body-container')) {
-                        vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(".ag-pinned-cols-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]").classList.remove('ag-row-hover');
+                        counterpartEl = vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(".ag-pinned-cols-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]");
+                        if (counterpartEl)
+                            counterpartEl.classList.remove('ag-row-hover');
                     }
                 });
                 return vRow;
