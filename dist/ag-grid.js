@@ -3302,7 +3302,7 @@ var ag;
                         foundElementToWrap.style['max-height'] = totalLineHeight + "px";
                         foundElementToWrap.style['height'] = totalLineHeight + "px";
                         foundElementToWrap.style['line-height'] = singleLineHeight + "px";
-                        _.reflowText(foundElementToWrap, foundElementToWrap.textContent);
+                        _.reflowText(foundElementToWrap, foundElementToWrap.innerHTML);
                         this.rowHeight = rowHeight;
                     }
                     else {
