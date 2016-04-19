@@ -708,6 +708,7 @@ declare module ag.grid {
         private eventService;
         timing: number;
         timingReflow: number;
+        private isHovered;
         constructor(gridOptionsWrapper: GridOptionsWrapper, valueService: ValueService, parentScope: any, angularGrid: Grid, columnController: ColumnController, expressionService: ExpressionService, cellRendererMap: {
             [key: string]: any;
         }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService, rowsBefore?: number, topPx?: number, readyToDraw?: boolean);

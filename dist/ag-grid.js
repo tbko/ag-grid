@@ -3201,6 +3201,7 @@ var ag;
                 this.headerHeight = 0;
                 this.rowHeight = 0;
                 this.timing = 0;
+                this.isHovered = false;
                 var eRoot = _.findParentWithClass(this.eBodyContainer, 'ag-root');
                 var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
                 var rowIsHeaderThatSpans = node.group && groupHeaderTakesEntireRow;
@@ -3594,8 +3595,6 @@ var ag;
                     var eRowOverlay = document.querySelector('#ag-overlay-row');
                     var headerHeight = (this.gridOptionsWrapper && this.gridOptionsWrapper.getHeaderHeight()) || 0;
                     var thisRowElement = vRow.getElement();
-                    // event.stopPropagation();
-                    // event.preventDefault();
                     that.rowRenderer.setHoveredOn(null);
                     if (that.node) {
                         if (that.node.group) {
@@ -3624,6 +3623,26 @@ var ag;
                 vRow.addEventListener("dblclick", function (event) {
                     var agEvent = that.createEvent(event, this);
                     that.eventService.dispatchEvent(grid.Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
+                });
+                vRow.addEventListener("mouseenter", function (event) {
+                    this.isHovered = true;
+                    vRow.addClass('ag-row-hover');
+                    if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
+                        vRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]").classList.add('ag-row-hover');
+                    }
+                    else if (vRow.element.parentElement.classList.contains('ag-body-container')) {
+                        vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(".ag-pinned-cols-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]").classList.add('ag-row-hover');
+                    }
+                });
+                vRow.addEventListener("mouseleave", function (event) {
+                    this.isHovered = false;
+                    vRow.removeClass('ag-row-hover');
+                    if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
+                        vRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]").classList.remove('ag-row-hover');
+                    }
+                    else if (vRow.element.parentElement.classList.contains('ag-body-container')) {
+                        vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(".ag-pinned-cols-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]").classList.remove('ag-row-hover');
+                    }
                 });
                 return vRow;
             };

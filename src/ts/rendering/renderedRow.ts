@@ -55,6 +55,8 @@ module ag.grid {
         public timing: number;
         public timingReflow: number;
 
+        private isHovered: boolean;
+
         constructor(gridOptionsWrapper: GridOptionsWrapper,
                     valueService: ValueService,
                     parentScope: any,
@@ -94,6 +96,7 @@ module ag.grid {
             this.headerHeight = 0;
             this.rowHeight = 0;
             this.timing = 0;
+            this.isHovered = false;
 
             var eRoot: HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
 
@@ -567,9 +570,6 @@ module ag.grid {
                 var headerHeight = (this.gridOptionsWrapper && this.gridOptionsWrapper.getHeaderHeight()) || 0;
                 var thisRowElement = vRow.getElement();
 
-                // event.stopPropagation();
-                // event.preventDefault();
-
                 that.rowRenderer.setHoveredOn(null);
 
                 if (that.node) {
@@ -605,6 +605,32 @@ module ag.grid {
             vRow.addEventListener("dblclick", function (event: any) {
                 var agEvent = that.createEvent(event, this);
                 that.eventService.dispatchEvent(Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
+            });
+            vRow.addEventListener("mouseenter", function (event: any) {
+                this.isHovered = true;
+                vRow.addClass('ag-row-hover');
+                if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
+                    vRow.element.parentElement.parentElement.parentElement.querySelector(
+                        `.ag-body-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
+                    ).classList.add('ag-row-hover')
+                } else if (vRow.element.parentElement.classList.contains('ag-body-container')) {
+                    vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(
+                        `.ag-pinned-cols-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
+                    ).classList.add('ag-row-hover')
+                }
+            });
+            vRow.addEventListener("mouseleave", function (event: any) {
+                this.isHovered = false;
+                vRow.removeClass('ag-row-hover');
+                if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
+                    vRow.element.parentElement.parentElement.parentElement.querySelector(
+                        `.ag-body-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
+                    ).classList.remove('ag-row-hover')
+                } else if (vRow.element.parentElement.classList.contains('ag-body-container')) {
+                    vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(
+                        `.ag-pinned-cols-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
+                    ).classList.remove('ag-row-hover')
+                }
             });
 
             return vRow;
