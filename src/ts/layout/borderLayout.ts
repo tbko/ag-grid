@@ -186,7 +186,8 @@ module ag.grid {
             for (let eventName of [
                 'click', 'scroll', 'mousemove',
                 'mouseup', 'mousedown', 'DOMMouseScroll',
-                'MSPointerMove', 'mousewheel', 'wheel'
+                'MSPointerMove', 'mousewheel', 'wheel',
+                'mouseenter', 'mouseleave'
             ]) {
                 rowOverlayZone.addEventListener(eventName, this.overlayEventThrough.bind(this));
             }
@@ -201,6 +202,7 @@ module ag.grid {
         }
 
         public positionOverlayRowZone() {
+            console.log('position overlay');
             if (!this.gridOptionsWrapper || !this.getHoveredOn || !this.gridPanel) return;
             // vertically position action row overlay
             // from top of the first fully visible row to bottom of the last visible one
@@ -273,8 +275,8 @@ module ag.grid {
             this.setRowOverlayHeight(lastRowBottom - firstRowTop);
             this.setRowOverlayRight(this.getScrollWidth());
 
-            var rowUnderCursor = this.getHoveredOn();
-            if (rowUnderCursor && this.gridPanel.rowRenderer.isListenMouseMove) rowUnderCursor.listenMoveRef();
+            // var rowUnderCursor = this.getHoveredOn();
+            // if (rowUnderCursor && this.gridPanel.rowRenderer.isListenMouseMove) rowUnderCursor.listenMoveRef();
         }
 
         public switchExtraButton(rowObj) {
@@ -411,7 +413,7 @@ module ag.grid {
                 ) + 'px';
 
                 this.eGui.style.width = rootWidth;
-                this.positionOverlayRowZone();
+                // this.positionOverlayRowZone();
             }
 
             return atLeastOneChanged;
@@ -535,19 +537,78 @@ module ag.grid {
         private createOverlayRowTemplate(): string {
             // debugger
             var actions = this.gridOptionsWrapper.getActionTemplate();
-            var template = [];
-            for (var k in actions) {
-                var v = actions[k];
-                template.push(`
-                <a title="${v}" href="#"><span id="ag-action-row-${k}" class="i-${k}" style="pointer-events:all;"></span></a>
-                `);
+            // var template = [];
+            var template = '';
+            actionTemplate = {
+                'edit': 'Редактировать',
+                'split': 'Разделить',
+                'time-line_md': 'История',
+                'download': 'Скачать',
             }
+            // for (var k in actions) {
+            //     var v = actions[k];
+            //     template.push(`
+            //     <a title="${v}" href="#"><span id="ag-action-row-${k}" class="i-${k}" style="pointer-events:all;"></span></a>
+            //     `);
+            // }
             // var tmpl = `
             //     <a title="Редактировать" href="#"><span id="ag-action-row-edit" class="i-edit" style="pointer-events:all;"></span></a>
             //     <a title="Удалить" href="#"><span id="ag-action-row-delete" class="i-delete" style="pointer-events:all;"></span></a>
             //     <a title="Разделить" href="#"><span id="ag-action-row-split" class="i-split" style="pointer-events:all;"></span></a>
             // `;
-            return this.getOverlayRowWrapper(template.join(''));
+            template = `
+                <div
+                    class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm"
+                    style="pointer-events: all;"
+                    title="Смена статуса"
+                >
+                    <span
+                        class="b-options-btn b-options-btn_icon dropdown-toggle"
+                        data-toggle="dropdown"
+                        data-hover="dropdown"
+                        aria-expanded="false"
+                    >
+                        <span class="i-change-status"> </span>
+                    </span>
+                    <ul class="dropdown-menu">
+                        <li>
+                            <a class="k-visible k-action-elem js-work-status" data-status-id="1" href="\\#"> Новая </a>
+                        </li>
+                        <li>
+                            <a class="k-visible k-action-elem js-work-status" data-status-id="9" href="\\#" > Отменена </a>
+                        </li>
+                        <li>
+                            <a class="k-visible k-action-elem js-work-status" data-status-id="13" href="\\#" > Включена в план ПИ</a>
+                        </li>
+                    </ul>
+                </div>
+                <div
+                    class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm"
+                    style="margin-left: -10px; pointer-events: all;"
+                    title="Операции"
+                >
+                    <span class="b-options-btn dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" aria-expanded="false">...</span>
+                    <ul class="dropdown-menu">
+                        <li>
+                        </li>
+                        <li>
+                            <a class="link-icon link-edit k-visible k-action-elem js-work-edit" href="#?page=planPIWorks&amp;projectId=150&amp;subpage=edit&amp;id=12544"><span class="content-center">Редактировать</span></a>
+                        </li>
+                        <li>
+                            <a class="link-icon link-split k-visible k-action-elem js-work-split" href="#?page=planPIWorks&amp;projectId=150&amp;subpage=split&amp;id=12544"><span class="content-center">Разделить</span></a>
+                        </li>
+                        <li>
+                            <a class="link-icon link-delete k-visible k-action-elem js-work-delete" href="\\#"><span class="content-center">Удалить</span></a>
+                        </li>
+                    </ul>
+                </div>
+                <a title="История" href="\\#"><span id="ag-action-row-time-line_md" class="i-time-line_md" style="pointer-events:all;"></span></a>
+            `;
+            // <a class="link-icon link-time-line_md k-visible k-action-elem js-work-history" href="\\#"><span class="content-center">Удалить</span></a>
+            // <a class="k-visible k-action-elem js-work-history" href="#?page=planPiWorks&amp;id=12544&amp;subpage=history&amp;tab=statistics" style="pointer-events: all;"><span class="i-time-line_md"></span></a>
+            // return this.getOverlayRowWrapper(template.join(''));
+            template = `<a class="k-visible k-action-elem js-work-status" href="\\#">${Math.random()}</a>`;
+            return this.getOverlayRowWrapper(template);
         }
 
     // <div class="k-visible pi-dropdown-options btn-group k-action-elem_more" >
@@ -563,24 +624,74 @@ module ag.grid {
 
 
 
-        public showOverlayRow() {
+        public showOverlayRow(rowData?: any) {
             if (this.eOverlayRowZoneWrapper === void 0) return;
+            var actions: any = this.gridOptionsWrapper.getActionTemplate();
+            var actionData: any;
+
+            if (rowData && typeof actions == 'function') {
+                actionData = actions({
+                    data: rowData,
+                    type: 'actionTemplate'
+                });
+                while (this.eOverlayRowWrapper.firstChild) {
+                    this.eOverlayRowWrapper.removeChild(this.eOverlayRowWrapper.firstChild);
+                }
+                let tmpl: string[]|string = [''];
+                tmpl.push(`
+                    <div
+                        class="k-visible pi-dropdown-options dropup pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm"
+                        style="pointer-events: all;"
+                        title="Смена статуса"
+                    >
+                        <span
+                            class="b-options-btn b-options-btn_icon dropdown-toggle"
+                            data-toggle="dropdown"
+                            data-hover="dropdown"
+                            aria-expanded="false"
+                        >
+                            <span class="i-change-status"> </span>
+                        </span>
+                        <ul class="dropdown-menu">
+                `);
+                for (let el of actionData.statuses) {
+                    tmpl.push(`<li><a class="k-visible k-action-elem js-work-status" data-status-id="${el.id}" href= "\\#">  ${el.get('name')} </a></li>`);
+                }
+              
+                tmpl.push(`</ul></div>`);
+                tmpl = tmpl.join('');
+                tmpl = this.getOverlayRowWrapper(tmpl);
+                var tempDiv = document.createElement("div");
+                tempDiv.innerHTML = tmpl;
+                
+                this.eOverlayRowWrapper.appendChild(
+                    tempDiv.firstElementChild
+                );
+
+                actionData.postActionFn();
+
+                    // _.loadTemplate(tmpl)
+                return;
+            }
             document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
             // this.eOverlayRowWrapper.style.display = 'none';
             this.eOverlayRowWrapper.appendChild(
                 _.loadTemplate(this.createOverlayRowTemplate().trim())
             );
-            var actions = this.gridOptionsWrapper.getActionTemplate();
             for (var k in actions) {
                 var v = actions[k];
                 var that = this;
                 (function(k) {
-                    that.eOverlayRowWrapper.querySelector(`#ag-action-row-${k}`).addEventListener('click', (event) => {
-                        event.stopPropagation();
-                        event.preventDefault();
-                        that.rowActionListener(event, k);
-                        return false;
-                    });
+                    var actionElement = that.eOverlayRowWrapper.querySelector(`#ag-action-row-${k}`);
+                    if (actionElement) {
+                        actionElement.addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            event.preventDefault();
+                            that.rowActionListener(event, k);
+                            return false;
+
+                        });
+                    }
                 })(k);
             }
             // this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {

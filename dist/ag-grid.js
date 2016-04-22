@@ -3589,11 +3589,11 @@ var ag;
             RenderedRow.prototype.createRowContainer = function () {
                 var vRow = new ag.vdom.VHtmlElement('div');
                 var that = this;
-                function listenMove(event) {
+                var listenMove = function listenMove(event) {
                     var eRoot = _.findParentWithClass(that.eBodyContainer, 'ag-root');
                     var eOverlayZone = eRoot.querySelector('.ag-overlay-row-zone');
                     var eRowOverlay = document.querySelector('#ag-overlay-row');
-                    var headerHeight = (this.gridOptionsWrapper && this.gridOptionsWrapper.getHeaderHeight()) || 0;
+                    var headerHeight = (that.gridOptionsWrapper && that.gridOptionsWrapper.getHeaderHeight()) || 0;
                     var thisRowElement = vRow.getElement();
                     that.rowRenderer.setHoveredOn(null);
                     if (that.node) {
@@ -3602,15 +3602,16 @@ var ag;
                         }
                         else {
                             eRowOverlay.style.display = '';
-                            eRowOverlay.style.top = (thisRowElement.offsetTop - that.eBodyContainer.parentElement.scrollTop - 1 - eOverlayZone.offsetTop + headerHeight) + "px";
+                            eRowOverlay.style.top = (thisRowElement.offsetTop - that.eBodyContainer.parentElement.scrollTop - 1 - parseInt(eOverlayZone.style.top) + headerHeight) + "px";
                             eRowOverlay.style.height = that.heightPX;
                             that.rowRenderer.setHoveredOn(that);
                         }
                     }
+                    that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
                     that.rowRenderer.setListenMouseMove();
                     that.isListenMove = false;
                     that.vBodyRow.getElement().removeEventListener('mousemove', listenMove);
-                }
+                };
                 this.listenMoveRef = listenMove;
                 this.isListenMove = false;
                 vRow.addEventListener("click", function (event) {
@@ -3891,7 +3892,6 @@ var ag;
         var constants = grid.Constants;
         function groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService) {
             return function groupCellRenderer(params) {
-                console.log('group cell rendered');
                 var eGroupCell = document.createElement('span');
                 var node = params.node;
                 var cellExpandable = node.group && !node.footer;
@@ -5221,6 +5221,7 @@ var ag;
             ************************************************/
             RowRenderer.prototype.setListenMouseMove = function (toAllSet) {
                 if (toAllSet === void 0) { toAllSet = true; }
+                console.log(toAllSet);
                 var eventAction;
                 var allRows = this.renderedRows;
                 var el;
@@ -7961,7 +7962,8 @@ var ag;
                 for (var _i = 0, _a = [
                     'click', 'scroll', 'mousemove',
                     'mouseup', 'mousedown', 'DOMMouseScroll',
-                    'MSPointerMove', 'mousewheel', 'wheel'
+                    'MSPointerMove', 'mousewheel', 'wheel',
+                    'mouseenter', 'mouseleave'
                 ]; _i < _a.length; _i++) {
                     var eventName = _a[_i];
                     rowOverlayZone.addEventListener(eventName, this.overlayEventThrough.bind(this));
@@ -7973,6 +7975,7 @@ var ag;
                 this.eOverlayRowZoneWrapper = rowOverlayZone;
             };
             BorderLayout.prototype.positionOverlayRowZone = function () {
+                console.log('position overlay');
                 if (!this.gridOptionsWrapper || !this.getHoveredOn || !this.gridPanel)
                     return;
                 // vertically position action row overlay
@@ -8034,10 +8037,9 @@ var ag;
                 this.setRowOverlayTop(firstRowTop);
                 this.setRowOverlayHeight(lastRowBottom - firstRowTop);
                 this.setRowOverlayRight(this.getScrollWidth());
-                var rowUnderCursor = this.getHoveredOn();
-                if (rowUnderCursor && this.gridPanel.rowRenderer.isListenMouseMove)
-                    rowUnderCursor.listenMoveRef();
                 var _a;
+                // var rowUnderCursor = this.getHoveredOn();
+                // if (rowUnderCursor && this.gridPanel.rowRenderer.isListenMouseMove) rowUnderCursor.listenMoveRef();
             };
             BorderLayout.prototype.switchExtraButton = function (rowObj) {
                 // var row = this.getOverlayRow();
@@ -8154,7 +8156,6 @@ var ag;
                     }
                     var rootWidth = Math.min(this.containerBodyEl.offsetWidth + this.containerPinnedEl.offsetWidth + scrollWidth, this.gridPanel.getRootPanel().offsetWidth) + 'px';
                     this.eGui.style.width = rootWidth;
-                    this.positionOverlayRowZone();
                 }
                 return atLeastOneChanged;
             };
@@ -8257,17 +8258,31 @@ var ag;
             BorderLayout.prototype.createOverlayRowTemplate = function () {
                 // debugger
                 var actions = this.gridOptionsWrapper.getActionTemplate();
-                var template = [];
-                for (var k in actions) {
-                    var v = actions[k];
-                    template.push("\n                <a title=\"" + v + "\" href=\"#\"><span id=\"ag-action-row-" + k + "\" class=\"i-" + k + "\" style=\"pointer-events:all;\"></span></a>\n                ");
-                }
+                // var template = [];
+                var template = '';
+                actionTemplate = {
+                    'edit': 'Редактировать',
+                    'split': 'Разделить',
+                    'time-line_md': 'История',
+                    'download': 'Скачать',
+                };
+                // for (var k in actions) {
+                //     var v = actions[k];
+                //     template.push(`
+                //     <a title="${v}" href="#"><span id="ag-action-row-${k}" class="i-${k}" style="pointer-events:all;"></span></a>
+                //     `);
+                // }
                 // var tmpl = `
                 //     <a title="Редактировать" href="#"><span id="ag-action-row-edit" class="i-edit" style="pointer-events:all;"></span></a>
                 //     <a title="Удалить" href="#"><span id="ag-action-row-delete" class="i-delete" style="pointer-events:all;"></span></a>
                 //     <a title="Разделить" href="#"><span id="ag-action-row-split" class="i-split" style="pointer-events:all;"></span></a>
                 // `;
-                return this.getOverlayRowWrapper(template.join(''));
+                template = "\n                <div\n                    class=\"k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm\"\n                    style=\"pointer-events: all;\"\n                    title=\"\u0421\u043C\u0435\u043D\u0430 \u0441\u0442\u0430\u0442\u0443\u0441\u0430\"\n                >\n                    <span\n                        class=\"b-options-btn b-options-btn_icon dropdown-toggle\"\n                        data-toggle=\"dropdown\"\n                        data-hover=\"dropdown\"\n                        aria-expanded=\"false\"\n                    >\n                        <span class=\"i-change-status\"> </span>\n                    </span>\n                    <ul class=\"dropdown-menu\">\n                        <li>\n                            <a class=\"k-visible k-action-elem js-work-status\" data-status-id=\"1\" href=\"\\#\"> \u041D\u043E\u0432\u0430\u044F </a>\n                        </li>\n                        <li>\n                            <a class=\"k-visible k-action-elem js-work-status\" data-status-id=\"9\" href=\"\\#\" > \u041E\u0442\u043C\u0435\u043D\u0435\u043D\u0430 </a>\n                        </li>\n                        <li>\n                            <a class=\"k-visible k-action-elem js-work-status\" data-status-id=\"13\" href=\"\\#\" > \u0412\u043A\u043B\u044E\u0447\u0435\u043D\u0430 \u0432 \u043F\u043B\u0430\u043D \u041F\u0418</a>\n                        </li>\n                    </ul>\n                </div>\n                <div\n                    class=\"k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm\"\n                    style=\"margin-left: -10px; pointer-events: all;\"\n                    title=\"\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u0438\"\n                >\n                    <span class=\"b-options-btn dropdown-toggle\" data-toggle=\"dropdown\" data-hover=\"dropdown\" aria-expanded=\"false\">...</span>\n                    <ul class=\"dropdown-menu\">\n                        <li>\n                        </li>\n                        <li>\n                            <a class=\"link-icon link-edit k-visible k-action-elem js-work-edit\" href=\"#?page=planPIWorks&amp;projectId=150&amp;subpage=edit&amp;id=12544\"><span class=\"content-center\">\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C</span></a>\n                        </li>\n                        <li>\n                            <a class=\"link-icon link-split k-visible k-action-elem js-work-split\" href=\"#?page=planPIWorks&amp;projectId=150&amp;subpage=split&amp;id=12544\"><span class=\"content-center\">\u0420\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u044C</span></a>\n                        </li>\n                        <li>\n                            <a class=\"link-icon link-delete k-visible k-action-elem js-work-delete\" href=\"\\#\"><span class=\"content-center\">\u0423\u0434\u0430\u043B\u0438\u0442\u044C</span></a>\n                        </li>\n                    </ul>\n                </div>\n                <a title=\"\u0418\u0441\u0442\u043E\u0440\u0438\u044F\" href=\"\\#\"><span id=\"ag-action-row-time-line_md\" class=\"i-time-line_md\" style=\"pointer-events:all;\"></span></a>\n            ";
+                // <a class="link-icon link-time-line_md k-visible k-action-elem js-work-history" href="\\#"><span class="content-center">Удалить</span></a>
+                // <a class="k-visible k-action-elem js-work-history" href="#?page=planPiWorks&amp;id=12544&amp;subpage=history&amp;tab=statistics" style="pointer-events: all;"><span class="i-time-line_md"></span></a>
+                // return this.getOverlayRowWrapper(template.join(''));
+                template = "<a class=\"k-visible k-action-elem js-work-status\" href=\"\\#\">" + Math.random() + "</a>";
+                return this.getOverlayRowWrapper(template);
             };
             // <div class="k-visible pi-dropdown-options btn-group k-action-elem_more" >
             //     <span class="b-options-btn dropdown-toggle" data- toggle="dropdown" data- hover="dropdown" aria- expanded="true" >...</span>
@@ -8279,23 +8294,51 @@ var ag;
             //             </li>
             //         </ul>
             // </div>
-            BorderLayout.prototype.showOverlayRow = function () {
+            BorderLayout.prototype.showOverlayRow = function (rowData) {
                 if (this.eOverlayRowZoneWrapper === void 0)
                     return;
+                var actions = this.gridOptionsWrapper.getActionTemplate();
+                var actionData;
+                if (rowData && typeof actions == 'function') {
+                    actionData = actions({
+                        data: rowData,
+                        type: 'actionTemplate'
+                    });
+                    while (this.eOverlayRowWrapper.firstChild) {
+                        this.eOverlayRowWrapper.removeChild(this.eOverlayRowWrapper.firstChild);
+                    }
+                    var tmpl = [''];
+                    tmpl.push("\n                    <div\n                        class=\"k-visible pi-dropdown-options dropup pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm\"\n                        style=\"pointer-events: all;\"\n                        title=\"\u0421\u043C\u0435\u043D\u0430 \u0441\u0442\u0430\u0442\u0443\u0441\u0430\"\n                    >\n                        <span\n                            class=\"b-options-btn b-options-btn_icon dropdown-toggle\"\n                            data-toggle=\"dropdown\"\n                            data-hover=\"dropdown\"\n                            aria-expanded=\"false\"\n                        >\n                            <span class=\"i-change-status\"> </span>\n                        </span>\n                        <ul class=\"dropdown-menu\">\n                ");
+                    for (var _i = 0, _a = actionData.statuses; _i < _a.length; _i++) {
+                        var el = _a[_i];
+                        tmpl.push("<li><a class=\"k-visible k-action-elem js-work-status\" data-status-id=\"" + el.id + "\" href= \"\\#\">  " + el.get('name') + " </a></li>");
+                    }
+                    tmpl.push("</ul></div>");
+                    tmpl = tmpl.join('');
+                    tmpl = this.getOverlayRowWrapper(tmpl);
+                    var tempDiv = document.createElement("div");
+                    tempDiv.innerHTML = tmpl;
+                    this.eOverlayRowWrapper.appendChild(tempDiv.firstElementChild);
+                    actionData.postActionFn();
+                    // _.loadTemplate(tmpl)
+                    return;
+                }
                 document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
                 // this.eOverlayRowWrapper.style.display = 'none';
                 this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
-                var actions = this.gridOptionsWrapper.getActionTemplate();
                 for (var k in actions) {
                     var v = actions[k];
                     var that = this;
                     (function (k) {
-                        that.eOverlayRowWrapper.querySelector("#ag-action-row-" + k).addEventListener('click', function (event) {
-                            event.stopPropagation();
-                            event.preventDefault();
-                            that.rowActionListener(event, k);
-                            return false;
-                        });
+                        var actionElement = that.eOverlayRowWrapper.querySelector("#ag-action-row-" + k);
+                        if (actionElement) {
+                            actionElement.addEventListener('click', function (event) {
+                                event.stopPropagation();
+                                event.preventDefault();
+                                that.rowActionListener(event, k);
+                                return false;
+                            });
+                        }
                     })(k);
                 }
                 // this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
@@ -8705,8 +8748,8 @@ var ag;
                 }
                 this.layout.showOverlay('tool');
             };
-            GridPanel.prototype.showOverlayRow = function () {
-                this.layout.showOverlayRow();
+            GridPanel.prototype.showOverlayRow = function (rowData) {
+                this.layout.showOverlayRow(rowData);
             };
             GridPanel.prototype.hideOverlay = function () {
                 this.layout.hideOverlay();

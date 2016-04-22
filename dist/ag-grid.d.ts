@@ -504,7 +504,7 @@ declare module ag.grid {
         getFullHeaderHeight(): number;
         getHeaderHeight(): number;
         setHeaderHeight(headerHeight: number): void;
-        getActionTemplate(): string;
+        getActionTemplate(): string | Function;
         isGroupHeaders(): boolean;
         setGroupHeaders(groupHeaders: boolean): void;
         getFloatingTopRowData(): any[];
@@ -1308,7 +1308,7 @@ declare module ag.grid {
         hideOverlay(): void;
         private getOverlayRowWrapper(content?);
         private createOverlayRowTemplate();
-        showOverlayRow(): void;
+        showOverlayRow(rowData?: any): void;
         showOverlay(key: string): void;
         private pXhelper(value);
         setRowOverlayTop(offsetY: number): void;
@@ -1381,7 +1381,7 @@ declare module ag.grid {
         showLoadingOverlay(): void;
         showNoRowsOverlay(): void;
         showToolOverlay(counter?: number): void;
-        showOverlayRow(): void;
+        showOverlayRow(rowData?: any): void;
         hideOverlay(): void;
         getWidthForSizeColsToFit(): number;
         setRowModel(rowModel: any): void;

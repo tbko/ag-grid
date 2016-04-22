@@ -13,7 +13,6 @@ module ag.grid {
                                     expressionService: ExpressionService) {
 
         return function groupCellRenderer(params: any) {
-            console.log('group cell rendered');
 
             var eGroupCell = document.createElement('span');
             var node = params.node;

@@ -157,7 +157,7 @@ module ag.grid {
             }
         }
         public setHeaderHeight(headerHeight: number): void { this.headerHeight = headerHeight; }
-        public getActionTemplate(): string {
+        public getActionTemplate(): string | Function {
             return this.actionTemplate;
         }
 

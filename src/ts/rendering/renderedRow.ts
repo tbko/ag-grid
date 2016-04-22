@@ -563,12 +563,13 @@ module ag.grid {
             var vRow = new ag.vdom.VHtmlElement('div');
             var that = this;
 
-            function listenMove(event: any) {
+            var listenMove = function listenMove(event: any) {
                 var eRoot:HTMLElement = _.findParentWithClass(that.eBodyContainer, 'ag-root');
                 var eOverlayZone: HTMLElement = <HTMLElement>eRoot.querySelector('.ag-overlay-row-zone');
                 var eRowOverlay:HTMLElement = <HTMLElement>document.querySelector('#ag-overlay-row');
-                var headerHeight = (this.gridOptionsWrapper && this.gridOptionsWrapper.getHeaderHeight()) || 0;
+                var headerHeight = (that.gridOptionsWrapper && that.gridOptionsWrapper.getHeaderHeight()) || 0;
                 var thisRowElement = vRow.getElement();
+
 
                 that.rowRenderer.setHoveredOn(null);
 
@@ -579,17 +580,17 @@ module ag.grid {
                         eRowOverlay.style.display = '';
 
                         eRowOverlay.style.top = `${
-                            thisRowElement.offsetTop - that.eBodyContainer.parentElement.scrollTop - 1 - eOverlayZone.offsetTop + headerHeight
+                            thisRowElement.offsetTop - that.eBodyContainer.parentElement.scrollTop - 1 - parseInt(eOverlayZone.style.top) + headerHeight
                         }px`;
                         eRowOverlay.style.height = that.heightPX;
                         that.rowRenderer.setHoveredOn(that);
                     }
                 }
 
+                that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
                 that.rowRenderer.setListenMouseMove();
                 that.isListenMove = false;
                 that.vBodyRow.getElement().removeEventListener('mousemove', listenMove);
-
             }
             this.listenMoveRef = listenMove;
             this.isListenMove = false;

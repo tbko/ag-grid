@@ -419,8 +419,8 @@ module ag.grid {
             this.layout.showOverlay('tool');
         }
 
-        public showOverlayRow(): void {
-            this.layout.showOverlayRow();
+        public showOverlayRow(rowData?: any): void {
+            this.layout.showOverlayRow(rowData);
         }
 
         public hideOverlay(): void {
