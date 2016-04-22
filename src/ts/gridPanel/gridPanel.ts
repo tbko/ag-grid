@@ -681,6 +681,8 @@ module ag.grid {
                 this.masterSlaveService.fireHorizontalScrollEvent(newLeftPosition);
 
                 this.layout.positionOverlayRowZone();
+                var rowUnderCursor = this.layout.getHoveredOn();
+                if (rowUnderCursor && this.layout.gridPanel.rowRenderer.isListenMouseMove) rowUnderCursor.listenMoveRef();
             });
 
             this.ePinnedColsViewport.addEventListener('scroll', () => {

@@ -7847,6 +7847,7 @@ var ag;
             function BorderLayout(params) {
                 this.sizeChangeListeners = [];
                 this.isLayoutPanel = true;
+                this.isActionsRedrawn = true;
                 this.fullHeight = !params.north && !params.south;
                 this.deleteListener = params.deleteListener;
                 this.rowActionListener = params.rowActionListener;
@@ -8255,34 +8256,90 @@ var ag;
                 var tmpl = "\n                <div class=\"ag-overlay-panel\">\n                    <div class=\"ag-overlay-wrapper ag-overlay-row-wrapper\">" + content + "</div>\n                </div>\n            ";
                 return tmpl;
             };
-            BorderLayout.prototype.createOverlayRowTemplate = function () {
-                // debugger
-                var actions = this.gridOptionsWrapper.getActionTemplate();
-                // var template = [];
-                var template = '';
-                actionTemplate = {
-                    'edit': 'Редактировать',
-                    'split': 'Разделить',
-                    'time-line_md': 'История',
-                    'download': 'Скачать',
-                };
-                // for (var k in actions) {
-                //     var v = actions[k];
-                //     template.push(`
-                //     <a title="${v}" href="#"><span id="ag-action-row-${k}" class="i-${k}" style="pointer-events:all;"></span></a>
-                //     `);
-                // }
-                // var tmpl = `
-                //     <a title="Редактировать" href="#"><span id="ag-action-row-edit" class="i-edit" style="pointer-events:all;"></span></a>
-                //     <a title="Удалить" href="#"><span id="ag-action-row-delete" class="i-delete" style="pointer-events:all;"></span></a>
-                //     <a title="Разделить" href="#"><span id="ag-action-row-split" class="i-split" style="pointer-events:all;"></span></a>
+            BorderLayout.prototype.createOverlayRowTemplate = function (actions) {
+                var tmpl = [''];
+                if (!actions) {
+                    actions = this.gridOptionsWrapper.getActionTemplate();
+                    for (var k in actions) {
+                        var v = actions[k];
+                        tmpl.push("\n                    <a title=\"" + v + "\" href=\"#\"><span id=\"ag-action-row-" + k + "\" class=\"i-" + k + "\" style=\"pointer-events:all;\"></span></a>\n                    ");
+                    }
+                }
+                else {
+                    var menuTemplateStart = function (data) {
+                        return "\n                        <div\n                            class=\"k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm\"\n                            style=\"pointer-events: all;\"\n                            title=" + data.title + "\n                        >\n                            <span\n                                class=\"b-options-btn b-options-btn_icon dropdown-toggle\"\n                                data-toggle=\"dropdown\"\n                                data-hover=\"dropdown\"\n                                aria-expanded=\"false\"\n                            >\n                                <span class=\"i-" + data.code + "\"> </span>\n                            </span>\n                            <ul class=\"dropdown-menu\">\n                    ";
+                    };
+                    var menuTemplateEnd = function (data) {
+                        return "\n                            </ul>\n                        </div>\n                    ";
+                    };
+                    var menuTemplateItem = function (data) {
+                        return "\n                        <li>\n                            <a class=\"k-visible k-action-elem js-" + data.code + "\" data-status-id=\"" + data.itemId + "\" href=\"\\#\">\n                                " + data.itemTitle + "\n                            </a>\n                        </li>\n                    ";
+                    };
+                    for (var _i = 0; _i < actions.length; _i++) {
+                        var actionItem = actions[_i];
+                        var data = {
+                            title: actionItem.title,
+                            code: actionItem.code
+                        };
+                        if ('children' in actionItem) {
+                            tmpl.push(menuTemplateStart(data));
+                            for (var _a = 0, _b = actionItem.children; _a < _b.length; _a++) {
+                                var menuItem = _b[_a];
+                                data.itemId = menuItem.get('id');
+                                data.itemTitle = menuItem.get('name');
+                                tmpl.push(menuTemplateItem(data));
+                            }
+                            tmpl.push(menuTemplateEnd(data));
+                        }
+                    }
+                }
+                tmpl = tmpl.join('');
+                // template = `
+                //     <div
+                //         class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm"
+                //         style="pointer-events: all;"
+                //         title="Смена статуса"
+                //     >
+                //         <span
+                //             class="b-options-btn b-options-btn_icon dropdown-toggle"
+                //             data-toggle="dropdown"
+                //             data-hover="dropdown"
+                //             aria-expanded="false"
+                //         >
+                //             <span class="i-change-status"> </span>
+                //         </span>
+                //         <ul class="dropdown-menu">
+                //             <li>
+                //                 <a class="k-visible k-action-elem js-work-status" data-status-id="9" href="\\#" > Отменена </a>
+                //             </li>
+                //             <li>
+                //                 <a class="k-visible k-action-elem js-work-status" data-status-id="13" href="\\#" > Включена в план ПИ</a>
+                //             </li>
+                //         </ul>
+                //     </div>
+                //     <div
+                //         class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm"
+                //         style="margin-left: -10px; pointer-events: all;"
+                //         title="Операции"
+                //     >
+                //         <span class="b-options-btn dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" aria-expanded="false">...</span>
+                //         <ul class="dropdown-menu">
+                //             <li>
+                //             </li>
+                //             <li>
+                //                 <a class="link-icon link-edit k-visible k-action-elem js-work-edit" href="#?page=planPIWorks&amp;projectId=150&amp;subpage=edit&amp;id=12544"><span class="content-center">Редактировать</span></a>
+                //             </li>
+                //             <li>
+                //                 <a class="link-icon link-split k-visible k-action-elem js-work-split" href="#?page=planPIWorks&amp;projectId=150&amp;subpage=split&amp;id=12544"><span class="content-center">Разделить</span></a>
+                //             </li>
+                //             <li>
+                //                 <a class="link-icon link-delete k-visible k-action-elem js-work-delete" href="\\#"><span class="content-center">Удалить</span></a>
+                //             </li>
+                //         </ul>
+                //     </div>
+                //     <a title="История" href="\\#"><span id="ag-action-row-time-line_md" class="i-time-line_md" style="pointer-events:all;"></span></a>
                 // `;
-                template = "\n                <div\n                    class=\"k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm\"\n                    style=\"pointer-events: all;\"\n                    title=\"\u0421\u043C\u0435\u043D\u0430 \u0441\u0442\u0430\u0442\u0443\u0441\u0430\"\n                >\n                    <span\n                        class=\"b-options-btn b-options-btn_icon dropdown-toggle\"\n                        data-toggle=\"dropdown\"\n                        data-hover=\"dropdown\"\n                        aria-expanded=\"false\"\n                    >\n                        <span class=\"i-change-status\"> </span>\n                    </span>\n                    <ul class=\"dropdown-menu\">\n                        <li>\n                            <a class=\"k-visible k-action-elem js-work-status\" data-status-id=\"1\" href=\"\\#\"> \u041D\u043E\u0432\u0430\u044F </a>\n                        </li>\n                        <li>\n                            <a class=\"k-visible k-action-elem js-work-status\" data-status-id=\"9\" href=\"\\#\" > \u041E\u0442\u043C\u0435\u043D\u0435\u043D\u0430 </a>\n                        </li>\n                        <li>\n                            <a class=\"k-visible k-action-elem js-work-status\" data-status-id=\"13\" href=\"\\#\" > \u0412\u043A\u043B\u044E\u0447\u0435\u043D\u0430 \u0432 \u043F\u043B\u0430\u043D \u041F\u0418</a>\n                        </li>\n                    </ul>\n                </div>\n                <div\n                    class=\"k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm\"\n                    style=\"margin-left: -10px; pointer-events: all;\"\n                    title=\"\u041E\u043F\u0435\u0440\u0430\u0446\u0438\u0438\"\n                >\n                    <span class=\"b-options-btn dropdown-toggle\" data-toggle=\"dropdown\" data-hover=\"dropdown\" aria-expanded=\"false\">...</span>\n                    <ul class=\"dropdown-menu\">\n                        <li>\n                        </li>\n                        <li>\n                            <a class=\"link-icon link-edit k-visible k-action-elem js-work-edit\" href=\"#?page=planPIWorks&amp;projectId=150&amp;subpage=edit&amp;id=12544\"><span class=\"content-center\">\u0420\u0435\u0434\u0430\u043A\u0442\u0438\u0440\u043E\u0432\u0430\u0442\u044C</span></a>\n                        </li>\n                        <li>\n                            <a class=\"link-icon link-split k-visible k-action-elem js-work-split\" href=\"#?page=planPIWorks&amp;projectId=150&amp;subpage=split&amp;id=12544\"><span class=\"content-center\">\u0420\u0430\u0437\u0434\u0435\u043B\u0438\u0442\u044C</span></a>\n                        </li>\n                        <li>\n                            <a class=\"link-icon link-delete k-visible k-action-elem js-work-delete\" href=\"\\#\"><span class=\"content-center\">\u0423\u0434\u0430\u043B\u0438\u0442\u044C</span></a>\n                        </li>\n                    </ul>\n                </div>\n                <a title=\"\u0418\u0441\u0442\u043E\u0440\u0438\u044F\" href=\"\\#\"><span id=\"ag-action-row-time-line_md\" class=\"i-time-line_md\" style=\"pointer-events:all;\"></span></a>\n            ";
-                // <a class="link-icon link-time-line_md k-visible k-action-elem js-work-history" href="\\#"><span class="content-center">Удалить</span></a>
-                // <a class="k-visible k-action-elem js-work-history" href="#?page=planPiWorks&amp;id=12544&amp;subpage=history&amp;tab=statistics" style="pointer-events: all;"><span class="i-time-line_md"></span></a>
-                // return this.getOverlayRowWrapper(template.join(''));
-                template = "<a class=\"k-visible k-action-elem js-work-status\" href=\"\\#\">" + Math.random() + "</a>";
-                return this.getOverlayRowWrapper(template);
+                return this.getOverlayRowWrapper(tmpl);
             };
             // <div class="k-visible pi-dropdown-options btn-group k-action-elem_more" >
             //     <span class="b-options-btn dropdown-toggle" data- toggle="dropdown" data- hover="dropdown" aria- expanded="true" >...</span>
@@ -8300,6 +8357,7 @@ var ag;
                 var actions = this.gridOptionsWrapper.getActionTemplate();
                 var actionData;
                 if (rowData && typeof actions == 'function') {
+                    // debugger
                     actionData = actions({
                         data: rowData,
                         type: 'actionTemplate'
@@ -8307,22 +8365,16 @@ var ag;
                     while (this.eOverlayRowWrapper.firstChild) {
                         this.eOverlayRowWrapper.removeChild(this.eOverlayRowWrapper.firstChild);
                     }
-                    var tmpl = [''];
-                    tmpl.push("\n                    <div\n                        class=\"k-visible pi-dropdown-options dropup pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm\"\n                        style=\"pointer-events: all;\"\n                        title=\"\u0421\u043C\u0435\u043D\u0430 \u0441\u0442\u0430\u0442\u0443\u0441\u0430\"\n                    >\n                        <span\n                            class=\"b-options-btn b-options-btn_icon dropdown-toggle\"\n                            data-toggle=\"dropdown\"\n                            data-hover=\"dropdown\"\n                            aria-expanded=\"false\"\n                        >\n                            <span class=\"i-change-status\"> </span>\n                        </span>\n                        <ul class=\"dropdown-menu\">\n                ");
-                    for (var _i = 0, _a = actionData.statuses; _i < _a.length; _i++) {
-                        var el = _a[_i];
-                        tmpl.push("<li><a class=\"k-visible k-action-elem js-work-status\" data-status-id=\"" + el.id + "\" href= \"\\#\">  " + el.get('name') + " </a></li>");
-                    }
-                    tmpl.push("</ul></div>");
-                    tmpl = tmpl.join('');
-                    tmpl = this.getOverlayRowWrapper(tmpl);
                     var tempDiv = document.createElement("div");
-                    tempDiv.innerHTML = tmpl;
+                    tempDiv.innerHTML = this.createOverlayRowTemplate(actionData.actions);
                     this.eOverlayRowWrapper.appendChild(tempDiv.firstElementChild);
                     actionData.postActionFn();
-                    // _.loadTemplate(tmpl)
                     return;
                 }
+                if (!this.isActionsRedrawn) {
+                    return;
+                }
+                this.isActionsRedrawn = false;
                 document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
                 // this.eOverlayRowWrapper.style.display = 'none';
                 this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
@@ -8968,6 +9020,9 @@ var ag;
                     }
                     _this.masterSlaveService.fireHorizontalScrollEvent(newLeftPosition);
                     _this.layout.positionOverlayRowZone();
+                    var rowUnderCursor = _this.layout.getHoveredOn();
+                    if (rowUnderCursor && _this.layout.gridPanel.rowRenderer.isListenMouseMove)
+                        rowUnderCursor.listenMoveRef();
                 });
                 this.ePinnedColsViewport.addEventListener('scroll', function () {
                     // this means the pinned panel was moved, which can only

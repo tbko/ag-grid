@@ -44,6 +44,7 @@ module ag.grid {
         isRowDrug: any;
         isRowDrop: any;
         metrics: any;
+        actionTemplate: any;
 
         // just set once
         heightOption: number;

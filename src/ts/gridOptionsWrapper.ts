@@ -15,7 +15,7 @@ module ag.grid {
 
         private groupHeaders: boolean;
         private headerHeight: number;
-        private actionTemplate: string;
+        private actionTemplate: any;
         private rowHeight: number;
         private rowHeightExtra: number;
         private floatingTopRowData: any[];
@@ -157,7 +157,7 @@ module ag.grid {
             }
         }
         public setHeaderHeight(headerHeight: number): void { this.headerHeight = headerHeight; }
-        public getActionTemplate(): string | Function {
+        public getActionTemplate(): any | Function {
             return this.actionTemplate;
         }
 
