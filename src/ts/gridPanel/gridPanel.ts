@@ -151,7 +151,8 @@ module ag.grid {
                     var selected = [that.rowRenderer.getHoveredOn().node];
                     var multitoolParams = {
                         name: key,
-                        items: selected
+                        items: selected,
+                        data: ev.currentTarget.dataset
                     }
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                 },

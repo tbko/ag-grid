@@ -5221,7 +5221,6 @@ var ag;
             ************************************************/
             RowRenderer.prototype.setListenMouseMove = function (toAllSet) {
                 if (toAllSet === void 0) { toAllSet = true; }
-                console.log(toAllSet);
                 var eventAction;
                 var allRows = this.renderedRows;
                 var el;
@@ -7976,7 +7975,6 @@ var ag;
                 this.eOverlayRowZoneWrapper = rowOverlayZone;
             };
             BorderLayout.prototype.positionOverlayRowZone = function () {
-                console.log('position overlay');
                 if (!this.gridOptionsWrapper || !this.getHoveredOn || !this.gridPanel)
                     return;
                 // vertically position action row overlay
@@ -8267,13 +8265,19 @@ var ag;
                 }
                 else {
                     var menuTemplateStart = function (data) {
-                        return "\n                        <div\n                            class=\"k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm\"\n                            style=\"pointer-events: all;\"\n                            title=" + data.title + "\n                        >\n                            <span\n                                class=\"b-options-btn b-options-btn_icon dropdown-toggle\"\n                                data-toggle=\"dropdown\"\n                                data-hover=\"dropdown\"\n                                aria-expanded=\"false\"\n                            >\n                                <span class=\"i-" + data.code + "\"> </span>\n                            </span>\n                            <ul class=\"dropdown-menu\">\n                    ";
+                        return "\n                        <div\n                            class=\"k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm\"\n                            style=\"margin-left: -10px; pointer-events: all;\"\n                            title=\"" + data.title + "\"\n                        >\n                            <span\n                                class=\"b-options-btn b-options-btn_icon dropdown-toggle\"\n                                data-toggle=\"dropdown\"\n                                data-hover=\"dropdown\"\n                                aria-expanded=\"false\"\n                            >\n                                <span class=\"i-" + data.code + "\"> </span>\n                            </span>\n                            <ul class=\"dropdown-menu\">\n                    ";
                     };
                     var menuTemplateEnd = function (data) {
                         return "\n                            </ul>\n                        </div>\n                    ";
                     };
                     var menuTemplateItem = function (data) {
-                        return "\n                        <li>\n                            <a class=\"k-visible k-action-elem js-" + data.code + "\" data-status-id=\"" + data.itemId + "\" href=\"\\#\">\n                                " + data.itemTitle + "\n                            </a>\n                        </li>\n                    ";
+                        return "\n                        <li>\n                            <a class=\"k-visible k-action-elem js-" + (data.code || 'dummy') + "\" data-status-id=\"" + data.itemId + "\" href=\"\\#\">\n                                " + data.itemTitle + "\n                            </a>\n                        </li>\n                    ";
+                    };
+                    var menuTemplateItemLink = function (data) {
+                        return "\n                        <li>\n                            <a class=\"link-icon link-" + data.itemCode + " k-visible k-action-elem js-" + data.itemCode + "\" href=\"" + data.itemLink + "\">\n                                <span class=\"content-center\">\n                                    " + data.itemTitle + "\n                                </span>\n                            </a>\n                        </li>\n                    ";
+                    };
+                    var singleTemplate = function (data) {
+                        return "\n                    <a title=\"" + data.title + "\" href= \"\\#\" >\n                        <span class=\"i-" + data.code + " js-" + data.code + "\" style= \"pointer-events:all;\" >\n                        </span>\n                    </a>\n                    ";
                     };
                     for (var _i = 0; _i < actions.length; _i++) {
                         var actionItem = actions[_i];
@@ -8285,77 +8289,38 @@ var ag;
                             tmpl.push(menuTemplateStart(data));
                             for (var _a = 0, _b = actionItem.children; _a < _b.length; _a++) {
                                 var menuItem = _b[_a];
-                                data.itemId = menuItem.get('id');
-                                data.itemTitle = menuItem.get('name');
-                                tmpl.push(menuTemplateItem(data));
+                                var content = void 0;
+                                data.itemId = menuItem.id;
+                                data.itemTitle = menuItem.title;
+                                data.itemLink = menuItem.link;
+                                data.itemCode = menuItem.code;
+                                if (data.itemLink) {
+                                    content = menuTemplateItemLink(data);
+                                }
+                                else if (data.itemId) {
+                                    content = menuTemplateItem(data);
+                                }
+                                else {
+                                    content = "<div>Здесь могла бы быть..., да что угодно!</div>";
+                                }
+                                tmpl.push(content);
                             }
                             tmpl.push(menuTemplateEnd(data));
+                        }
+                        else {
+                            tmpl.push(singleTemplate(data));
                         }
                     }
                 }
                 tmpl = tmpl.join('');
-                // template = `
-                //     <div
-                //         class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm"
-                //         style="pointer-events: all;"
-                //         title="Смена статуса"
-                //     >
-                //         <span
-                //             class="b-options-btn b-options-btn_icon dropdown-toggle"
-                //             data-toggle="dropdown"
-                //             data-hover="dropdown"
-                //             aria-expanded="false"
-                //         >
-                //             <span class="i-change-status"> </span>
-                //         </span>
-                //         <ul class="dropdown-menu">
-                //             <li>
-                //                 <a class="k-visible k-action-elem js-work-status" data-status-id="9" href="\\#" > Отменена </a>
-                //             </li>
-                //             <li>
-                //                 <a class="k-visible k-action-elem js-work-status" data-status-id="13" href="\\#" > Включена в план ПИ</a>
-                //             </li>
-                //         </ul>
-                //     </div>
-                //     <div
-                //         class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm"
-                //         style="margin-left: -10px; pointer-events: all;"
-                //         title="Операции"
-                //     >
-                //         <span class="b-options-btn dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" aria-expanded="false">...</span>
-                //         <ul class="dropdown-menu">
-                //             <li>
-                //             </li>
-                //             <li>
-                //                 <a class="link-icon link-edit k-visible k-action-elem js-work-edit" href="#?page=planPIWorks&amp;projectId=150&amp;subpage=edit&amp;id=12544"><span class="content-center">Редактировать</span></a>
-                //             </li>
-                //             <li>
-                //                 <a class="link-icon link-split k-visible k-action-elem js-work-split" href="#?page=planPIWorks&amp;projectId=150&amp;subpage=split&amp;id=12544"><span class="content-center">Разделить</span></a>
-                //             </li>
-                //             <li>
-                //                 <a class="link-icon link-delete k-visible k-action-elem js-work-delete" href="\\#"><span class="content-center">Удалить</span></a>
-                //             </li>
-                //         </ul>
-                //     </div>
-                //     <a title="История" href="\\#"><span id="ag-action-row-time-line_md" class="i-time-line_md" style="pointer-events:all;"></span></a>
-                // `;
                 return this.getOverlayRowWrapper(tmpl);
             };
-            // <div class="k-visible pi-dropdown-options btn-group k-action-elem_more" >
-            //     <span class="b-options-btn dropdown-toggle" data- toggle="dropdown" data- hover="dropdown" aria- expanded="true" >...</span>
-            //         <ul class="dropdown-menu">
-            //             <li>
-            //             <a class="link-icon link-message k-visible  k-action-elem js-work-message"  href= "\\#" >
-            //                 <span class="content-center" >На согласование</span>
-            //             </a >
-            //             </li>
-            //         </ul>
-            // </div>
             BorderLayout.prototype.showOverlayRow = function (rowData) {
                 if (this.eOverlayRowZoneWrapper === void 0)
                     return;
                 var actions = this.gridOptionsWrapper.getActionTemplate();
                 var actionData;
+                var actionClickSelector;
                 if (rowData && typeof actions == 'function') {
                     // debugger
                     actionData = actions({
@@ -8369,21 +8334,35 @@ var ag;
                     tempDiv.innerHTML = this.createOverlayRowTemplate(actionData.actions);
                     this.eOverlayRowWrapper.appendChild(tempDiv.firstElementChild);
                     actionData.postActionFn();
-                    return;
+                    actionClickSelector = '.js-';
+                    actions = actionData.actions.reduce(function (acc, el) {
+                        if (el.children) {
+                            for (var _i = 0, _a = el.children; _i < _a.length; _i++) {
+                                var child = _a[_i];
+                                if (child.code)
+                                    acc[child.code] = child.title;
+                            }
+                        }
+                        acc[el.code] = el.title;
+                        return acc;
+                    }, {});
                 }
-                if (!this.isActionsRedrawn) {
-                    return;
+                else {
+                    if (!this.isActionsRedrawn) {
+                        return;
+                    }
+                    this.isActionsRedrawn = false;
+                    document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
+                    this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
+                    actionClickSelector = '#ag-action-row-';
                 }
-                this.isActionsRedrawn = false;
-                document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
-                // this.eOverlayRowWrapper.style.display = 'none';
-                this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
                 for (var k in actions) {
                     var v = actions[k];
                     var that = this;
                     (function (k) {
-                        var actionElement = that.eOverlayRowWrapper.querySelector("#ag-action-row-" + k);
-                        if (actionElement) {
+                        var actionElements = that.eOverlayRowWrapper.querySelectorAll("" + actionClickSelector + k);
+                        for (var _i = 0; _i < actionElements.length; _i++) {
+                            var actionElement = actionElements[_i];
                             actionElement.addEventListener('click', function (event) {
                                 event.stopPropagation();
                                 event.preventDefault();
@@ -8590,7 +8569,8 @@ var ag;
                         var selected = [that.rowRenderer.getHoveredOn().node];
                         var multitoolParams = {
                             name: key,
-                            items: selected
+                            items: selected,
+                            data: ev.currentTarget.dataset
                         };
                         that.eventService.dispatchEvent(grid_1.Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                     },

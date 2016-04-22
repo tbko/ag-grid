@@ -204,7 +204,6 @@ module ag.grid {
         }
 
         public positionOverlayRowZone() {
-            console.log('position overlay');
             if (!this.gridOptionsWrapper || !this.getHoveredOn || !this.gridPanel) return;
             // vertically position action row overlay
             // from top of the first fully visible row to bottom of the last visible one
@@ -560,8 +559,8 @@ module ag.grid {
                     return `
                         <div
                             class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm"
-                            style="pointer-events: all;"
-                            title=${data.title}
+                            style="margin-left: -10px; pointer-events: all;"
+                            title="${data.title}"
                         >
                             <span
                                 class="b-options-btn b-options-btn_icon dropdown-toggle"
@@ -583,102 +582,83 @@ module ag.grid {
                 var menuTemplateItem = (data) => {
                     return `
                         <li>
-                            <a class="k-visible k-action-elem js-${data.code}" data-status-id="${data.itemId}" href="\\#">
+                            <a class="k-visible k-action-elem js-${data.code || 'dummy'}" data-status-id="${data.itemId}" href="\\#">
                                 ${data.itemTitle}
                             </a>
                         </li>
                     `;
                 }
+                var menuTemplateItemLink = (data) => {
+                    return `
+                        <li>
+                            <a class="link-icon link-${data.itemCode} k-visible k-action-elem js-${data.itemCode}" href="${data.itemLink}">
+                                <span class="content-center">
+                                    ${data.itemTitle}
+                                </span>
+                            </a>
+                        </li>
+                    `;
+                }
+                var singleTemplate = (data) => {
+                    return `
+                    <a title="${data.title}" href= "\\#" >
+                        <span class="i-${data.code} js-${data.code}" style= "pointer-events:all;" >
+                        </span>
+                    </a>
+                    `;
+                }
 
 
                 for (let actionItem of actions) {
+
                     let data: any = {
                         title: actionItem.title,
                         code: actionItem.code
                     }
 
                     if ('children' in actionItem) {
+
                         (<string[]>tmpl).push(menuTemplateStart(data));
 
                         for (let menuItem of actionItem.children) {
-                            data.itemId = menuItem.get('id');
-                            data.itemTitle = menuItem.get('name');
-                            (<string[]>tmpl).push(menuTemplateItem(data));
+                            let content: string;
+                            data.itemId = menuItem.id;
+                            data.itemTitle = menuItem.title;
+                            data.itemLink = menuItem.link;
+                            data.itemCode = menuItem.code;
+
+                            if (data.itemLink) {
+                                content = menuTemplateItemLink(data);
+                            } else if (data.itemId) {
+                                content = menuTemplateItem(data);
+                            } else {
+                                content = "<div>Здесь могла бы быть..., да что угодно!</div>";
+                            }
+                            (<string[]>tmpl).push(content);
                         }
 
                         (<string[]>tmpl).push(menuTemplateEnd(data));
+
+                    } else {
+
+                        (<string[]>tmpl).push(singleTemplate(data));
+
                     }
 
                 }
 
 
             }
+
             tmpl = (<string[]>tmpl).join('');
-            // template = `
-            //     <div
-            //         class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm"
-            //         style="pointer-events: all;"
-            //         title="Смена статуса"
-            //     >
-            //         <span
-            //             class="b-options-btn b-options-btn_icon dropdown-toggle"
-            //             data-toggle="dropdown"
-            //             data-hover="dropdown"
-            //             aria-expanded="false"
-            //         >
-            //             <span class="i-change-status"> </span>
-            //         </span>
-            //         <ul class="dropdown-menu">
-            //             <li>
-            //                 <a class="k-visible k-action-elem js-work-status" data-status-id="9" href="\\#" > Отменена </a>
-            //             </li>
-            //             <li>
-            //                 <a class="k-visible k-action-elem js-work-status" data-status-id="13" href="\\#" > Включена в план ПИ</a>
-            //             </li>
-            //         </ul>
-            //     </div>
-            //     <div
-            //         class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm"
-            //         style="margin-left: -10px; pointer-events: all;"
-            //         title="Операции"
-            //     >
-            //         <span class="b-options-btn dropdown-toggle" data-toggle="dropdown" data-hover="dropdown" aria-expanded="false">...</span>
-            //         <ul class="dropdown-menu">
-            //             <li>
-            //             </li>
-            //             <li>
-            //                 <a class="link-icon link-edit k-visible k-action-elem js-work-edit" href="#?page=planPIWorks&amp;projectId=150&amp;subpage=edit&amp;id=12544"><span class="content-center">Редактировать</span></a>
-            //             </li>
-            //             <li>
-            //                 <a class="link-icon link-split k-visible k-action-elem js-work-split" href="#?page=planPIWorks&amp;projectId=150&amp;subpage=split&amp;id=12544"><span class="content-center">Разделить</span></a>
-            //             </li>
-            //             <li>
-            //                 <a class="link-icon link-delete k-visible k-action-elem js-work-delete" href="\\#"><span class="content-center">Удалить</span></a>
-            //             </li>
-            //         </ul>
-            //     </div>
-            //     <a title="История" href="\\#"><span id="ag-action-row-time-line_md" class="i-time-line_md" style="pointer-events:all;"></span></a>
-            // `;
             return this.getOverlayRowWrapper(<string>tmpl);
         }
-
-    // <div class="k-visible pi-dropdown-options btn-group k-action-elem_more" >
-    //     <span class="b-options-btn dropdown-toggle" data- toggle="dropdown" data- hover="dropdown" aria- expanded="true" >...</span>
-    //         <ul class="dropdown-menu">
-    //             <li>
-    //             <a class="link-icon link-message k-visible  k-action-elem js-work-message"  href= "\\#" >
-    //                 <span class="content-center" >На согласование</span>
-    //             </a >
-    //             </li>
-    //         </ul>
-    // </div>
-
-
 
         public showOverlayRow(rowData?: any) {
             if (this.eOverlayRowZoneWrapper === void 0) return;
             var actions: any = this.gridOptionsWrapper.getActionTemplate();
             var actionData: any;
+            var actionClickSelector: string;
 
             if (rowData && typeof actions == 'function') {
                 // debugger
@@ -698,32 +678,51 @@ module ag.grid {
                 );
 
                 actionData.postActionFn();
+                actionClickSelector = '.js-'
 
-                return;
+                actions = actionData.actions.reduce(
+                    (acc, el) => {
+                        if (el.children) {
+                            for (let child of el.children) {
+                                if (child.code) acc[child.code] = child.title;
+                            }
+                        }
+                        acc[el.code] = el.title;
+                        return acc;
+                    },
+                    {}
+                )
+
+            } else {
+
+                if (!this.isActionsRedrawn) {
+                    return;
+                }
+                this.isActionsRedrawn = false;
+
+                document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
+
+                this.eOverlayRowWrapper.appendChild(
+                    _.loadTemplate(this.createOverlayRowTemplate().trim())
+                );
+                actionClickSelector = '#ag-action-row-'
+                
             }
 
-            if (!this.isActionsRedrawn) {
-                return;
-            }
-            this.isActionsRedrawn = false;
 
-            document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
-            // this.eOverlayRowWrapper.style.display = 'none';
-            this.eOverlayRowWrapper.appendChild(
-                _.loadTemplate(this.createOverlayRowTemplate().trim())
-            );
             for (var k in actions) {
                 var v = actions[k];
                 var that = this;
+
                 (function(k) {
-                    var actionElement = that.eOverlayRowWrapper.querySelector(`#ag-action-row-${k}`);
-                    if (actionElement) {
+                    var actionElements = that.eOverlayRowWrapper.querySelectorAll(`${actionClickSelector}${k}`);
+
+                    for (let actionElement of actionElements) {
                         actionElement.addEventListener('click', (event) => {
                             event.stopPropagation();
                             event.preventDefault();
                             that.rowActionListener(event, k);
                             return false;
-
                         });
                     }
                 })(k);

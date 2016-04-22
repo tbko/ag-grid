@@ -1102,7 +1102,6 @@ module ag.grid {
         ************************************************/
 
         public setListenMouseMove(toAllSet:boolean = true) {
-            console.log(toAllSet);
             var eventAction: Function;
             var allRows = this.renderedRows;
             var el: RenderedRow;
