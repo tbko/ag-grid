@@ -1308,7 +1308,7 @@ declare module ag.grid {
         private setupOverlays();
         hideOverlay(): void;
         private getOverlayRowWrapper(content?);
-        private createOverlayRowTemplate(actions);
+        private createOverlayRowTemplate(actions, availableHeightForMenu);
         showOverlayRow(rowData?: any): void;
         showOverlay(key: string): void;
         private pXhelper(value);

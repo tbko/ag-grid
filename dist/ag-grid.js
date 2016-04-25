@@ -8254,7 +8254,7 @@ var ag;
                 var tmpl = "\n                <div class=\"ag-overlay-panel\">\n                    <div class=\"ag-overlay-wrapper ag-overlay-row-wrapper\">" + content + "</div>\n                </div>\n            ";
                 return tmpl;
             };
-            BorderLayout.prototype.createOverlayRowTemplate = function (actions) {
+            BorderLayout.prototype.createOverlayRowTemplate = function (actions, availableHeightForMenu) {
                 var tmpl = [''];
                 if (!actions) {
                     actions = this.gridOptionsWrapper.getActionTemplate();
@@ -8265,7 +8265,7 @@ var ag;
                 }
                 else {
                     var menuTemplateStart = function (data) {
-                        return "\n                        <div\n                            class=\"k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm\"\n                            style=\"margin-left: -10px; pointer-events: all;\"\n                            title=\"" + data.title + "\"\n                        >\n                            <span\n                                class=\"b-options-btn b-options-btn_icon dropdown-toggle\"\n                                data-toggle=\"dropdown\"\n                                data-hover=\"dropdown\"\n                                aria-expanded=\"false\"\n                            >\n                                <span class=\"i-" + data.code + "\"> </span>\n                            </span>\n                            <ul class=\"dropdown-menu\">\n                    ";
+                        return "\n                        <div\n                            class=\"k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm " + data.auxClass + "\"\n                            style=\"margin-left: -10px; pointer-events: all;\"\n                            title=\"" + data.title + "\"\n                        >\n                            <span\n                                class=\"b-options-btn b-options-btn_icon dropdown-toggle\"\n                                data-toggle=\"dropdown\"\n                                data-hover=\"dropdown\"\n                                aria-expanded=\"false\"\n                            >\n                                <span class=\"i-" + data.code + "\"> </span>\n                            </span>\n                            <ul class=\"dropdown-menu\">\n                    ";
                     };
                     var menuTemplateEnd = function (data) {
                         return "\n                            </ul>\n                        </div>\n                    ";
@@ -8286,6 +8286,8 @@ var ag;
                             code: actionItem.code
                         };
                         if ('children' in actionItem) {
+                            var menuHeight = actionItem.children.length * 30 + 10;
+                            data.auxClass = menuHeight > availableHeightForMenu ? 'dropup' : '';
                             tmpl.push(menuTemplateStart(data));
                             for (var _a = 0, _b = actionItem.children; _a < _b.length; _a++) {
                                 var menuItem = _b[_a];
@@ -8321,8 +8323,10 @@ var ag;
                 var actions = this.gridOptionsWrapper.getActionTemplate();
                 var actionData;
                 var actionClickSelector;
+                var overlayBottom = parseInt(this.eOverlayRowZoneWrapper.style.height);
+                var rowBottom = parseInt(this.eOverlayRowWrapper.style.top) + parseInt(this.eOverlayRowWrapper.style.height);
+                var availableHeightForMenu = overlayBottom - rowBottom;
                 if (rowData && typeof actions == 'function') {
-                    // debugger
                     actionData = actions({
                         data: rowData,
                         type: 'actionTemplate'
@@ -8331,7 +8335,7 @@ var ag;
                         this.eOverlayRowWrapper.removeChild(this.eOverlayRowWrapper.firstChild);
                     }
                     var tempDiv = document.createElement("div");
-                    tempDiv.innerHTML = this.createOverlayRowTemplate(actionData.actions);
+                    tempDiv.innerHTML = this.createOverlayRowTemplate(actionData.actions, availableHeightForMenu);
                     this.eOverlayRowWrapper.appendChild(tempDiv.firstElementChild);
                     actionData.postActionFn();
                     actionClickSelector = '.js-';

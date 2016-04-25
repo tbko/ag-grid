@@ -535,7 +535,7 @@ module ag.grid {
             return tmpl;
         }
 
-        private createOverlayRowTemplate(actions: any[]): string {
+        private createOverlayRowTemplate(actions: any[], availableHeightForMenu: number): string {
             let tmpl: string[] | string = [''];
 
             if (!actions) {
@@ -558,7 +558,7 @@ module ag.grid {
                 let menuTemplateStart = (data) => {
                     return `
                         <div
-                            class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm"
+                            class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm ${data.auxClass}"
                             style="margin-left: -10px; pointer-events: all;"
                             title="${data.title}"
                         >
@@ -618,6 +618,8 @@ module ag.grid {
 
                     if ('children' in actionItem) {
 
+                        let menuHeight = actionItem.children.length * 30 + 10;
+                        data.auxClass = menuHeight > availableHeightForMenu ? 'dropup' : '';
                         (<string[]>tmpl).push(menuTemplateStart(data));
 
                         for (let menuItem of actionItem.children) {
@@ -660,8 +662,12 @@ module ag.grid {
             var actionData: any;
             var actionClickSelector: string;
 
+            var overlayBottom = parseInt(this.eOverlayRowZoneWrapper.style.height);
+            var rowBottom = parseInt(this.eOverlayRowWrapper.style.top) + parseInt(this.eOverlayRowWrapper.style.height);
+            var availableHeightForMenu = overlayBottom - rowBottom;
+
             if (rowData && typeof actions == 'function') {
-                // debugger
+
                 actionData = actions({
                     data: rowData,
                     type: 'actionTemplate'
@@ -671,7 +677,10 @@ module ag.grid {
                 }
 
                 let tempDiv = document.createElement("div");
-                tempDiv.innerHTML = this.createOverlayRowTemplate(actionData.actions);
+                tempDiv.innerHTML = this.createOverlayRowTemplate(
+                    actionData.actions,
+                    availableHeightForMenu
+                );
                 
                 this.eOverlayRowWrapper.appendChild(
                     tempDiv.firstElementChild
