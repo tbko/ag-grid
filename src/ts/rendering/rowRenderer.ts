@@ -728,8 +728,8 @@ module ag.grid {
             return this.rowModel.getDragSource();
         }
         
-        private canDrop(sourceOrderIndex: string, destOrderIndex: string, target: HTMLElement): boolean {
-            let targetIsAdd = (
+        private canDrop(sourceOrderIndex: string, destOrderIndex: string, target: HTMLElement, isTargetAdd: boolean = false): boolean {
+            let targetIsAdd = isTargetAdd || (
                     target.classList.contains('ag-group-name') ||
                     target.classList.contains('ag-group-parent-name')
                 );
@@ -777,6 +777,24 @@ module ag.grid {
             var ePinRow = thisRow.vPinnedRow ? thisRow.vPinnedRow.element : null;
             var eBodyRow = thisRow.vBodyRow.element;
 
+            function getMousePoint(event: DragEvent) {
+                return event.pageY - (<HTMLElement>event.currentTarget).getBoundingClientRect().top;
+            }
+
+            function isUpperPart(event: DragEvent) {
+                let upperPoint = (<HTMLElement>event.currentTarget).offsetHeight / 3;
+                return upperPoint > getMousePoint(event);
+            }
+
+            function isLowerPart(event: DragEvent) {
+                let lowerPoint = 2 * (<HTMLElement>event.currentTarget).offsetHeight / 3;
+                return lowerPoint < getMousePoint(event);
+            }
+
+            function isMiddlePart(event: DragEvent) {
+                return !(isLowerPart(event) && isUpperPart(event));
+            }
+
             let [dragHandlers, dragTargets] = ['ag-js-draghandler', 'ag-js-dragtarget'].map((styleName)=>{
                 return (ePinRow ? [].slice.call(ePinRow.querySelectorAll('.' + styleName)) : []).concat(
                     (ePinRow ? ePinRow.classList.contains(styleName) : false) ? ePinRow : []
@@ -808,7 +826,10 @@ module ag.grid {
                     }
                 })(dragEl));
                 dragEl.addEventListener('drop', function(ev: DragEvent) {
-                    onDragDrop(ev, 'level');
+                    onDragDrop(
+                        ev,
+                        isMiddlePart(ev) ? 'inside' : 'level'
+                    );
                 });
             }
 
@@ -820,12 +841,13 @@ module ag.grid {
                 });
             }
 
-            function isLowerHalf(event: DragEvent) {
-                return (
-                    ((<HTMLElement>event.currentTarget).offsetHeight / 2) <
-                    (event.pageY - (<HTMLElement>event.currentTarget).getBoundingClientRect().top)
-                );
-            }
+            // function isLowerHalf(event: DragEvent) {
+            //     return (
+            //         ((<HTMLElement>event.currentTarget).offsetHeight / 2) <
+            //         (event.pageY - (<HTMLElement>event.currentTarget).getBoundingClientRect().top)
+            //     );
+            // }
+
 
             function clearAllDragStyles() {
                 var stylesToClear: string[] = ['ag-dragging-over', 'ag-dragging-over-up', 'ag-dragging-over-down'];
@@ -855,6 +877,7 @@ module ag.grid {
                 let eCurRow: HTMLElement = <HTMLElement>event.currentTarget;
                 let eCurRowComplement: HTMLElement;
                 let dropType: boolean | string;
+                let whereTo = isLowerPart(event) ? 'down' : (isUpperPart(event) ? 'up' : 'mid');
 
                 if (eCurRow.parentElement.classList.contains('ag-body-container')) {
                     eCurRowComplement = <HTMLElement>that.ePinnedColsContainer.querySelector(`.ag-row[row="${eCurRow.getAttribute('row')}"]`)
@@ -863,15 +886,26 @@ module ag.grid {
                     eCurRowComplement = <HTMLElement>that.eBodyContainer.querySelector(`.ag-row[row="${eCurRow.getAttribute('row')}"]`)
                 }
 
-                if (dropType = that.canDrop(that.getSourceOrderIndex(), that.getOrderIndex(thisRowIndex), <HTMLElement>event.target)) {
+                if (
+                    dropType = that.canDrop(
+                        that.getSourceOrderIndex(),
+                        that.getOrderIndex(thisRowIndex),
+                        <HTMLElement>event.target,
+                        whereTo == 'mid'
+                    )
+                ) {
                     clearAllDragStyles();
                     if (eCurRow && eCurRowComplement) {
                         [eCurRow, eCurRowComplement].forEach((el)=>{
                             el.classList.add('ag-dragging-over');
-                            el.classList.add(`ag-dragging-over-${isLowerHalf(event) ? 'down' : 'up'}`);
+                            el.classList.add(`ag-dragging-over-${whereTo}`);
                         });
                     }
-                    event.dataTransfer.dropEffect = <string>((typeof dropType == 'string') ? dropType : 'move');
+                    let dropEffect = <string>((typeof dropType == 'string') ? dropType : 'move');
+                    if (dropEffect && dropEffect != 'none' && whereTo == 'mid') {
+                        dropEffect = 'copy';
+                    }
+                    event.dataTransfer.dropEffect = dropEffect;
                 } else {
                     event.dataTransfer.dropEffect = 'none';
                 }
@@ -926,14 +960,16 @@ module ag.grid {
             }
 
             function onDragDrop(event: DragEvent, dropType: string) {
+
                 // debugger
+                
                 var maxLevels = that.gridOptionsWrapper.getGroupKeys().length;
 
                 var sourceOrderIndex = that.getSourceOrderIndex();
                 var destOrderIndex = that.getOrderIndex(thisRowIndex);
                 var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex, <HTMLElement>event.target);
                 if (!canDrop) return;
-               var sourceLevel = (sourceOrderIndex.match(/\./g) || []).length;
+                var sourceLevel = (sourceOrderIndex.match(/\./g) || []).length;
                 var destLevel = (destOrderIndex.match(/\./g) || []).length;
                 var sourceParentIndex = sourceOrderIndex.split('.').slice(0, -1).join('.');
                 var destParentIndex = destOrderIndex.split('.').slice(0, -1).join('.');
@@ -1082,7 +1118,7 @@ module ag.grid {
                     destinationNodeId: dropType == 'level' ? destinationParentId : destinationNodeId,
                     destinationOrder: (
                         destOrderAtLevel && dropType == 'level' ?
-                        (isLowerHalf(event) ? destOrderAtLevel + (wannaBeShifted ? 0 : 1) :destOrderAtLevel) :
+                        (isLowerPart(event) ? destOrderAtLevel + (wannaBeShifted ? 0 : 1) : destOrderAtLevel) :
                         null
                     )
                 }

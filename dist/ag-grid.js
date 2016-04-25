@@ -4903,8 +4903,9 @@ var ag;
             RowRenderer.prototype.getSourceOrderIndex = function () {
                 return this.rowModel.getDragSource();
             };
-            RowRenderer.prototype.canDrop = function (sourceOrderIndex, destOrderIndex, target) {
-                var targetIsAdd = (target.classList.contains('ag-group-name') ||
+            RowRenderer.prototype.canDrop = function (sourceOrderIndex, destOrderIndex, target, isTargetAdd) {
+                if (isTargetAdd === void 0) { isTargetAdd = false; }
+                var targetIsAdd = isTargetAdd || (target.classList.contains('ag-group-name') ||
                     target.classList.contains('ag-group-parent-name'));
                 var isDrop = this.gridOptionsWrapper.isRowDrop({
                     sourceOrderIndex: sourceOrderIndex,
@@ -4943,6 +4944,20 @@ var ag;
                 var lastenter;
                 var ePinRow = thisRow.vPinnedRow ? thisRow.vPinnedRow.element : null;
                 var eBodyRow = thisRow.vBodyRow.element;
+                function getMousePoint(event) {
+                    return event.pageY - event.currentTarget.getBoundingClientRect().top;
+                }
+                function isUpperPart(event) {
+                    var upperPoint = event.currentTarget.offsetHeight / 3;
+                    return upperPoint > getMousePoint(event);
+                }
+                function isLowerPart(event) {
+                    var lowerPoint = 2 * event.currentTarget.offsetHeight / 3;
+                    return lowerPoint < getMousePoint(event);
+                }
+                function isMiddlePart(event) {
+                    return !(isLowerPart(event) && isUpperPart(event));
+                }
                 var _a = ['ag-js-draghandler', 'ag-js-dragtarget'].map(function (styleName) {
                     return (ePinRow ? [].slice.call(ePinRow.querySelectorAll('.' + styleName)) : []).concat((ePinRow ? ePinRow.classList.contains(styleName) : false) ? ePinRow : []).concat([].slice.call(eBodyRow.querySelectorAll('.' + styleName))).concat(eBodyRow.classList.contains(styleName) ? eBodyRow : []);
                 }), dragHandlers = _a[0], dragTargets = _a[1];
@@ -4969,7 +4984,7 @@ var ag;
                         };
                     })(dragEl));
                     dragEl.addEventListener('drop', function (ev) {
-                        onDragDrop(ev, 'level');
+                        onDragDrop(ev, isMiddlePart(ev) ? 'inside' : 'level');
                     });
                 }
                 for (var _b = 0; _b < dragTargets.length; _b++) {
@@ -4979,10 +4994,12 @@ var ag;
                         onDragDrop(ev, 'inside');
                     });
                 }
-                function isLowerHalf(event) {
-                    return ((event.currentTarget.offsetHeight / 2) <
-                        (event.pageY - event.currentTarget.getBoundingClientRect().top));
-                }
+                // function isLowerHalf(event: DragEvent) {
+                //     return (
+                //         ((<HTMLElement>event.currentTarget).offsetHeight / 2) <
+                //         (event.pageY - (<HTMLElement>event.currentTarget).getBoundingClientRect().top)
+                //     );
+                // }
                 function clearAllDragStyles() {
                     var stylesToClear = ['ag-dragging-over', 'ag-dragging-over-up', 'ag-dragging-over-down'];
                     var rowContainersToClear = [that.eBodyContainer, that.ePinnedColsContainer];
@@ -5008,21 +5025,26 @@ var ag;
                     var eCurRow = event.currentTarget;
                     var eCurRowComplement;
                     var dropType;
+                    var whereTo = isLowerPart(event) ? 'down' : (isUpperPart(event) ? 'up' : 'mid');
                     if (eCurRow.parentElement.classList.contains('ag-body-container')) {
                         eCurRowComplement = that.ePinnedColsContainer.querySelector(".ag-row[row=\"" + eCurRow.getAttribute('row') + "\"]");
                     }
                     if (eCurRow.parentElement.classList.contains('ag-pinned-cols-container')) {
                         eCurRowComplement = that.eBodyContainer.querySelector(".ag-row[row=\"" + eCurRow.getAttribute('row') + "\"]");
                     }
-                    if (dropType = that.canDrop(that.getSourceOrderIndex(), that.getOrderIndex(thisRowIndex), event.target)) {
+                    if (dropType = that.canDrop(that.getSourceOrderIndex(), that.getOrderIndex(thisRowIndex), event.target, whereTo == 'mid')) {
                         clearAllDragStyles();
                         if (eCurRow && eCurRowComplement) {
                             [eCurRow, eCurRowComplement].forEach(function (el) {
                                 el.classList.add('ag-dragging-over');
-                                el.classList.add("ag-dragging-over-" + (isLowerHalf(event) ? 'down' : 'up'));
+                                el.classList.add("ag-dragging-over-" + whereTo);
                             });
                         }
-                        event.dataTransfer.dropEffect = ((typeof dropType == 'string') ? dropType : 'move');
+                        var dropEffect = ((typeof dropType == 'string') ? dropType : 'move');
+                        if (dropEffect && dropEffect != 'none' && whereTo == 'mid') {
+                            dropEffect = 'copy';
+                        }
+                        event.dataTransfer.dropEffect = dropEffect;
                     }
                     else {
                         event.dataTransfer.dropEffect = 'none';
@@ -5206,7 +5228,7 @@ var ag;
                         sourceNodeId: sourceNodeId,
                         destinationNodeId: dropType == 'level' ? destinationParentId : destinationNodeId,
                         destinationOrder: (destOrderAtLevel && dropType == 'level' ?
-                            (isLowerHalf(event) ? destOrderAtLevel + (wannaBeShifted ? 0 : 1) : destOrderAtLevel) :
+                            (isLowerPart(event) ? destOrderAtLevel + (wannaBeShifted ? 0 : 1) : destOrderAtLevel) :
                             null)
                     };
                     moveData.curNode = curNode;

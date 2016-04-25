@@ -907,7 +907,7 @@ declare module ag.grid {
         private isParentByIndex(parentOrderIndex, childOrderIndex);
         private getOrderIndex(rowIndex);
         private getSourceOrderIndex();
-        private canDrop(sourceOrderIndex, destOrderIndex, target);
+        private canDrop(sourceOrderIndex, destOrderIndex, target, isTargetAdd?);
         private findParentRow(startEl);
         private setupDND(thisRow);
         /***********************************************
