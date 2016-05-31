@@ -611,6 +611,7 @@ module ag.grid {
                 let counterpartEl: HTMLElement;
                 this.isHovered = true;
                 vRow.addClass('ag-row-hover');
+                listenMove();
                 if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
                     counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(
                         `.ag-body-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
@@ -627,6 +628,7 @@ module ag.grid {
                 let counterpartEl: HTMLElement;
                 this.isHovered = false;
                 vRow.removeClass('ag-row-hover');
+                document.querySelector('#ag-overlay-row').style.display = 'none';
                 if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
                     counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(
                         `.ag-body-container .ag-row[row="${vRow.element.getAttribute('row')}"]`

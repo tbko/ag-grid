@@ -354,6 +354,7 @@ var ag;
             };
             // new event object from existing
             Utils.simulateEvent = function (element, eventName, coordinates) {
+                console.log(eventName);
                 function extend(destination, source) {
                     for (var property in source)
                         destination[property] = source[property];
@@ -404,6 +405,7 @@ var ag;
                     else {
                         oEvent = new MouseEvent(eventName, options);
                     }
+                    console.log(oEvent);
                     element.dispatchEvent(oEvent);
                 }
                 else {
@@ -3629,6 +3631,7 @@ var ag;
                     var counterpartEl;
                     this.isHovered = true;
                     vRow.addClass('ag-row-hover');
+                    listenMove();
                     if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
                         counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]");
                         if (counterpartEl)
@@ -3644,6 +3647,7 @@ var ag;
                     var counterpartEl;
                     this.isHovered = false;
                     vRow.removeClass('ag-row-hover');
+                    document.querySelector('#ag-overlay-row').style.display = 'none';
                     if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
                         counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]");
                         if (counterpartEl)
@@ -7982,7 +7986,7 @@ var ag;
                 rowOverlayZone.className = rowOverlayZone.id;
                 rowOverlayZone.appendChild(rowOverlay);
                 for (var _i = 0, _a = [
-                    'click', 'scroll', 'mousemove',
+                    'click', 'scroll', 'mousemove', 'mouseover',
                     'mouseup', 'mousedown', 'DOMMouseScroll',
                     'MSPointerMove', 'mousewheel', 'wheel',
                     'mouseenter', 'mouseleave'
@@ -7990,6 +7994,7 @@ var ag;
                     var eventName = _a[_i];
                     rowOverlayZone.addEventListener(eventName, this.overlayEventThrough.bind(this));
                 }
+                // rowOverlayZone.addEventListener('mouseover', (ev) => { console.log(ev);});
                 rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
                 rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
                 rowOverlay.style.display = 'none';
@@ -8086,6 +8091,7 @@ var ag;
                     };
                 }
                 var underEl = document.elementFromPoint(event.clientX, event.clientY);
+                // console.dir(event);
                 if (underEl)
                     _.simulateEvent(underEl, event.type, coordinates);
                 event.target.style.display = '';

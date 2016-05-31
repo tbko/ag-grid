@@ -186,13 +186,14 @@ module ag.grid {
             rowOverlayZone.appendChild(rowOverlay);
 
             for (let eventName of [
-                'click', 'scroll', 'mousemove',
+                'click', 'scroll', 'mousemove', 'mouseover',
                 'mouseup', 'mousedown', 'DOMMouseScroll',
                 'MSPointerMove', 'mousewheel', 'wheel',
                 'mouseenter', 'mouseleave'
             ]) {
                 rowOverlayZone.addEventListener(eventName, this.overlayEventThrough.bind(this));
             }
+            // rowOverlayZone.addEventListener('mouseover', (ev) => { console.log(ev);});
 
             rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
             rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
@@ -294,6 +295,7 @@ module ag.grid {
         }
 
         private overlayEventThrough(event: MouseEvent) {
+            
             // relay mouse events to underlying element
             var coordinates: any;
             (<HTMLElement>event.target).style.display = 'none';
@@ -304,6 +306,7 @@ module ag.grid {
                 }
             }
             var underEl = document.elementFromPoint(event.clientX, event.clientY);
+            // console.dir(event);
             if (underEl) _.simulateEvent((<HTMLElement>underEl), event.type, coordinates);
             (<HTMLElement>event.target).style.display = '';
         }
