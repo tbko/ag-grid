@@ -354,7 +354,6 @@ var ag;
             };
             // new event object from existing
             Utils.simulateEvent = function (element, eventName, coordinates) {
-                console.log(eventName);
                 function extend(destination, source) {
                     for (var property in source)
                         destination[property] = source[property];
@@ -405,7 +404,6 @@ var ag;
                     else {
                         oEvent = new MouseEvent(eventName, options);
                     }
-                    console.log(oEvent);
                     element.dispatchEvent(oEvent);
                 }
                 else {

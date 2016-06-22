@@ -312,7 +312,6 @@ module ag.grid {
 
         // new event object from existing
         static simulateEvent(element: HTMLElement, eventName: string, coordinates?: any): HTMLElement {
-            console.log(eventName);
 
             function extend(destination: any, source: any): any {
                 for (var property in source)
@@ -390,7 +389,6 @@ module ag.grid {
                         options
                     );
                 }
-                console.log(oEvent);
                 element.dispatchEvent(oEvent);
             }
             else {
