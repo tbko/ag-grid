@@ -6069,11 +6069,9 @@ var ag;
                                 }
                                 return acc;
                             }, 0);
-                            console.log("row count: " + (realRowsCount + (fillinRowsCount || 0)));
                             return realRowsCount + (fillinRowsCount || 0);
                         }
                         else {
-                            console.log('row count: 0');
                             return 0;
                         }
                     },
