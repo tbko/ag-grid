@@ -29,6 +29,8 @@ module ag.grid {
         private valueService: ValueService;
         private eventService: EventService;
 
+        private dragSourceOrderIndex: string;
+
         constructor() {
             this.createModel();
         }
@@ -50,6 +52,8 @@ module ag.grid {
             this.rowsAfterFilter = null;
             this.rowsAfterSort = null;
             this.rowsAfterMap = null;
+
+            this.dragSourceOrderIndex = null;
         }
 
         private createModel() {
@@ -111,8 +115,14 @@ module ag.grid {
                 forEachNodeAfterFilter: function (callback: any) {
                     that.forEachNodeAfterFilter(callback);
                 },
-                forEachNodeAfterFilterAndSort: function (callback: any) {
+                forEachNodeAfterFilterAndSor: function (callback: any) {
                     that.forEachNodeAfterFilterAndSort(callback);
+                },
+                setDragSource: function (index: string) {
+                    that.dragSourceOrderIndex = index;
+                },
+                getDragSource: function (): string {
+                    return that.dragSourceOrderIndex;
                 }
             };
         }

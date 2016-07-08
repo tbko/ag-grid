@@ -38,6 +38,7 @@ declare module ag.grid {
         private static canvas;
         static getTextWidth(text: string, font: string): number;
         static getWidthHeight(value: string, allowedWidth: number, font: string, maxLines: number): any;
+        static reflowText(elText: HTMLElement, allText: string): void;
         static iterateObject(object: any, callback: (key: string, value: any) => void): void;
         static cloneObject(object: any): any;
         static map<TItem, TResult>(array: TItem[], callback: (item: TItem) => TResult): TResult[];
@@ -257,6 +258,8 @@ declare module ag.grid {
         comparator?: (valueA: any, valueB: any, nodeA?: RowNode, nodeB?: RowNode, isInverted?: boolean) => number;
         /** Set to true to render a selection checkbox in the column. */
         checkboxSelection?: boolean;
+        /** Set to true to skip rendering drag element in the column header. */
+        noDrag?: boolean;
         /** Set to true if no menu should be shown for this column header. */
         suppressMenu?: boolean;
         /** Set to true if no sorting should be done for this column. */
@@ -419,6 +422,7 @@ declare module ag.grid {
         private gridOptions;
         private groupHeaders;
         private headerHeight;
+        private actionTemplate;
         private rowHeight;
         private rowHeightExtra;
         private floatingTopRowData;
@@ -491,6 +495,8 @@ declare module ag.grid {
         getWidthGap(): number;
         getMaxRows(): number;
         getMinRows(): number;
+        isRowDrug(options?: {}): any;
+        isRowDrop(options?: {}): any;
         setMetrics(metrics: any): void;
         getFullRowHeight(): number;
         getBaseRowHeight(): number;
@@ -498,6 +504,7 @@ declare module ag.grid {
         getFullHeaderHeight(): number;
         getHeaderHeight(): number;
         setHeaderHeight(headerHeight: number): void;
+        getActionTemplate(): any | Function;
         isGroupHeaders(): boolean;
         setGroupHeaders(groupHeaders: boolean): void;
         getFloatingTopRowData(): any[];
@@ -512,6 +519,11 @@ declare module ag.grid {
         private checkForDeprecated();
         getPinnedColCount(): number;
         getLocaleTextFunc(): Function;
+        getHeightOption(): number;
+        isHeightMixed(): boolean;
+        isHeightUnspecified(): boolean;
+        isHeightGiven(): boolean;
+        isHeightFullScreen(): boolean;
         globalEventHandler(eventName: string, event?: any): void;
         private getCallbackForEvent(eventName);
     }
@@ -675,6 +687,7 @@ declare module ag.grid {
         private topPX;
         private heightPX;
         private headerHeight;
+        private rowHeight;
         private isListenMove;
         listenMoveRef: EventListener;
         private cellRendererMap;
@@ -693,9 +706,17 @@ declare module ag.grid {
         private ePinnedContainer;
         private valueService;
         private eventService;
+        timing: number;
+        timingReflow: number;
+        private isHovered;
         constructor(gridOptionsWrapper: GridOptionsWrapper, valueService: ValueService, parentScope: any, angularGrid: Grid, columnController: ColumnController, expressionService: ExpressionService, cellRendererMap: {
             [key: string]: any;
-        }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService, rowsBefore?: number, readyToDraw?: boolean);
+        }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService, rowsBefore?: number, topPx?: number, readyToDraw?: boolean);
+        private renderAndMeasureHeight(totalLineHeight, singleLineHeight, baseHeight, rowHeight, maxRows, minRows, verticalGap);
+        private renderAndMeasureHeightSome(totalLineHeight, singleLineHeight, baseHeight, rowHeight, maxRows, minRows, verticalGap);
+        positionTop(px: number): void;
+        getHeight(): number;
+        getVerticalFrame(): any;
         insertInDOM(): void;
         getMaxRowsNeeded(): number;
         onRowSelected(selected: boolean): void;
@@ -708,6 +729,7 @@ declare module ag.grid {
         isNodeInList(nodes: RowNode[]): boolean;
         isGroup(): boolean;
         getId(): any;
+        getNode(): any;
         private drawNormalRow();
         private bindVirtualElement(vElement);
         private createGroupRow();
@@ -834,7 +856,19 @@ declare module ag.grid {
         private eFloatingBottomPinnedContainer;
         private eParentsOfRows;
         private hoveredOn;
+        isListenMouseMove: boolean;
         private isSingleRow;
+        private numberOfLinesCalculated;
+        private beforeCalculatedHeight;
+        private afterCalculatedHeight;
+        private renderedTotalHeight;
+        private renderedAverageHeight;
+        private heightFromLastRow;
+        private previousRowIndex;
+        private prePreviousRowIndex;
+        private maxOrderColumnWidth;
+        private orderColumn;
+        private canOrderResize;
         init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel, angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any, selectionController: SelectionController, expressionService: ExpressionService, templateService: TemplateService, valueService: ValueService, eventService: EventService): void;
         setRowModel(rowModel: any): void;
         onIndividualColumnResized(column: Column): void;
@@ -851,16 +885,34 @@ declare module ag.grid {
         refreshGroupRows(): void;
         private removeVirtualRow(rowsToRemove, fromIndex?);
         private unbindVirtualRow(indexToRemove);
+        /***********************************************
+        * START of ROW RENDERING
+        ************************************************/
         drawVirtualRows(): void;
         getFirstVirtualRenderedRow(): number;
         getLastVirtualRenderedRow(): number;
-        countGridRows(): void;
-        private ensureRowsRendered(preparedRows?);
-        private insertRow(node, rowIndex, mainRowWidth, rowsBefore, realDraw?);
+        private ensureRowsRendered(countLinesBefore?);
+        getBodyHeight(): number;
+        private insertRow(node, rowIndex, mainRowWidth, rowsBefore, topPx, realDraw?);
         getRenderedNodes(): any[];
         getRenderedRows(): {
             [key: string]: RenderedRow;
         };
+        /***********************************************
+        * END of ROW RENDERING
+        ************************************************/
+        /***********************************************
+        * DND BLOCK
+        ************************************************/
+        private isParentByIndex(parentOrderIndex, childOrderIndex);
+        private getOrderIndex(rowIndex);
+        private getSourceOrderIndex();
+        private canDrop(sourceOrderIndex, destOrderIndex, target, isTargetAdd?);
+        private findParentRow(startEl);
+        private setupDND(thisRow);
+        /***********************************************
+        * END of DND BLOCK
+        ************************************************/
         setListenMouseMove(toAllSet?: boolean): void;
         setHoveredOn(rowNode: any): void;
         getHoveredOn(): any;
@@ -1064,6 +1116,7 @@ declare module ag.grid {
         private groupCreator;
         private valueService;
         private eventService;
+        private dragSourceOrderIndex;
         constructor();
         init(gridOptionsWrapper: GridOptionsWrapper, columnController: ColumnController, angularGrid: any, filterManager: FilterManager, $scope: any, groupCreator: GroupCreator, valueService: ValueService, eventService: EventService): void;
         private createModel();
@@ -1203,22 +1256,30 @@ declare module ag.grid {
         private eEastChildLayout;
         private eWestChildLayout;
         private eCenterChildLayout;
+        private rootEl;
+        private containerPinnedEl;
+        private containerBodyEl;
+        private viewportBodyEl;
+        private headerEl;
         private isLayoutPanel;
         private fullHeight;
         private layoutActive;
         private eGui;
         private id;
+        private name;
         private childPanels;
         private centerHeightLastTime;
         private sizeChangeListeners;
         private overlays;
         private deleteListener;
-        private rowEditListener;
-        private rowDeleteListener;
-        private rowSplitListener;
+        private rowActionListener;
+        private getHoveredOn;
         private eventService;
         private gridOptionsWrapper;
         private gridPanel;
+        private eBodyViewport;
+        private headerHeight;
+        private isActionsRedrawn;
         constructor(params: any);
         getOverlays(): any;
         getOverlayRow(): any;
@@ -1227,12 +1288,15 @@ declare module ag.grid {
         fireSizeChanged(): void;
         private setupPanels(params);
         private addOverlayRowZone();
-        positionOverlayRowZone(offsetTopY: number): void;
+        positionOverlayRowZone(): void;
+        switchExtraButton(rowObj: any): void;
         private overlayEventThrough(event);
         private rowOverlayLeaveListener(event);
         private rowOverlayEnterListener(event);
         private setupPanel(content, ePanel);
         getGui(): any;
+        private getScrollWidth();
+        private getScrollHeight();
         doLayout(): boolean;
         private layoutChild(childPanel);
         private layoutHeight();
@@ -1244,13 +1308,13 @@ declare module ag.grid {
         private setupOverlays();
         hideOverlay(): void;
         private getOverlayRowWrapper(content?);
-        private createOverlayRowTemplate();
-        showOverlayRow(): void;
+        private createOverlayRowTemplate(actions, availableHeightForMenu);
+        showOverlayRow(rowData?: any): void;
         showOverlay(key: string): void;
         private pXhelper(value);
         setRowOverlayTop(offsetY: number): void;
         setRowOverlayRight(offsetRight: number): void;
-        setRowOverlayRowHeight(height: number): void;
+        setRowOverlayHeight(height: number): void;
         setSouthVisible(visible: any): void;
     }
 }
@@ -1274,7 +1338,7 @@ declare module ag.grid {
         private eventService;
         private gridOptionsWrapper;
         private columnModel;
-        private rowRenderer;
+        rowRenderer: RowRenderer;
         private rowModel;
         private layout;
         private forPrint;
@@ -1298,7 +1362,8 @@ declare module ag.grid {
         private ePinnedFloatingBottom;
         private eFloatingBottomContainer;
         private eOverlayRow;
-        init(gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService): void;
+        private grid;
+        init(grid: Grid, gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService): void;
         getLayout(): BorderLayout;
         private setupComponents();
         initRowOverlay(): void;
@@ -1312,10 +1377,12 @@ declare module ag.grid {
         private createToolOverlayTemplate(counterText?);
         ensureIndexVisible(index: any): void;
         ensureColIndexVisible(index: any): void;
+        scrollToPx(topPx: number): void;
+        getScrollPx(): number;
         showLoadingOverlay(): void;
         showNoRowsOverlay(): void;
         showToolOverlay(counter?: number): void;
-        showOverlayRow(): void;
+        showOverlayRow(rowData?: any): void;
         hideOverlay(): void;
         getWidthForSizeColsToFit(): number;
         setRowModel(rowModel: any): void;
@@ -1324,6 +1391,8 @@ declare module ag.grid {
         getPinnedColsContainer(): HTMLElement;
         getHeaderContainer(): HTMLElement;
         getRoot(): HTMLElement;
+        getId(): string;
+        getRootPanel(): HTMLElement;
         getPinnedHeader(): HTMLElement;
         getRowsParent(): HTMLElement[];
         private queryHtmlElement(selector);
@@ -1339,6 +1408,7 @@ declare module ag.grid {
         private sizeHeaderAndBodyForPrint();
         setHorizontalScrollPosition(hScrollPosition: number): void;
         private addScrollListener();
+        private debounce(func, wait, immediate?);
         private requestDrawVirtualRows();
         private scrollHeader(bodyLeftPosition);
         private scrollPinned(bodyTopPosition);
@@ -1491,6 +1561,7 @@ declare module ag.grid {
 }
 declare module ag.grid {
     interface GridOptions {
+        heightClasses: string[];
         virtualPaging?: boolean;
         toolPanelSuppressPivot?: boolean;
         toolPanelSuppressValues?: boolean;
@@ -1526,7 +1597,11 @@ declare module ag.grid {
         widthGap: number;
         maxRows: number;
         minRows: number;
+        isRowDrug: any;
+        isRowDrop: any;
         metrics: any;
+        actionTemplate: any;
+        heightOption: number;
         localeText?: any;
         localeTextFunc?: Function;
         suppressScrollLag?: boolean;
@@ -1570,6 +1645,7 @@ declare module ag.grid {
         groupAggFunction?(nodes: any[]): any;
         getBusinessKeyForNode?(node: RowNode): string;
         onMultitoolClicked?(params: any): void;
+        onRowReordered?(params: any): void;
         onSelectionStateChanged?(params: any): void;
         onReady?(api: any): void;
         onModelUpdated?(): void;
@@ -1684,6 +1760,8 @@ declare module ag.grid {
         ensureColIndexVisible(index: any): void;
         ensureIndexVisible(index: any): void;
         ensureNodeVisible(comparator: any): void;
+        scrollToPx(topPx: number): void;
+        getScrollPx(): number;
         forEachInMemory(callback: Function): void;
         forEachNode(callback: Function): void;
         forEachNodeAfterFilter(callback: Function): void;
@@ -1778,9 +1856,11 @@ declare module ag.grid {
         static EVENT_ROW_DOUBLE_CLICKED: string;
         static EVENT_READY: string;
         static EVENT_MULTITOOL_CLICK: string;
+        static EVENT_ROW_REORDER: string;
         static EVENT_SELECTION_STATE_CHANGED: string;
         static EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE: string;
         static EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE: string;
+        static EVENT_ROWS_MOUSE_IN: string;
         static EVENT_DO_NOTHING: string;
     }
 }
@@ -1835,8 +1915,11 @@ declare module ag.grid {
         private addWindowResizeListener();
         getRowModel(): any;
         getId(): string;
+        getRootPanel(): HTMLElement;
         private periodicallyDoLayout();
+        private selectHeightOption(heightClasses, eUserProvidedDiv);
         private setupComponents($scope, $compile, eUserProvidedDiv, globalEventListener);
+        private onRowsMouseIn(rowObj);
         private onRowsListenMouseMove();
         private onRowsStopListenMouseMove();
         private onColumnChanged(event);
@@ -1952,12 +2035,14 @@ declare module ag.grid {
         private setupFreeze(freezeChecker);
         private useRenderer(headerNameValue, headerCellRenderer, headerCellLabel);
         refreshFilterIcon(): void;
+        sortDirectionMap: {
+            [s: string]: string;
+        };
         refreshSortIcon(): void;
         private getNextSortDirection();
         private addSortHandling(headerCellLabel);
         onDragStart(): void;
         onDragging(dragChange: number, finished: boolean): void;
-        reflowText(elText: HTMLElement, allText: string): void;
         onIndividualColumnResized(column: Column): void;
         private addHeaderClassesFromCollDef();
     }

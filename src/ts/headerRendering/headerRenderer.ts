@@ -192,18 +192,23 @@ module ag.grid {
         }
 
         private insertHeadersWithoutGrouping() {
-            this.columnController.getDisplayedColumns().forEach( (column: Column) => {
+            var displayedColumns = this.columnController.getDisplayedColumns();
+            var lastIndex = displayedColumns.length - 1;
+
+            displayedColumns.forEach( (column: Column, idx: Number) => {
                 // only include the first x cols
                 var headerCellRenderer: any = RenderedHeaderCell;
                 if (column.colDef.checkboxSelection) {
                     headerCellRenderer = RenderedHeaderCheckerCell;
                 }
+                // debugger;
                 var renderedHeaderCell = new headerCellRenderer(column, {
                     'frame': true,
                     'sort': true,
                     'freeze': true,
                     'resize': true,
-                    'drag': true                    
+                    'last': idx == lastIndex,
+                    'drag': !column.colDef.noDrag
                 }, null, this.gridOptionsWrapper,
                     this.$scope, this.filterManager, this.columnController, this.$compile,
                     this.angularGrid, this.eRoot, this.popupService);

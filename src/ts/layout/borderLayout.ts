@@ -23,46 +23,58 @@ module ag.grid {
         private eWestChildLayout: any;
         private eCenterChildLayout: any;
 
+        private rootEl: HTMLElement;
+        private containerPinnedEl: HTMLElement;
+        private containerBodyEl: HTMLElement;
+        private viewportBodyEl: HTMLElement;
+        private headerEl: HTMLElement;
+
         private isLayoutPanel: any;
         private fullHeight: any;
         private layoutActive: any;
 
         private eGui: any;
         private id: any;
+        private name: string;
         private childPanels: any;
         private centerHeightLastTime: any;
 
         private sizeChangeListeners = <any>[];
         private overlays: any;
         private deleteListener: any;
-        private rowEditListener: any;
-        private rowDeleteListener: any;
-        private rowSplitListener: any;
+        private rowActionListener: any;
+        private getHoveredOn: any;
         private eventService: EventService;
         private gridOptionsWrapper: GridOptionsWrapper;
         private gridPanel: GridPanel;
+        private eBodyViewport;
+        private headerHeight;
+        private isActionsRedrawn;
 
         constructor(params: any) {
 
             this.isLayoutPanel = true;
+            this.isActionsRedrawn = true;
 
             this.fullHeight = !params.north && !params.south;
             this.deleteListener = params.deleteListener;
-            this.rowEditListener = params.rowEditListener;
-            this.rowDeleteListener = params.rowDeleteListener;
-            this.rowSplitListener = params.rowSplitListener;
+            this.rowActionListener = params.rowActionListener;
+            this.getHoveredOn = params.getHoveredOn;
             this.eventService = params.eventService;
             this.gridOptionsWrapper = params.gridOptionsWrapper;
             this.gridPanel = params.gridPanel;
+            this.name = params.name;
+            this.eBodyViewport = this.gridPanel ? this.gridPanel.getBodyContainer().parentElement : null;
+            this.headerHeight = this.gridOptionsWrapper? this.gridOptionsWrapper.getHeaderHeight() : null;
 
             var template: any;
             if (!params.dontFill) {
                 if (this.fullHeight) {
                     template =
-                        '<div style="height: 100%; overflow: auto; position: relative;">' +
+                        '<div style="height: 100%; position: relative;">' +
                         '<div id="west" style="height: 100%; float: left;"></div>' +
                         '<div id="east" style="height: 100%; float: right;"></div>' +
-                        '<div id="center" style="height: 100%;"></div>' +
+                        '<div id="centerA" style="height: 100%;"></div>' +
                         '<div id="overlay" class="ag-overlay"></div>' +
                         '</div>';
                 } else {
@@ -72,7 +84,7 @@ module ag.grid {
                         '<div id="centerRow" style="height: 100%; overflow: hidden;">' +
                         '<div id="west" style="height: 100%; float: left;"></div>' +
                         '<div id="east" style="height: 100%; float: right;"></div>' +
-                        '<div id="center" style="height: 100%;"></div>' +
+                        '<div id="centerB" style="height: 100%;"></div>' +
                         '</div>' +
                         '<div id="south"></div>' +
                         '<div id="overlay" class="ag-overlay"></div>' +
@@ -86,7 +98,7 @@ module ag.grid {
                     '<div id="centerRow">' +
                     '<div id="west"></div>' +
                     '<div id="east"></div>' +
-                    '<div id="center"></div>' +
+                    '<div id="centerC"></div>' +
                     '</div>' +
                     '<div id="south"></div>' +
                     '<div id="overlay" style="pointer-events: none; position: absolute; height: 100%; width: 100%; top: 0px; left: 0px;"></div>' +
@@ -107,17 +119,13 @@ module ag.grid {
                 this.setupPanels(params);
             }
 
-            if (params.overlays) {
+            if (params.overlays && this.gridOptionsWrapper.getActionTemplate()) {
                 this.addOverlayRowZone();
             }
 
             this.overlays = params.overlays;
             this.setupOverlays();
 
-            
-            // this.eGui.style.width = '1630px';
-            // document.getElementsByClassName('work-space-content-body')[0].offsetWidth + 'px';
-            // console.log(document.getElementsByClassName('work-space-content-body')[0].offsetWidth + 'px');
         }
 
         public getOverlays() {
@@ -147,7 +155,7 @@ module ag.grid {
             this.eSouthWrapper = this.eGui.querySelector('#south');
             this.eEastWrapper = this.eGui.querySelector('#east');
             this.eWestWrapper = this.eGui.querySelector('#west');
-            this.eCenterWrapper = this.eGui.querySelector('#center');
+            this.eCenterWrapper = this.eGui.querySelector('#centerA') || this.eGui.querySelector('#centerB') || this.eGui.querySelector('#centerC');
             this.eOverlayWrapper = this.eGui.querySelector('#overlay');
             this.eCenterRow = this.eGui.querySelector('#centerRow');
 
@@ -157,7 +165,13 @@ module ag.grid {
             this.eWestChildLayout = this.setupPanel(params.west, this.eWestWrapper);
             this.eCenterChildLayout = this.setupPanel(params.center, this.eCenterWrapper);
 
-
+            this.rootEl = this.gridPanel ? this.gridPanel.getRoot() : null;
+            if (this.rootEl) {
+                this.containerPinnedEl = <HTMLElement>this.rootEl.getElementsByClassName('ag-pinned-cols-container')[0];
+                this.viewportBodyEl = <HTMLElement>this.rootEl.getElementsByClassName('ag-body-viewport')[0];
+                this.containerBodyEl = <HTMLElement>this.rootEl.getElementsByClassName('ag-body-container')[0];
+                this.headerEl = <HTMLElement>this.rootEl.getElementsByClassName('ag-header')[0];
+            }
         }
 
         private addOverlayRowZone(): void {
@@ -171,15 +185,15 @@ module ag.grid {
 
             rowOverlayZone.appendChild(rowOverlay);
 
-            
-            // rowOverlayZone.style.top = `${this.gridOptionsWrapper.getFullHeaderHeight()}px`;
-
-            rowOverlayZone.addEventListener('click', this.overlayEventThrough.bind(this));
-            rowOverlayZone.addEventListener('scroll', this.overlayEventThrough.bind(this));
-            rowOverlayZone.addEventListener('mousemove', this.overlayEventThrough.bind(this));
-            rowOverlayZone.addEventListener('DOMMouseScroll', this.overlayEventThrough.bind(this));
-            rowOverlayZone.addEventListener('mousewheel', this.overlayEventThrough.bind(this));
-
+            for (let eventName of [
+                'click', 'scroll', 'mousemove', 'mouseover',
+                'mouseup', 'mousedown', 'DOMMouseScroll',
+                'MSPointerMove', 'mousewheel', 'wheel',
+                'mouseenter', 'mouseleave'
+            ]) {
+                rowOverlayZone.addEventListener(eventName, this.overlayEventThrough.bind(this));
+            }
+            // rowOverlayZone.addEventListener('mouseover', (ev) => { console.log(ev);});
 
             rowOverlayZone.addEventListener('mouseleave', this.rowOverlayLeaveListener.bind(this));
             rowOverlayZone.addEventListener('mouseenter', this.rowOverlayEnterListener.bind(this));
@@ -190,27 +204,98 @@ module ag.grid {
 
         }
 
-        public positionOverlayRowZone(offsetTopY: number) {
+        public positionOverlayRowZone() {
+            if (!this.gridOptionsWrapper || !this.getHoveredOn || !this.gridPanel) return;
+            // vertically position action row overlay
+            // from top of the first fully visible row to bottom of the last visible one
+            // right side shift by the width of sroll bar if it is visible
 
-            var eBodyViewport = this.gridPanel.getBodyContainer();
-            var headerHeight = this.gridOptionsWrapper.getHeaderHeight();
-            var rowOverlayOffset = headerHeight - offsetTopY;
-            // var rowOverlayOffset = headerHeight;
-            var rowOverlayHeight = offsetTopY + eBodyViewport.clientHeight;
-            // console.log(offsetTopY);
-            // console.log(eBodyViewport.clientHeight);
-            // console.log(offsetTopY + eBodyViewport.clientHeight);
-            // console.log('***');
+            // viewport where rows and action row zone appears to calculate visibility
+            var bodyRect = this.eBodyViewport.getBoundingClientRect();
+            var visibleHeight = this.eBodyViewport.clientHeight;
 
-            var rightGap = this.gridPanel.getRightGap();
-            var rightPosition = rightGap > 0 ? rightGap : 18;
+            // rendered rows and their attributes
+            var rowsInView = this.gridPanel.rowRenderer.getRenderedRows();
+            var rowKeys = Object.keys(rowsInView);
+            var firstRenderedIndex = Math.min.apply(null, rowKeys);
+            var lastRenderedIndex = Math.max.apply(null, rowKeys);
+            var hScrollHeight = this.getScrollHeight();
+            
+            // result: first/last visible rows and their boundaries
+            var eFirstRowEl: HTMLElement;
+            var firstRowTop = 0;
+            var eLastRowEl: HTMLElement;
+            var lastRowBottom = 0;
+            var heightDiff = 0;
+            var extraTop = 0;
+            var extraBottom = 0;
 
-            this.setRowOverlayTop(rowOverlayOffset);
-            this.setRowOverlayRowHeight(rowOverlayHeight);            
-            this.setRowOverlayRight(rightPosition);
+            // it make sense if only there is rendered rows
+            if (rowKeys && rowKeys.length) {
+
+                // get elements that occupies first/last pixel in body view (parent of element in this point)
+                // if its class is not row one considering first visible row is the first/last rendered one
+                [eFirstRowEl, eLastRowEl] = [{
+                    pointToCheck: [bodyRect.left, bodyRect.top + 1],
+                    fallbackRowIdx: firstRenderedIndex
+                }, {
+                    pointToCheck: [bodyRect.left, bodyRect.bottom - 1 - hScrollHeight],
+                    fallbackRowIdx: lastRenderedIndex
+                }].map((params) => {
+                    var curEl = <HTMLElement>document.elementFromPoint(...params.pointToCheck);
+
+                    curEl = curEl ? (curEl.parentElement || null) : null;
+                    curEl = (curEl && curEl.classList.contains('ag-row')) ? curEl : (
+                        rowsInView[params.fallbackRowIdx] ? rowsInView[params.fallbackRowIdx].vBodyRow.element : null
+                    );
+
+                    return curEl;
+                })
+
+                // get Y coordinate of first visible row; top one if its visible and bottom one if it is mostly hidden
+                firstRowTop = eFirstRowEl.offsetTop - this.eBodyViewport.scrollTop;
+                if (firstRowTop < 0) {
+                    if (firstRowTop > -15) {
+                        extraTop = eFirstRowEl.offsetHeight + firstRowTop;
+                    }
+                    firstRowTop += eFirstRowEl.offsetHeight;
+                }
+                firstRowTop += this.headerHeight - extraTop;
+
+                // get Y coordinate of last visible row; bottom one if its visible and top one if it is mostly hidden
+                lastRowBottom = eLastRowEl.offsetTop - this.eBodyViewport.scrollTop;
+                heightDiff = visibleHeight - (lastRowBottom + eLastRowEl.offsetHeight);
+                if (heightDiff >= 0) {
+                    lastRowBottom += eLastRowEl.offsetHeight;
+                } else if (heightDiff > -15) {
+                    lastRowBottom += eLastRowEl.offsetHeight + heightDiff;
+                }
+                lastRowBottom += this.headerHeight;
+            }
+
+            this.setRowOverlayTop(firstRowTop);
+            this.setRowOverlayHeight(lastRowBottom - firstRowTop);
+            this.setRowOverlayRight(this.getScrollWidth());
+
+            // var rowUnderCursor = this.getHoveredOn();
+            // if (rowUnderCursor && this.gridPanel.rowRenderer.isListenMouseMove) rowUnderCursor.listenMoveRef();
+        }
+
+        public switchExtraButton(rowObj) {
+            // var row = this.getOverlayRow();
+            var needToShow = (rowObj.node.data.files || []).length;
+            var buttonToSwitch = this.eGui.querySelector('#ag-action-row-download');
+            if (buttonToSwitch) {
+                if (needToShow) {
+                    buttonToSwitch.style.display = null;
+                } else {
+                    buttonToSwitch.style.display = 'none';
+                }
+            }
         }
 
         private overlayEventThrough(event: MouseEvent) {
+            
             // relay mouse events to underlying element
             var coordinates: any;
             (<HTMLElement>event.target).style.display = 'none';
@@ -221,7 +306,7 @@ module ag.grid {
                 }
             }
             var underEl = document.elementFromPoint(event.clientX, event.clientY);
-            // console.log(underEl);
+            // console.dir(event);
             if (underEl) _.simulateEvent((<HTMLElement>underEl), event.type, coordinates);
             (<HTMLElement>event.target).style.display = '';
         }
@@ -272,8 +357,19 @@ module ag.grid {
             return this.eGui;
         }
 
+        private getScrollWidth(): number {
+            var el = this.viewportBodyEl;
+            return el.getBoundingClientRect().width - el.clientWidth;
+        }
+
+        private getScrollHeight(): number {
+            var el = this.viewportBodyEl;
+            return el.getBoundingClientRect().height - el.clientHeight;
+        }
+
         // returns true if any item changed size, otherwise returns false
         public doLayout() {
+
 
             if (!_.isVisible(this.eGui)) {
                 return false;
@@ -308,11 +404,21 @@ module ag.grid {
                 this.fireSizeChanged();
             }
 
-            var rootWidth = document.getElementsByClassName('b-content-center')[0].offsetWidth + 'px';
-            this.eGui.style.width = rootWidth;
-            // this.eGui.style.width = '1300px';
-            // this.eGui.style.width = '1620px';
-            // debugger;
+            if (this.name != 'eRootPanel' && this.rootEl) {
+                var lastHeaderEl = <HTMLElement>this.rootEl.querySelector('.ag-header-container .ag-header-cell:last-child');
+                var scrollWidth = this.getScrollWidth();
+                
+                if (scrollWidth) {
+                    lastHeaderEl.style.width = (this.headerEl.offsetWidth - lastHeaderEl.offsetLeft) + 'px';
+                }
+                var rootWidth = Math.min(
+                    this.containerBodyEl.offsetWidth + this.containerPinnedEl.offsetWidth + scrollWidth,
+                    this.gridPanel.getRootPanel().offsetWidth
+                ) + 'px';
+
+                this.eGui.style.width = rootWidth;
+                // this.positionOverlayRowZone();
+            }
 
             return atLeastOneChanged;
         }
@@ -350,11 +456,25 @@ module ag.grid {
 
         private layoutHeightNormal() {
 
+            if (!this.gridPanel) return;
+
             var totalHeight = _.offsetHeight(this.eGui);
             var northHeight = _.offsetHeight(this.eNorthWrapper);
             var southHeight = _.offsetHeight(this.eSouthWrapper);
-
             var centerHeight = totalHeight - northHeight - southHeight;
+
+            var compStyleInsertEl: any;
+
+            if (this.gridOptionsWrapper.isHeightUnspecified()) {
+                this.eCenterRow.style.height = '100%';
+
+            } else if (this.gridOptionsWrapper.isHeightGiven()) {
+                compStyleInsertEl = window.getComputedStyle(
+                    <HTMLElement>document.getElementById(this.gridPanel.getId())
+                );
+                centerHeight = parseInt(compStyleInsertEl.height);
+            }
+
             if (centerHeight < 0) {
                 centerHeight = 0;
             }
@@ -381,9 +501,6 @@ module ag.grid {
             if (centerWidth < 0) {
                 centerWidth = 0;
             }
-
-            // console.log(this.eGui);
-            // console.log(totalWidth);
 
             this.eCenterWrapper.style.width = centerWidth + 'px';
         }
@@ -421,40 +538,225 @@ module ag.grid {
             return tmpl;
         }
 
-        private createOverlayRowTemplate(): string {
-            var tmpl = `
-                <a title="Редактировать" href="#"><span id="ag-action-row-edit" class="i-edit" style="pointer-events:all;"></span></a>
-                <a title="Удалить" href="#"><span id="ag-action-row-delete" class="i-delete" style="pointer-events:all;"></span></a>
-                <a title="Разделить" href="#"><span id="ag-action-row-split" class="i-split" style="pointer-events:all;"></span></a>
-            `;
-            return this.getOverlayRowWrapper(tmpl);
+        private createOverlayRowTemplate(actions: any[], availableHeightForMenu: number): string {
+            let tmpl: string[] | string = [''];
+
+            if (!actions) {
+
+                actions = this.gridOptionsWrapper.getActionTemplate();
+                for (var k in actions) {
+                    var v = actions[k];
+                    (<string[]>tmpl).push(`
+                    <a title="${v}" href="#"><span id="ag-action-row-${k}" class="i-${k}" style="pointer-events:all;"></span></a>
+                    `);
+                }
+                // tmpl = `
+                //     <a title="Редактировать" href="#"><span id="ag-action-row-edit" class="i-edit" style="pointer-events:all;"></span></a>
+                //     <a title="Удалить" href="#"><span id="ag-action-row-delete" class="i-delete" style="pointer-events:all;"></span></a>
+                //     <a title="Разделить" href="#"><span id="ag-action-row-split" class="i-split" style="pointer-events:all;"></span></a>
+                // `;
+
+            } else {
+
+                let menuTemplateStart = (data) => {
+                    return `
+                        <div
+                            class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm ${data.auxClass}"
+                            style="margin-left: -10px; pointer-events: all;"
+                            title="${data.title}"
+                        >
+                            <span
+                                class="b-options-btn b-options-btn_icon dropdown-toggle"
+                                data-toggle="dropdown"
+                                data-hover="dropdown"
+                                aria-expanded="false"
+                            >
+                                <span class="i-${data.code}"> </span>
+                            </span>
+                            <ul class="dropdown-menu">
+                    `;
+                }
+                var menuTemplateEnd = (data) => {
+                    return `
+                            </ul>
+                        </div>
+                    `;
+                }
+                var menuTemplateItem = (data) => {
+                    return `
+                        <li>
+                            <a class="k-visible k-action-elem js-${data.code || 'dummy'}" data-status-id="${data.itemId}" href="\\#">
+                                ${data.itemTitle}
+                            </a>
+                        </li>
+                    `;
+                }
+                var menuTemplateItemLink = (data) => {
+                    return `
+                        <li>
+                            <a class="link-icon link-${data.itemCode} k-visible k-action-elem js-${data.itemCode}" href="${data.itemLink}">
+                                <span class="content-center">
+                                    ${data.itemTitle}
+                                </span>
+                            </a>
+                        </li>
+                    `;
+                }
+                var singleTemplate = (data) => {
+                    return `
+                    <a title="${data.title}" href= "\\#" >
+                        <span class="i-${data.code} js-${data.code}" style= "pointer-events:all;" >
+                        </span>
+                    </a>
+                    `;
+                }
+
+
+                for (let actionItem of actions) {
+
+                    let data: any = {
+                        title: actionItem.title,
+                        code: actionItem.code
+                    }
+
+                    if ('children' in actionItem) {
+
+                        let menuHeight = actionItem.children.length * 30 + 10;
+                        data.auxClass = menuHeight > availableHeightForMenu ? 'dropup' : '';
+                        (<string[]>tmpl).push(menuTemplateStart(data));
+
+                        for (let menuItem of actionItem.children) {
+                            let content: string;
+                            data.itemId = menuItem.id;
+                            data.itemTitle = menuItem.title;
+                            data.itemLink = menuItem.link;
+                            data.itemCode = menuItem.code;
+
+                            if (data.itemLink) {
+                                content = menuTemplateItemLink(data);
+                            } else if (data.itemId) {
+                                content = menuTemplateItem(data);
+                            } else {
+                                content = "<div>Здесь могла бы быть..., да что угодно!</div>";
+                            }
+                            (<string[]>tmpl).push(content);
+                        }
+
+                        (<string[]>tmpl).push(menuTemplateEnd(data));
+
+                    } else {
+
+                        (<string[]>tmpl).push(singleTemplate(data));
+
+                    }
+
+                }
+
+
+            }
+
+            tmpl = (<string[]>tmpl).join('');
+            return this.getOverlayRowWrapper(<string>tmpl);
         }
 
-        public showOverlayRow() {
+        public showOverlayRow(rowData?: any) {
             if (this.eOverlayRowZoneWrapper === void 0) return;
-            document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
-            // this.eOverlayRowWrapper.style.display = 'none';
-            this.eOverlayRowWrapper.appendChild(
-                _.loadTemplate(this.createOverlayRowTemplate().trim())
-            );
-            this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
-                event.stopPropagation();
-                event.preventDefault();
-                this.rowEditListener(event);
-                return false; 
-            });
-            this.eOverlayRowWrapper.querySelector('#ag-action-row-delete').addEventListener('click', (event) => {
-                event.stopPropagation();
-                event.preventDefault();
-                this.rowDeleteListener(event);
-                return false; 
-            });
-            this.eOverlayRowWrapper.querySelector('#ag-action-row-split').addEventListener('click', (event) => {
-                event.stopPropagation();
-                event.preventDefault();
-                this.rowSplitListener(event);
-                return false; 
-            });
+            var actions: any = this.gridOptionsWrapper.getActionTemplate();
+            var actionData: any;
+            var actionClickSelector: string;
+
+            var overlayBottom = parseInt(this.eOverlayRowZoneWrapper.style.height);
+            var rowBottom = parseInt(this.eOverlayRowWrapper.style.top) + parseInt(this.eOverlayRowWrapper.style.height);
+            var availableHeightForMenu = overlayBottom - rowBottom;
+
+            if (rowData && typeof actions == 'function') {
+
+                actionData = actions({
+                    data: rowData,
+                    type: 'actionTemplate'
+                });
+                while (this.eOverlayRowWrapper.firstChild) {
+                    this.eOverlayRowWrapper.removeChild(this.eOverlayRowWrapper.firstChild);
+                }
+
+                let tempDiv = document.createElement("div");
+                tempDiv.innerHTML = this.createOverlayRowTemplate(
+                    actionData.actions,
+                    availableHeightForMenu
+                );
+                
+                this.eOverlayRowWrapper.appendChild(
+                    tempDiv.firstElementChild
+                );
+
+                actionData.postActionFn();
+                actionClickSelector = '.js-'
+
+                actions = actionData.actions.reduce(
+                    (acc, el) => {
+                        if (el.children) {
+                            for (let child of el.children) {
+                                if (child.code) acc[child.code] = child.title;
+                            }
+                        }
+                        acc[el.code] = el.title;
+                        return acc;
+                    },
+                    {}
+                )
+
+            } else {
+
+                if (!this.isActionsRedrawn) {
+                    return;
+                }
+                this.isActionsRedrawn = false;
+
+                document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
+
+                this.eOverlayRowWrapper.appendChild(
+                    _.loadTemplate(this.createOverlayRowTemplate().trim())
+                );
+                actionClickSelector = '#ag-action-row-'
+                
+            }
+
+
+            for (var k in actions) {
+                var v = actions[k];
+                var that = this;
+
+                (function(k) {
+                    var actionElements = that.eOverlayRowWrapper.querySelectorAll(`${actionClickSelector}${k}`);
+
+                    for (let actionElement of actionElements) {
+                        actionElement.addEventListener('click', (event) => {
+                            event.stopPropagation();
+                            event.preventDefault();
+                            that.rowActionListener(event, k);
+                            return false;
+                        });
+                    }
+                })(k);
+            }
+            // this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
+            //     event.stopPropagation();
+            //     event.preventDefault();
+            //     this.rowEditListener(event);
+            //     return false; 
+            // });
+            // this.eOverlayRowWrapper.querySelector('#ag-action-row-delete').addEventListener('click', (event) => {
+            //     event.stopPropagation();
+            //     event.preventDefault();
+            //     this.rowDeleteListener(event);
+            //     return false; 
+            // });
+            // this.eOverlayRowWrapper.querySelector('#ag-action-row-split').addEventListener('click', (event) => {
+            //     event.stopPropagation();
+            //     event.preventDefault();
+            //     this.rowSplitListener(event);
+            //     return false; 
+            // });
         }
 
         public showOverlay(key: string) {
@@ -483,15 +785,22 @@ module ag.grid {
         }
 
         public setRowOverlayTop(offsetY: number): void {
-            this.eOverlayRowZoneWrapper.style.top = this.pXhelper(offsetY);
+            if (this.eOverlayRowZoneWrapper) {
+                this.eOverlayRowZoneWrapper.style.top = this.pXhelper(offsetY);
+            }
         }
 
         public setRowOverlayRight(offsetRight: number): void {
-            this.eOverlayRowZoneWrapper.style.right = this.pXhelper(offsetRight);
+            if (this.eOverlayRowZoneWrapper) {
+                this.eOverlayRowZoneWrapper.style.right = this.pXhelper(offsetRight);
+            }
         }
 
-        public setRowOverlayRowHeight(height: number): void {
-            this.eOverlayRowZoneWrapper.style.height = this.pXhelper(height);
+        public setRowOverlayHeight(height: number): void {
+            if (this.eOverlayRowZoneWrapper) {
+                this.eOverlayRowZoneWrapper.style.height = this.pXhelper(height);
+            }
+
         }
 
         public setSouthVisible(visible: any) {

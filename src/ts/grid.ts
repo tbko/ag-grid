@@ -58,6 +58,7 @@ module ag.grid {
         private eUserProvidedDiv: HTMLElement;
         private logger: Logger;
 
+
         constructor(eGridDiv: any, gridOptions: any, globalEventListener: Function = null, $scope: any = null, $compile: any = null, quickFilterOnScope: any = null) {
 
             this.gridOptions = gridOptions;
@@ -142,6 +143,11 @@ module ag.grid {
             return this.eUserProvidedDiv.id
         }
 
+        public getRootPanel(): HTMLElement {
+            if (!this.eRootPanel) return;
+            return this.eRootPanel.getGui();
+        }
+
         private periodicallyDoLayout() {
             if (!this.finished) {
                 var that = this;
@@ -152,8 +158,18 @@ module ag.grid {
             }
         }
 
+        private selectHeightOption(heightClasses: string[], eUserProvidedDiv: HTMLElement): number {
+            var userProvidedClasses = this.eUserProvidedDiv.classList;
+            var heightOptionsFlags = 0;
+            (heightClasses || []).forEach((classHeightName, idx) => {
+                heightOptionsFlags += userProvidedClasses.contains(classHeightName) ? 1 << idx : 0;
+            });
+            return heightOptionsFlags;
+        }
+
         private setupComponents($scope: any, $compile: any, eUserProvidedDiv: HTMLElement, globalEventListener: Function) {
             this.eUserProvidedDiv = eUserProvidedDiv;
+
 
             // create all the beans
             var eventService = new EventService();
@@ -177,14 +193,18 @@ module ag.grid {
             var dragAndDropService = new DragAndDropService();
 
             // initialise all the beans
+            this.gridOptions.heightOption = this.selectHeightOption(this.gridOptions.heightClasses || ['ag-height-limit', 'ag-height-fullscreen'], eUserProvidedDiv);
             gridOptionsWrapper.init(this.gridOptions, eventService);
+            if (gridOptionsWrapper.isHeightMixed()) {
+                console.warn(`Grid "${this.getId()}" is given ambiguous hegiht options`);
+            }
             loggerFactory.init(gridOptionsWrapper);
             this.logger = loggerFactory.create('Grid');
             this.logger.log('initialising');
 
             dragAndDropService.init(loggerFactory);
             eventService.init(loggerFactory);
-            gridPanel.init(gridOptionsWrapper, columnController, rowRenderer, masterSlaveService, eventService);
+            gridPanel.init(this, gridOptionsWrapper, columnController, rowRenderer, masterSlaveService, eventService);
             templateService.init($scope);
             expressionService.init(loggerFactory);
             selectionController.init(this, gridPanel, gridOptionsWrapper, $scope, rowRenderer, eventService);
@@ -257,7 +277,9 @@ module ag.grid {
                 east: toolPanelLayout,
                 south: paginationGui,
                 dontFill: gridOptionsWrapper.isForPrint(),
-                name: 'eRootPanel'
+                name: 'eRootPanel',
+                gridPanel: this.gridPanel,
+                gridOptionsWrapper: gridOptionsWrapper
             });
             popupService.init(this.eRootPanel.getGui());
 
@@ -270,7 +292,7 @@ module ag.grid {
 
             eUserProvidedDiv.appendChild(this.eRootPanel.getGui());
             this.logger.log('grid DOM added');
-            this.eRootPanel.getGui().style.width = this.eRootPanel.getGui().offsetWidth + 'px';
+            // this.eRootPanel.getGui().style.width = this.eRootPanel.getGui().offsetWidth + 'px';
 
             this.eventService.addEventListener('selectionStateChanged', function(pamparams: any) {
                 // relay "selection change" message to header
@@ -287,6 +309,11 @@ module ag.grid {
             eventService.addEventListener(Events.EVENT_COLUMN_VISIBLE, this.onColumnChanged.bind(this));
             eventService.addEventListener(Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE, this.onRowsListenMouseMove.bind(this));
             eventService.addEventListener(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.onRowsStopListenMouseMove.bind(this));
+            eventService.addEventListener(Events.EVENT_ROWS_MOUSE_IN, this.onRowsMouseIn.bind(this));
+        }
+
+        private onRowsMouseIn(rowObj: any) {
+            this.eRootPanel.switchExtraButton(rowObj);
         }
 
         private onRowsListenMouseMove() {
@@ -298,9 +325,16 @@ module ag.grid {
         }
 
         private onColumnChanged(event: ColumnChangeEvent): void {
-            this.rowRenderer.countGridRows();
+            var rootEl: HTMLHtmlElement = this.eRootPanel.eGui.getElementsByClassName('ag-root')[0]
+            // this.rowRenderer.countGridRows();
             if (event.isPivotChanged()) {
                 this.inMemoryRowController.onPivotChanged();
+                if (this.columnController.getPivotedColumns().length) {
+                    rootEl.classList.add('ag-root-group');
+                } else {
+                    rootEl.classList.remove('ag-root-group');
+
+                }
             }
             if (event.isValueChanged()) {
                 this.inMemoryRowController.doAggregate();
@@ -417,6 +451,7 @@ module ag.grid {
             this.gridPanel.setBodyContainerWidth();
             this.gridPanel.setPinnedColContainerWidth();
             this.rowRenderer.refreshView();
+
         }
 
         public destroy() {
@@ -527,6 +562,13 @@ module ag.grid {
         public updateModelAndRefresh(step: any, refreshFromIndex?: any) {
             this.inMemoryRowController.updateModel(step);
             this.rowRenderer.refreshView(refreshFromIndex);
+            var orderColumn = this.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
+            if (orderColumn && this.rowRenderer.maxOrderColumnWidth) {
+                this.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(
+                    orderColumn,
+                    this.rowRenderer.maxOrderColumnWidth
+                );
+            }
         }
 
         public setRowData(rows?: any, firstId?: any) {
@@ -719,6 +761,7 @@ module ag.grid {
             // need to do layout first, as drawVirtualRows and setPinnedColHeight
             // need to know the result of the resizing of the panels.
             var sizeChanged = this.eRootPanel.doLayout();
+
             // both of the two below should be done in gridPanel, the gridPanel should register 'resize' to the panel
             if (sizeChanged) {
                 this.rowRenderer.drawVirtualRows();

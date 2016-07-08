@@ -47,7 +47,21 @@ module ag.grid {
         private eParentsOfRows: HTMLElement[];
 
         private hoveredOn: any;
+        public isListenMouseMove: boolean;
         private isSingleRow: boolean;
+        private numberOfLinesCalculated: number;
+        private beforeCalculatedHeight: number;
+        private afterCalculatedHeight: number;
+        private renderedTotalHeight: number;
+        private renderedAverageHeight: number;
+        private heightFromLastRow: number;
+        private previousRowIndex: number;
+        private prePreviousRowIndex: number;
+
+        private maxOrderColumnWidth: number;
+        private orderColumn: Column;
+        private canOrderResize: boolean;
+
 
         public init(columnModel: any, gridOptionsWrapper: GridOptionsWrapper, gridPanel: GridPanel,
                     angularGrid: Grid, selectionRendererFactory: SelectionRendererFactory, $compile: any, $scope: any,
@@ -67,7 +81,20 @@ module ag.grid {
             this.findAllElements(gridPanel);
             this.eventService = eventService;
             this.hoveredOn = undefined;
+            this.isListenMouseMove = false;
             this.isSingleRow = true;
+            this.numberOfLinesCalculated = 0;
+            this.beforeCalculatedHeight = 0;
+            this.afterCalculatedHeight = 0;
+            this.renderedTotalHeight = 0;
+            this.heightFromLastRow = 0;
+
+            this.previousRowIndex = null;
+            this.prePreviousRowIndex = null;
+            
+            this.maxOrderColumnWidth = null;
+            this.orderColumn = null;
+            this.canOrderResize = true;
 
             this.cellRendererMap = {
                 'group': groupCellRendererFactory(gridOptionsWrapper, selectionRendererFactory, expressionService),
@@ -81,6 +108,10 @@ module ag.grid {
             // map of row ids to row objects. keeps track of which elements
             // are rendered for which rows in the dom.
             this.renderedRows = {};
+
+            var maxRows: number = this.gridOptionsWrapper.getMaxRows();
+            var minRows: number = this.gridOptionsWrapper.getMinRows();
+            this.renderedAverageHeight = (maxRows + minRows) / 2;
         }
 
         public setRowModel(rowModel: any) {
@@ -88,6 +119,7 @@ module ag.grid {
         }
 
         public onIndividualColumnResized(column: Column) {
+            this.canOrderResize = false;
             var newWidthPx = column.actualWidth + "px";
             var selectorForAllColsInCell = ".cell-col-" + column.index;
             this.eParentsOfRows.forEach( function(rowContainer: HTMLElement) {
@@ -97,6 +129,8 @@ module ag.grid {
                     element.style.width = newWidthPx;
                 }
             });
+            this.refreshView();
+            this.canOrderResize = true;
         }
 
         public setMainRowWidths() {
@@ -181,19 +215,19 @@ module ag.grid {
         }
 
         public refreshView(refreshFromIndex?: any) {
+            this.refreshAllVirtualRows(refreshFromIndex);
             if (!this.gridOptionsWrapper.isForPrint()) {
-                var rowCount = this.rowModel.getGridRowCount();
-                console.log(rowCount);
-                var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
+                // var rowCount = this.rowModel.getGridRowCount();
+                // var containerHeight = this.gridOptionsWrapper.getRowHeight() * rowCount;
+                // var containerHeight = this.gridOptionsWrapper.getRowHeight() * this.numberOfLinesCalculated;
+                var containerHeight = this.getBodyHeight();
 
-                // debugger;
                 this.eBodyContainer.style.height = containerHeight + "px";
                 // this.gridPanel.getLayout().setRowOverlayRowHeight(this.eBodyContainer.style.height);
 
                 this.ePinnedColsContainer.style.height = containerHeight + "px";
             }
 
-            this.refreshAllVirtualRows(refreshFromIndex);
             this.refreshAllFloatingRows();
             this.selectionController.refreshSelection();
         }
@@ -261,7 +295,7 @@ module ag.grid {
             this.removeVirtualRow(rowsToRemove, fromIndex);
 
             // add in new rows
-            this.countGridRows();
+            // this.countGridRows();
             this.drawVirtualRows();
         }
 
@@ -310,83 +344,43 @@ module ag.grid {
             delete this.renderedRows[indexToRemove];
         }
 
+
+        /***********************************************
+        * START of ROW RENDERING
+        ************************************************/
         public drawVirtualRows() {
             var first: any;
             var last: any;
-            var fillinRowsCount = 0;
+            // var fillinRowsCount = 0;
 
             var rowCount = this.rowModel.getVirtualRowCount();
-            var renderer = this.cellRendererMap['multiline'];
-            var mainRowWidth = this.columnModel.getBodyContainerWidth();
             var baseHeight = this.gridOptionsWrapper.getRowHeight();
+            var maxRows: number = this.gridOptionsWrapper.gridOptions.maxRows;
+            var minRows: number = this.gridOptionsWrapper.gridOptions.minRows;
+            var topPixel = this.eBodyViewport.scrollTop;
+            var bottomPixel = topPixel + this.eBodyViewport.offsetHeight;
+            var buffer = this.gridOptionsWrapper.getRowBuffer();
+            var groupKeys = this.gridOptionsWrapper.getGroupKeys();
+            var isGroup = groupKeys ? groupKeys.length : groupKeys;
+            var countLinesBefore = 0;
+
+            var verticalGap = 15; // top/bottom padding + borders (px) default: 15
 
             if (this.gridOptionsWrapper.isForPrint()) {
                 first = 0;
                 last = rowCount;
+            } else if (maxRows === void 0 || minRows === void 0) {
+                first = 0;
+                last = rowCount;
+            // } else if (maxRows === minRows && !isGroup) {
             } else {
-                var topPixel = this.eBodyViewport.scrollTop;
-                var bottomPixel = topPixel + this.eBodyViewport.offsetHeight;
-                var row: RowNode;
-                var countRowsBefore = 0;
-                var delta = 0;
-                var preparedRows:any = {};
-                var rowEl: any;
+                // first = Math.floor(    topPixel / ((baseHeight - verticalGap) * minRows + verticalGap) );
+                // last = Math.floor(  bottomPixel / ((baseHeight - verticalGap) * minRows + verticalGap) );
+                first = Math.floor(topPixel / ((baseHeight - verticalGap) * minRows + verticalGap));
+                last = Math.floor(bottomPixel / baseHeight);
 
-                // if (this.isSingleRow == )
-                
-                for (var k = 0; k < rowCount; k++) {
-                    row = this.rowModel.getVirtualRow(k)
-                    if (!row) {
-                        break;
-                    }
-                    
-                    // console.log(row);
-                    if (!row.group) {
-                        delta = row.gridHeight;
-                        // if (row.rowHeight === undefined || row.rowHeight === null) {
-                        //     rowEl = this.insertRow(row, k, mainRowWidth, baseHeight, countRowsBefore, false);
-                        //     row.rowHeight = rowEl.maxRowsNeeded
-                        //     preparedRows[k] = rowEl;
-                        // }
-                        // delta = row.rowHeight;
-                    } else {
-                        delta = 1;
-                    }
-                    if ((countRowsBefore + delta) * baseHeight > topPixel) {
-                        break;
-                    }
-                    countRowsBefore += delta;
-                }
-                first = k;
-                for (; k < rowCount; k++) {
-                    row = this.rowModel.getVirtualRow(k)
-                    if (!row) {
-                        break;
-                    }
-
-                    if (!row.group) {
-                        countRowsBefore += row.gridHeight;
-                        // if (row.rowHeight === undefined || row.rowHeight === null) {
-                        //     rowEl = this.insertRow(row, k, mainRowWidth, baseHeight, countRowsBefore, false);
-                        //     row.rowHeight = rowEl.maxRowsNeeded
-                        //     preparedRows[k] = rowEl;
-                        // }
-                        // countRowsBefore += row.rowHeight;
-                    } else {
-                        countRowsBefore += 1
-                    }
-                    if (countRowsBefore * baseHeight > bottomPixel) {
-                        break;
-                    }
-                }
-                last = k;
-
-                //add in buffer
-                var buffer = this.gridOptionsWrapper.getRowBuffer();
                 first = first - buffer;
                 last = last + buffer;
-
-                // adjust, in case buffer extended actual size
                 if (first < 0) {
                     first = 0;
                 }
@@ -394,13 +388,90 @@ module ag.grid {
                     last = rowCount - 1;
                 }
             }
+            //     var preRows = this.rowModel.getVirtualRowsUpto()
+            //     first = Math.trunc(topPixel / (baseHeight * maxRows));
+            //     last = Math.trunc(bottomPixel / (baseHeight * maxRows));;
 
-            // console.log(first, last);
+            //     first = first - buffer;
+            //     last = last + buffer;
+            //     if (first < 0) {
+            //         first = 0;
+            //     }
+            //     if (last > rowCount - 1) {
+            //         last = rowCount - 1;
+            //     }
+
+            // } else {
+            // } else if (maxRows === minRows && isGroup) {
+            //     var row: RowNode;
+            //     var countRowsBefore = 0;
+            //     var delta = 0;
+            //     var deltaHistory = [];
+            //     var preparedRows:any = {};
+            //     var rowEl: any;
+
+            //     for (var k = 0; k < rowCount; k++) {
+            //         row = this.rowModel.getVirtualRow(k)
+            //         if (!row) {
+            //             break;
+            //         }
+                    
+            //         if (!row.group) {
+            //             delta = maxRows;
+            //         } else {
+            //             delta = 1;
+            //         }
+            //         if ((countRowsBefore + delta) * baseHeight > topPixel) {
+            //             break;
+            //         }
+            //         deltaHistory.push(delta);
+            //         countRowsBefore += delta;
+            //     }
+            //     first = k;
+            //     countLinesBefore = countRowsBefore;
+            //     for (; k < rowCount; k++) {
+            //         row = this.rowModel.getVirtualRow(k)
+            //         if (!row) {
+            //             break;
+            //         }
+
+            //         if (!row.group) {
+            //             delta = maxRows;
+            //         } else {
+            //             delta = 1
+            //         }
+            //         if ((countRowsBefore + delta) * baseHeight > bottomPixel) {
+            //             break;
+            //         }
+            //         countRowsBefore += delta;
+            //     }
+            //     last = k;
+
+            //     //add in buffer
+            //     first = first - buffer;
+            //     last = last + buffer;
+            //     countLinesBefore = deltaHistory.slice(0, -buffer).reduce(function(acc, el) { return acc + el;}, 0);
+
+            //     // adjust, in case buffer extended actual size
+            //     if (first < 0) {
+            //         countLinesBefore = 0;
+            //         first = 0;
+            //     }
+            //     if (last > rowCount - 1) {
+            //         last = rowCount - 1;
+            //     }
+            // } else {
+            //     first = 0;
+            //     last = 10;
+            // }
+
             this.firstVirtualRenderedRow = first;
             this.lastVirtualRenderedRow = last;
 
+            // console.log(first, last);
             // this.ensureRowsRendered(preparedRows);
-            this.ensureRowsRendered();
+            this.ensureRowsRendered(countLinesBefore);
+
         }
 
         public getFirstVirtualRenderedRow() {
@@ -411,80 +482,130 @@ module ag.grid {
             return this.lastVirtualRenderedRow;
         }
 
-        public countGridRows() {
-            var mainRowWidth = this.columnModel.getBodyContainerWidth();
-            var baseHeight = this.gridOptionsWrapper.getRowHeight();
-            var rowCount: number = this.rowModel.getVirtualRowCount();
-            var row: RowNode;
-            var rowEl: any;
-            for (var k = 0; k < rowCount; k++) {
-                row = this.rowModel.getVirtualRow(k);
-                if (!row.group) {
-                    rowEl = this.insertRow(row, k, mainRowWidth, 0, false);
-                    if (rowEl === void 0) throw 'Row is not rendered with id: ' + row.id
-                    row.gridHeight = rowEl.maxRowsNeeded;
-                } else {
-                    row.gridHeight = 1;
-
-                }
-            }
-        }
-
-        private ensureRowsRendered(preparedRows:any = {}) {
-
-            //var start = new Date().getTime();
-
-            var mainRowWidth = this.columnModel.getBodyContainerWidth();
+        private ensureRowsRendered(countLinesBefore:number = 0) {
             var that = this;
 
             // at the end, this array will contain the items we need to remove
             var rowsToRemove = Object.keys(this.renderedRows);
 
-            var rowsBefore: RowNode[];
-            var rowsBeforeCount = 0;
-            var baseHeight = this.gridOptionsWrapper.getRowHeight();
-            var rowEl: any;
-            var delta: number = 0;
-            // var heightMult = 3;
+            this.maxOrderColumnWidth = 0;
 
-            // add in new rows
-            rowsBefore = this.rowModel.getVirtualRowsUpto(this.firstVirtualRenderedRow);
-            for (var idx = 0; idx < rowsBefore.length; idx++) {
-                var row = rowsBefore[idx];
-                if (!row.group) {
-                    rowsBeforeCount += row.gridHeight;
-                } else {
-                    rowsBeforeCount += 1;
-                }
+            this.orderColumn = this.columnModel.getColumn('order');
+
+            var totalRows = this.rowModel.getVirtualRowCount();
+            var maxRows: number = this.gridOptionsWrapper.getMaxRows();
+            var minRows: number = this.gridOptionsWrapper.getMinRows();
+            var mainRowWidth = this.columnModel.getBodyContainerWidth();
+
+            var linesBeforeCount = 0;
+            var linesBeforePlusRenderedCount = 0;
+            var linesRenderedCount = 0;
+            var rowsAfterCount = 0;
+            var rowsBeforeCount = 0;
+            var rowsRenderedCount = 0;
+            var linesAfterCount = 0;
+            var linesPerRowInRendered = 0;
+            var linesPerRow = maxRows;
+            if (maxRows !== minRows) {
+                linesPerRow = (maxRows + minRows) / 2;
             }
 
-            for (var rowIndex = this.firstVirtualRenderedRow; rowIndex <= this.lastVirtualRenderedRow; rowIndex++) {
-                var node = this.rowModel.getVirtualRow(rowIndex);
+            var baseHeight = this.gridOptionsWrapper.getRowHeight();
+            var verticalGap = 15; // top/bottom padding + borders (px) default: 15
+            var assumedRowHeghtPx = (baseHeight - verticalGap) * minRows + verticalGap;
 
-                // count how many grid rows take lines above current
-                if (node) {
-                    if (!node.group) {
-                        // debugger;
-                        delta = node.gridHeight;
-                    } else {
-                        // console.log('group row rendered');
-                        delta = 1;
-                    }
-                }
-                rowsBeforeCount += delta;
+            var timing = 0;
+            var timingReflow = 0;
+
+            rowsBeforeCount = this.firstVirtualRenderedRow;
+            linesBeforeCount = countLinesBefore || Math.round(rowsBeforeCount * linesPerRow);
+            linesBeforePlusRenderedCount = linesBeforeCount;
+            rowsRenderedCount = this.lastVirtualRenderedRow - rowsBeforeCount + 1;
+
+            var rowKeys = Object.keys(this.renderedRows);
+            var topPx = this.renderedAverageHeight * rowsBeforeCount;
+            // add in new rows
+            var direction = 1;
+            var fromIdx = this.firstVirtualRenderedRow;
+            var toIdx = this.lastVirtualRenderedRow;
+            // debugger;
+            if ( (this.firstVirtualRenderedRow || 0) < Math.min.apply(null, rowsToRemove.length ? rowsToRemove : [0])) {
+                direction = -1;
+                fromIdx = this.lastVirtualRenderedRow;
+                toIdx = this.firstVirtualRenderedRow;
+            }
+            for (var rowIndex = fromIdx; direction > 0 ? rowIndex <= toIdx : rowIndex >= toIdx; rowIndex += direction) {
+                var node = this.rowModel.getVirtualRow(rowIndex);
 
                 // see if item already there, and if yes, take it out of the 'to remove' array
                 if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
                     rowsToRemove.splice(rowsToRemove.indexOf(rowIndex.toString()), 1);
+                    // linesBeforePlusRenderedCount += this.renderedRows[rowIndex.toString()].getHeight() / baseHeight;
+                    linesBeforePlusRenderedCount += maxRows;
+                    topPx += this.renderedRows[rowIndex].getHeight();
                     continue;
                 }
 
+                // if (rowIndex == 13) {
+                // }
+                // console.log(rowIndex, linesBeforePlusRenderedCount);
+
                 // check this row actually exists (in case overflow buffer window exceeds real data)
                 if (node) {
-                    that.insertRow(node, rowIndex, mainRowWidth, rowsBeforeCount-delta);
+                    var rowRenderedBefore = this.renderedRows[rowIndex - 1];
+                    var rowRenderedAfter = this.renderedRows[rowIndex + 1];
+                    if (rowRenderedBefore) {
+                        topPx = rowRenderedBefore.getVerticalFrame().bottom;
+                    } else if (rowRenderedAfter) {
+                        topPx = rowRenderedAfter.getVerticalFrame().top;
+                    } else {
+                        // console.log('no pre or after rendered rows', linesBeforeCount);
+                        topPx = rowIndex * assumedRowHeghtPx;
+                    }
+                    var insertedRow = this.insertRow(node, rowIndex, mainRowWidth, linesBeforePlusRenderedCount, topPx);
+                    if (rowRenderedAfter) {
+                        insertedRow.positionTop(topPx - insertedRow.getHeight())
+                    }
+                    // linesBeforePlusRenderedCount += insertedRow.getHeight() / baseHeight;
+                    linesBeforePlusRenderedCount += maxRows;
+                    topPx += insertedRow.getHeight();
+
+                    timing += insertedRow.timing;
+                    timingReflow += insertedRow.timingReflow;
+
                 }
             }
 
+
+            linesRenderedCount = linesBeforePlusRenderedCount - linesBeforeCount;
+            rowsAfterCount = totalRows - rowsBeforeCount - rowsRenderedCount;
+            linesPerRowInRendered = linesRenderedCount / rowsRenderedCount;
+            linesAfterCount = rowsAfterCount * linesPerRowInRendered;
+
+            this.numberOfLinesCalculated = linesBeforeCount + linesRenderedCount + linesAfterCount;
+
+            
+            rowKeys = Object.keys(this.renderedRows);
+            var lastRenderedIndex = Math.max.apply(null, rowKeys);
+            if (lastRenderedIndex + 1 == totalRows) {
+                var lastRow = this.renderedRows[lastRenderedIndex];
+                this.heightFromLastRow = lastRow.getVerticalFrame().bottom;
+                // this.refreshView();
+                this.eBodyContainer.style.height = this.heightFromLastRow + "px";
+                this.ePinnedColsContainer.style.height = this.heightFromLastRow + "px";
+            } else {
+                this.heightFromLastRow = 0;
+            }
+            if (rowKeys.length) {
+                this.renderedTotalHeight = rowKeys.map((k) => { return this.renderedRows[k]; }).reduce((acc, el) => {
+                    return acc + parseInt(el.getHeight());
+                }, 0);
+            }
+            this.renderedAverageHeight = this.renderedTotalHeight / rowKeys.length;
+            rowsBeforeCount = Math.min.apply(this, rowKeys)
+            this.beforeCalculatedHeight = this.renderedAverageHeight * rowsBeforeCount;
+            rowsAfterCount = totalRows - rowKeys.length - rowsBeforeCount;
+            this.afterCalculatedHeight = this.renderedAverageHeight * rowsAfterCount; 
 
             // at this point, everything in our 'rowsToRemove' . . .
             this.removeVirtualRow(rowsToRemove);
@@ -497,12 +618,28 @@ module ag.grid {
                 }, 0);
             }
 
-            //var end = new Date().getTime();
-            //console.log(end-start);
         }
 
-        private insertRow(node: any, rowIndex: any, mainRowWidth: any, rowsBefore: number, realDraw: boolean = true) {
+        public getBodyHeight(): number {
+            return this.heightFromLastRow || (this.beforeCalculatedHeight + this.renderedTotalHeight + this.afterCalculatedHeight);
+        }
+
+        private insertRow(node: any, rowIndex: any, mainRowWidth: any, rowsBefore: number, topPx: number, realDraw: boolean = true) {
             var columns = this.columnModel.getDisplayedColumns();
+            var orderCellEl: HTMLElement;
+            var orderCellElContainer: HTMLElement;
+            var orderCellElShift: HTMLElement;
+            var orderCellElNumber: HTMLElement;
+            var orderCellElArrow: HTMLElement;
+
+            var orderCellElShiftWidth: number;
+            var orderCellElNumberWidth: number;
+            var orderCellElArrowWidth: number;
+            var orderCellLeftPadding: number;
+            var orderCellRightPadding: number;
+            var currentWidth: number;
+            var orderedCell: RenderedCell;
+
             // if no cols, don't draw row
             if (!columns || columns.length == 0) {
                 return;
@@ -512,11 +649,49 @@ module ag.grid {
                 this.columnModel, this.expressionService, this.cellRendererMap, this.selectionRendererFactory,
                 this.$compile, this.templateService, this.selectionController, this,
                 this.eBodyContainer, this.ePinnedColsContainer, node, rowIndex, this.eventService,
-                rowsBefore, realDraw);
+                rowsBefore, topPx, realDraw);
 
             if (realDraw) {
                 renderedRow.setMainRowWidth(mainRowWidth);
                 this.renderedRows[rowIndex] = renderedRow;
+
+                if (this.orderColumn) {
+                    orderedCell = renderedRow.renderedCells[this.orderColumn.index];
+                    if (orderedCell) orderCellEl = orderedCell.vGridCell.element;
+                }
+                if (orderCellEl) {
+                    orderCellElContainer = <HTMLElement>orderCellEl.querySelector('.pi-table');
+
+                    orderCellElShift = <HTMLElement>orderCellElContainer.querySelector('span');
+                    orderCellElNumber = <HTMLElement>orderCellElContainer.querySelector('.ag-group-name');
+                    if (!orderCellElNumber) {
+                        orderCellElNumber = <HTMLElement>orderCellElContainer.querySelector('.ag-group-parent-name');
+                    }
+                    orderCellElArrow = <HTMLElement>orderCellElContainer.querySelector('.group-expand-control');
+
+                    orderCellElShiftWidth = orderCellElShift ? orderCellElShift.offsetWidth : 0;
+                    orderCellElNumberWidth = orderCellElNumber ? orderCellElNumber.offsetWidth : 0;
+                    orderCellElArrowWidth = orderCellElArrow ? orderCellElArrow.offsetWidth : 0;
+                    orderCellLeftPadding = parseInt(
+                        window.getComputedStyle(orderCellEl, null).getPropertyValue('padding-left')
+                    ) || 0;
+                    orderCellRightPadding = parseInt(
+                        window.getComputedStyle(orderCellEl, null).getPropertyValue('padding-right')
+                    ) || 0;
+
+                    currentWidth = (
+                        orderCellLeftPadding +
+                        orderCellElShiftWidth + orderCellElNumberWidth + orderCellElArrowWidth +
+                        orderCellRightPadding
+                    );
+
+                    this.maxOrderColumnWidth = Math.max(
+                        currentWidth,
+                        this.maxOrderColumnWidth
+                    );
+                }
+
+                this.setupDND(renderedRow);
             }
 
             return renderedRow;
@@ -533,15 +708,452 @@ module ag.grid {
             return this.renderedRows;
         }
 
+        /***********************************************
+        * END of ROW RENDERING
+        ************************************************/
+        /***********************************************
+        * DND BLOCK
+        ************************************************/
+        private isParentByIndex(parentOrderIndex: string, childOrderIndex: string) {
+            return !!~childOrderIndex.search(
+                new RegExp('^' + parentOrderIndex.replace('\.', '\\.'))
+            );
+        }
+
+        private getOrderIndex(rowIndex: number|string): string {
+            return this.getRenderedRows()[rowIndex].getNode().data.order.orderNumber;
+        }
+
+        private getSourceOrderIndex(): string {
+            return this.rowModel.getDragSource();
+        }
+        
+        private canDrop(sourceOrderIndex: string, destOrderIndex: string, target: HTMLElement, isTargetAdd: boolean = false): boolean {
+            let targetIsAdd = isTargetAdd || (
+                    target.classList.contains('ag-group-name') ||
+                    target.classList.contains('ag-group-parent-name')
+                );
+
+            let isDrop = this.gridOptionsWrapper.isRowDrop({
+                sourceOrderIndex: sourceOrderIndex,
+                destOrderIndex: destOrderIndex,
+                isAdd: targetIsAdd
+            });
+            isDrop = (isDrop === void 0) ? true : isDrop;
+                
+            return !this.isParentByIndex(sourceOrderIndex, destOrderIndex) && isDrop;
+        }
+
+        private findParentRow(startEl: Element): Element {
+            var rowEl = startEl;
+            while (!rowEl.classList.contains('ag-row') && rowEl.parentElement) {
+                rowEl = rowEl.parentElement;
+            }
+            return rowEl;
+        }
+
+        // private draggingNodeInfo(el: Element): any {
+        //     var rowObj = this.renderedRows[el.getAttribute('row')];
+        //     var rowNode = rowObj.node;
+        //     var lvl = (rowNode.data.order.orderNumber.match(/\./g) || []).length
+        //     var isParent = rowNode.data.order.isParent;
+        //     while (rowNode.parent && rowNode.level != lvl) {
+        //         rowNode = rowNode.parent;
+        //     }
+        //     return {
+        //         row: rowObj,
+        //         level: lvl,
+        //         parentId: rowNode.parent ? rowNode.parent.id : 0,
+        //         hasChildren: isParent
+        //     };
+        // }
+
+        private setupDND(thisRow: RenderedRow) {
+            var that = this;
+            var thisRowIndex = thisRow.getRowIndex()
+            // react to drag header over header
+            var lastenter: any;
+
+            var ePinRow = thisRow.vPinnedRow ? thisRow.vPinnedRow.element : null;
+            var eBodyRow = thisRow.vBodyRow.element;
+
+            function getMousePoint(event: DragEvent) {
+                return event.pageY - (<HTMLElement>event.currentTarget).getBoundingClientRect().top;
+            }
+
+            function isUpperPart(event: DragEvent) {
+                let upperPoint = (<HTMLElement>event.currentTarget).offsetHeight / 3;
+                return upperPoint > getMousePoint(event);
+            }
+
+            function isLowerPart(event: DragEvent) {
+                let lowerPoint = 2 * (<HTMLElement>event.currentTarget).offsetHeight / 3;
+                return lowerPoint < getMousePoint(event);
+            }
+
+            function isMiddlePart(event: DragEvent) {
+                return !(isLowerPart(event) && isUpperPart(event));
+            }
+
+            let [dragHandlers, dragTargets] = ['ag-js-draghandler', 'ag-js-dragtarget'].map((styleName)=>{
+                return (ePinRow ? [].slice.call(ePinRow.querySelectorAll('.' + styleName)) : []).concat(
+                    (ePinRow ? ePinRow.classList.contains(styleName) : false) ? ePinRow : []
+                ).concat(
+                    [].slice.call(eBodyRow.querySelectorAll('.' + styleName))
+                ).concat(
+                    eBodyRow.classList.contains(styleName) ? eBodyRow : []
+                )
+            });
+            if (!dragHandlers || !dragHandlers.length) return;
+
+            for (let dragEl of dragHandlers) {
+                dragEl.setAttribute('draggable', 'true');
+                dragEl.addEventListener('dragstart', (function(curDragEl) {
+                    return function(ev: DragEvent) {
+                        onDragStart(ev, curDragEl);
+                    }
+                })(dragEl));
+                dragEl.addEventListener('dragover', onDragOver);
+                dragEl.addEventListener('dragend', onDragEnd);
+                dragEl.addEventListener('dragenter', (function(curDragEl) {
+                    return function(ev: DragEvent) {
+                        onDragEnter(ev, curDragEl);
+                    }
+                })(dragEl));
+                dragEl.addEventListener('dragleave', (function(curDragEl) {
+                    return function(ev: DragEvent) {
+                        onDragLeave(ev, curDragEl);
+                    }
+                })(dragEl));
+                dragEl.addEventListener('drop', function(ev: DragEvent) {
+                    onDragDrop(
+                        ev,
+                        isMiddlePart(ev) ? 'inside' : 'level'
+                    );
+                });
+            }
+
+
+            for (let dragEl of dragTargets) {
+                dragEl.addEventListener('dragover', onDragOver);
+                dragEl.addEventListener('drop', function(ev: DragEvent) {
+                    onDragDrop(ev, 'inside');
+                });
+            }
+
+            // function isLowerHalf(event: DragEvent) {
+            //     return (
+            //         ((<HTMLElement>event.currentTarget).offsetHeight / 2) <
+            //         (event.pageY - (<HTMLElement>event.currentTarget).getBoundingClientRect().top)
+            //     );
+            // }
+
+
+            function clearAllDragStyles() {
+                var stylesToClear: string[] = ['ag-dragging-over', 'ag-dragging-over-up', 'ag-dragging-over-down'];
+                var rowContainersToClear: HTMLElement[] = [that.eBodyContainer, that.ePinnedColsContainer];
+                stylesToClear.forEach((styleName: string) => {
+                    rowContainersToClear.forEach((eRowContainer: HTMLElement) => {
+                        Array.prototype.forEach.call(eRowContainer.querySelectorAll('.' + styleName), (element: HTMLElement) => {
+                            element.classList.remove(styleName);
+                        });
+                    });
+                });
+            }
+
+            function onDragStart(event: DragEvent, dragHandler: Element) {
+                var rowEl = that.findParentRow(dragHandler);
+                rowEl.classList.add('ag-dragging');
+                var rowIndex = rowEl.getAttribute('row')
+                event.dataTransfer.setData('text', rowIndex);
+                // event.dataTransfer.effectAllowed('all');
+                // store node data as it can be in not rendered state when drag is dropped (went out of visual scope)
+                that.rowModel.setDragSource(that.getRenderedRows()[rowIndex].getNode().data.order.orderNumber)
+            }
+
+            function onDragOver(event: DragEvent) {
+                event.preventDefault();
+
+                let eCurRow: HTMLElement = <HTMLElement>event.currentTarget;
+                let eCurRowComplement: HTMLElement;
+                let dropType: boolean | string;
+                let whereTo = isLowerPart(event) ? 'down' : (isUpperPart(event) ? 'up' : 'mid');
+
+                if (eCurRow.parentElement.classList.contains('ag-body-container')) {
+                    eCurRowComplement = <HTMLElement>that.ePinnedColsContainer.querySelector(`.ag-row[row="${eCurRow.getAttribute('row')}"]`)
+                }
+                if (eCurRow.parentElement.classList.contains('ag-pinned-cols-container')) {
+                    eCurRowComplement = <HTMLElement>that.eBodyContainer.querySelector(`.ag-row[row="${eCurRow.getAttribute('row')}"]`)
+                }
+
+                if (
+                    dropType = that.canDrop(
+                        that.getSourceOrderIndex(),
+                        that.getOrderIndex(thisRowIndex),
+                        <HTMLElement>event.target,
+                        whereTo == 'mid'
+                    )
+                ) {
+                    clearAllDragStyles();
+                    if (eCurRow && eCurRowComplement) {
+                        [eCurRow, eCurRowComplement].forEach((el)=>{
+                            el.classList.add('ag-dragging-over');
+                            el.classList.add(`ag-dragging-over-${whereTo}`);
+                        });
+                    }
+                    let dropEffect = <string>((typeof dropType == 'string') ? dropType : 'move');
+                    if (dropEffect && dropEffect != 'none' && whereTo == 'mid') {
+                        dropEffect = 'copy';
+                    }
+                    event.dataTransfer.dropEffect = dropEffect;
+                } else {
+                    event.dataTransfer.dropEffect = 'none';
+                }
+
+            }
+
+            // function onDragOverTarget(event: DragEvent) {
+            //     event.preventDefault();
+            //     var draggingElement = that.eBodyContainer.querySelector('.ag-dragging');
+            //     if (draggingElement) {
+            //         draggingElement.getAttribute('row')
+            //         if (that.renderedRows[draggingElement.getAttribute('row')].node.data.automatic) {
+            //             event.dataTransfer.dropEffect = 'none';
+            //         } else {
+            //             event.dataTransfer.dropEffect = 'copy';
+            //         }
+            //     } else {
+            //         event.dataTransfer.dropEffect = 'none';
+            //     }
+            // }
+
+            function onDragEnd() {
+                var draggingElement = that.eBodyContainer.querySelector('.ag-dragging');
+                if (draggingElement) {
+                    draggingElement.classList.remove('ag-dragging');
+                }
+                clearAllDragStyles();
+                that.eventService.dispatchEvent(Events.EVENT_ROW_REORDER);
+            }
+
+            function onDragEnter(event: DragEvent, dragHandler: Element) {
+                lastenter = event.target;
+                event.stopPropagation();
+                event.preventDefault();
+                return false;
+            }
+
+            function onDragLeave(event: Event, dragHandler: Element) {
+                // clear classes for row drag styling
+                var styleName = 'ag-dragging-over';
+                var hostId = that.findParentRow(dragHandler).getAttribute('row');
+                if (lastenter === event.target) {
+                    var othersDragging = Array.prototype.filter.call(that.eBodyContainer.querySelectorAll('.' + styleName), (element: HTMLElement) => {
+                        return element.getAttribute('row') !== hostId;
+                    });
+                    if (!othersDragging.length) {
+                        clearAllDragStyles();
+                    }
+
+                    lastenter = null;
+                }
+            }
+
+            function onDragDrop(event: DragEvent, dropType: string) {
+
+                // debugger
+                
+                var maxLevels = that.gridOptionsWrapper.getGroupKeys().length;
+
+                var sourceOrderIndex = that.getSourceOrderIndex();
+                var destOrderIndex = that.getOrderIndex(thisRowIndex);
+                var canDrop = that.canDrop(sourceOrderIndex, destOrderIndex, <HTMLElement>event.target);
+                if (!canDrop) return;
+                var sourceLevel = (sourceOrderIndex.match(/\./g) || []).length;
+                var destLevel = (destOrderIndex.match(/\./g) || []).length;
+                var sourceParentIndex = sourceOrderIndex.split('.').slice(0, -1).join('.');
+                var destParentIndex = destOrderIndex.split('.').slice(0, -1).join('.');
+
+                var flatData = that.gridOptionsWrapper.getRowData();
+                var curNode: any;
+
+                var shiftOrderInfix = function(orderNumber: string, level: number, shift: number) {
+                    var splittedOrderNumber = orderNumber.split('.');
+                    splittedOrderNumber[level] = (parseInt(splittedOrderNumber[level]) + shift).toString();
+                    return splittedOrderNumber.join('.');
+                };
+                // turn to app for server call
+                // need 2 know: 1. source id; 2. destination parent id; 3. order in new parent
+                var sourceNodeId = that.getRenderedRows()[event.dataTransfer.getData('text')].node.data.id;
+                var destinationNodeId = that.getRenderedRows()[thisRowIndex].node.data.id;
+                var destinationParentId = (flatData.filter(function(el) { return el.order.orderNumber == destParentIndex; })[0] || { id: 0 }).id;
+                var destOrderAtLevel = parseInt(destOrderIndex.slice(-1));
+
+                var wannaBeShifted = (
+                    sourceParentIndex == destParentIndex &&
+                    sourceOrderIndex < destOrderIndex
+                );
+
+                // console.log(`Порядок назанчения: ${destOrderAtLevel};\nПод: ${isLowerHalf(event)}\nСброс: ${dropType}\nПосле в том же: ${wannaBeShifted}`);
+
+                // debugger;
+                // 1. Для элементов с порядковым номером источника и всех его дочерних элементов
+                // (все элементы, имеющие префикс с номером источника в порядковом номере и следующие за ним, если есть такие)
+                // меняем в порядковом номере префикс совпадающий с номером источника на номер назначения
+                //
+                // Находим индекс источника и меняем его номер
+                var idx = 0;
+                var parentIndex: number;
+                if (sourceParentIndex) {
+                    for (; idx < flatData.length; idx++) {
+                        if (flatData[idx].order.orderNumber == sourceParentIndex) break;
+
+                    }
+                    parentIndex = idx;
+                }
+                for (;idx < flatData.length; idx++) {
+                    if (flatData[idx].order.orderNumber == sourceOrderIndex) break;
+
+                }
+                var startSourceIndex = idx;
+                var oldIndexPrefix = new RegExp('^' + sourceOrderIndex.replace(new RegExp('\\.', 'g'), '\\.'));
+                // Находим индекс, где заканчиваются его дочерние элементы, меняем их префикс на назначение
+                for (; idx < flatData.length; idx++) {
+                    curNode = flatData[idx];
+                    if (!that.isParentByIndex(sourceOrderIndex, curNode.order.orderNumber)) break;
+
+                    curNode.order.orderNumber = curNode.order.orderNumber.replace(
+                        oldIndexPrefix,
+                        destOrderIndex
+                    )
+                    // опеределяем максимальный уровень вложенности после переноса всех элементов
+                    maxLevels = Math.max(maxLevels, curNode.order.orderNumber.split('.').length);
+                    for (var i = 0; i < maxLevels; i++) {
+                        delete curNode[`order_${i}`];
+                    }
+                    curNode.order.orderNumber.split('.').forEach((el, idx) => {
+                        curNode[`order_${idx}`] = el;
+                    });
+                }
+                var endSourceIndex = idx;
+
+                // 2. Все последующие элементы с префиксом, совпадающим с родительским префиксом элемента источника
+                // (если есть такие) уменьшают инфикс, на уровне, совпадающем с уровнем источника на единицу
+                //
+                for (; idx < flatData.length; idx++) {
+                    curNode = flatData[idx];
+                    if (!that.isParentByIndex(sourceParentIndex, curNode.order.orderNumber)) break;
+
+                    curNode.order.orderNumber = shiftOrderInfix(curNode.order.orderNumber, sourceLevel, -1);
+                    for (var i = 0; i < maxLevels; i++) {
+                        delete curNode[`order_${i}`];
+                    }
+                    curNode.order.orderNumber.split('.').forEach((el, idx) => {
+                        curNode[`order_${idx}`] = el;
+                    });
+                }
+
+                // 3. Элементы источника и его дочерние элементы вырезаются из списка
+                // если у родительского элемента источника, не осталось больше детей меняем его родительский статус
+                var shiftBlock = flatData.splice(startSourceIndex, endSourceIndex - startSourceIndex);
+                if (flatData[parentIndex] &&
+                    (!flatData[parentIndex + 1] ||
+                    !that.isParentByIndex(flatData[parentIndex].order.orderNumber, flatData[parentIndex + 1].order.orderNumber))
+                ) {
+                    flatData[parentIndex].order.isParent = false;
+                }
+
+                // 4. Элемент с номером назначения (его может уже и не быть, если его номер изменился в предыдущих пунктах)
+                // и все последующие элементы с префиксом, совпадающим с родительским префиксом элемента назначения (если есть)
+                // увеличивают инфикс, на уровне, совпадающем с уровнем назначения на единицу
+                for (idx = 0; idx < flatData.length; idx++) {
+                    curNode = flatData[idx];
+                    if (curNode.order.orderNumber == destOrderIndex) break;
+                }
+                for (; idx < flatData.length; idx++) {
+                    curNode = flatData[idx];
+                    if (!that.isParentByIndex(destParentIndex, curNode.order.orderNumber)) break;
+
+                    curNode.order.orderNumber = shiftOrderInfix(curNode.order.orderNumber, destLevel, 1);
+                    for (var i = 0; i < maxLevels; i++) {
+                        delete curNode[`order_${i}`];
+                    }
+                    curNode.order.orderNumber.split('.').forEach((el, idx) => {
+                        curNode[`order_${idx}`] = el;
+                    });
+                }
+
+                // 5. Дополняем список вырезанными элементами и сортируем по порядковому номеру
+                flatData = flatData.concat(shiftBlock);
+
+                flatData.sort((a, b) => {
+                    for (var i = 0; i < maxLevels; i++) {
+                        if (parseInt(a[`order_${i}`] || 0) > parseInt(b[`order_${i}`] || 0))
+                            return 1
+                        if (parseInt(a[`order_${i}`] || 0) < parseInt(b[`order_${i}`] || 0))
+                            return -1
+                    }
+                    return 0
+                });
+
+                that.gridOptionsWrapper.getApi().setRowData(flatData);
+
+                // if (that.gridOptionsWrapper.getGroupKeys().length !== maxLevels) {
+                // }
+                var newGroupingKeys = [];
+                for (var i = 0; i < maxLevels; i++) {
+                    newGroupingKeys.push(`order_${i}`);
+                }
+
+                // var col = that.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
+                // that.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(col, 24 + maxLevels * 17 * 2);
+                that.gridOptionsWrapper.gridOptions.wrapper.reGroup(newGroupingKeys);
+                // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
+
+                // that.gridOptionsWrapper.getApi().refreshPivot();
+
+                var moveData = {
+                    flatData: flatData,
+                    sourceNodeId: sourceNodeId,
+                    destinationNodeId: dropType == 'level' ? destinationParentId : destinationNodeId,
+                    destinationOrder: (
+                        destOrderAtLevel && dropType == 'level' ?
+                        (isLowerPart(event) ? destOrderAtLevel + (wannaBeShifted ? 0 : 1) : destOrderAtLevel) :
+                        null
+                    )
+                }
+                moveData.curNode = curNode;
+
+
+                that.eventService.dispatchEvent(Events.EVENT_ROW_REORDER, moveData);
+
+                event.stopPropagation();
+                event.preventDefault();
+                return false;
+            }
+        }
+
+        /***********************************************
+        * END of DND BLOCK
+        ************************************************/
+
         public setListenMouseMove(toAllSet:boolean = true) {
             var eventAction: Function;
             var allRows = this.renderedRows;
             var el: RenderedRow;
+
+            this.isListenMouseMove = toAllSet;
+
             for (var k in allRows) {
                 el = allRows[k];
                 eventAction = toAllSet ? el.vBodyRow.addEventListener.bind(el.vBodyRow) : el.vBodyRow.removeEventListener.bind(el.vBodyRow);
                 if (toAllSet !== el.isListenForMove()) {
+                    // if (window.navigator.msPointerEnabled) {
+                    //     eventAction('mousemove', el.listenMoveRef);
+                    //     eventAction('MSPointerMove', el.listenMoveRef);
+                    // } else {
                     eventAction('mousemove', el.listenMoveRef);
+                    // }
                     el.isListenForMove(toAllSet);
                 }
             };
@@ -550,7 +1162,8 @@ module ag.grid {
         public setHoveredOn(rowNode: any) {
             if (rowNode === null || rowNode === void 0 || !rowNode.node)
                 return;
-            this.hoveredOn = rowNode.node;
+            this.eventService.dispatchEvent(Events.EVENT_ROWS_MOUSE_IN, rowNode);
+            this.hoveredOn = rowNode;
         }
 
         public getHoveredOn(): any {

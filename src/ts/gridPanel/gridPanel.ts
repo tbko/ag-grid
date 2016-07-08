@@ -62,7 +62,7 @@ module ag.grid {
         private eventService: EventService;
         private gridOptionsWrapper: GridOptionsWrapper;
         private columnModel: ColumnController;
-        private rowRenderer: RowRenderer;
+        public rowRenderer: RowRenderer;
         private rowModel: any;
 
         private layout: BorderLayout;
@@ -92,8 +92,10 @@ module ag.grid {
         private eFloatingBottomContainer: HTMLElement;
 
         private eOverlayRow: HTMLElement;
+        private grid: Grid;
 
-        public init(gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService) {
+        public init(grid: Grid, gridOptionsWrapper: GridOptionsWrapper, columnModel: ColumnController, rowRenderer: RowRenderer, masterSlaveService: MasterSlaveService, eventService: EventService) {
+            this.grid = grid;
             this.gridOptionsWrapper = gridOptionsWrapper;
             this.eventService = eventService;
             // makes code below more readable if we pull 'forPrint' out
@@ -105,6 +107,7 @@ module ag.grid {
             this.rowRenderer = rowRenderer;
             this.masterSlaveService = masterSlaveService;
             this.sizeHeaderAndBody();
+
         }
 
         public getLayout(): BorderLayout {
@@ -142,36 +145,40 @@ module ag.grid {
                     }
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                 },
-                rowEditListener: function(ev: Event) {
+                rowActionListener: function(ev: Event, key: string) {
                     ev.preventDefault();
 
-                    var selected = [that.rowRenderer.getHoveredOn()];
+                    var selected = [that.rowRenderer.getHoveredOn().node];
                     var multitoolParams = {
-                        name: 'edit',
-                        items: selected
+                        name: key,
+                        items: selected,
+                        data: ev.currentTarget.dataset
                     }
                     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
                 },
-                rowDeleteListener: function(ev: Event) {
-                    ev.preventDefault();
-
-                    var selected = [that.rowRenderer.getHoveredOn()];
-                    var multitoolParams = {
-                        name: 'delete',
-                        items: selected
-                    }
-                    that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                getHoveredOn: function() {
+                    return that.rowRenderer.getHoveredOn();
                 },
-                rowSplitListener: function(ev: Event) {
-                    ev.preventDefault();
+                // rowDeleteListener: function(ev: Event) {
+                //     ev.preventDefault();
 
-                    var selected = [that.rowRenderer.getHoveredOn()];
-                    var multitoolParams = {
-                        name: 'split',
-                        items: selected
-                    }
-                    that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
-                },
+                //     var selected = [that.rowRenderer.getHoveredOn()];
+                //     var multitoolParams = {
+                //         name: 'delete',
+                //         items: selected
+                //     }
+                //     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                // },
+                // rowSplitListener: function(ev: Event) {
+                //     ev.preventDefault();
+
+                //     var selected = [that.rowRenderer.getHoveredOn()];
+                //     var multitoolParams = {
+                //         name: 'split',
+                //         items: selected
+                //     }
+                //     that.eventService.dispatchEvent(Events.EVENT_MULTITOOL_CLICK, multitoolParams);
+                // },
                 eventService: that.eventService,
                 gridOptionsWrapper: that.gridOptionsWrapper,
                 gridPanel: this
@@ -220,9 +227,7 @@ module ag.grid {
         }
 
         public initRowOverlay() {
-            this.layout.positionOverlayRowZone(
-                this.eBodyViewport.scrollTop || 0
-            );
+            this.layout.positionOverlayRowZone();
         }
 
         public getPinnedFloatingTop(): HTMLElement {
@@ -301,7 +306,7 @@ module ag.grid {
         public ensureIndexVisible(index: any) {
             var lastRow = this.rowModel.getVirtualRowCount();
             if (typeof index !== 'number' || index < 0 || index >= lastRow) {
-                console.warn('invalid row index for ensureIndexVisible: ' + index);
+                // console.warn('invalid row index for ensureIndexVisible: ' + index);
                 return;
             }
 
@@ -384,6 +389,15 @@ module ag.grid {
             // otherwise, col is already in view, so do nothing
         }
 
+        public scrollToPx(topPx: number) {
+
+            this.eBodyViewport.scrollTop = topPx;
+        }
+
+        public getScrollPx(): number {
+            return this.eBodyViewport.scrollTop;
+        }
+
         public showLoadingOverlay(): void {
             if (!this.gridOptionsWrapper.isSuppressLoadingOverlay()) {
                 this.layout.showOverlay('loading');
@@ -406,8 +420,8 @@ module ag.grid {
             this.layout.showOverlay('tool');
         }
 
-        public showOverlayRow(): void {
-            this.layout.showOverlayRow();
+        public showOverlayRow(rowData?: any): void {
+            this.layout.showOverlayRow(rowData);
         }
 
         public hideOverlay(): void {
@@ -445,6 +459,16 @@ module ag.grid {
 
         public getRoot() {
             return this.eRoot;
+        }
+
+        public getId() {
+            if (!this.grid) return;
+            return this.grid.getId();
+        }
+
+        public getRootPanel() {
+            if (!this.grid) return;
+            return this.grid.getRootPanel();
         }
 
         public getPinnedHeader() {
@@ -491,6 +515,7 @@ module ag.grid {
 
                 // IE9, Chrome, Safari, Opera
                 this.ePinnedColsViewport.addEventListener('mousewheel', this.mouseWheelListener.bind(this));
+                this.ePinnedColsViewport.addEventListener('wheel', this.mouseWheelListener.bind(this));
                 // Firefox
                 this.ePinnedColsViewport.addEventListener('DOMMouseScroll', this.mouseWheelListener.bind(this));
 
@@ -498,8 +523,8 @@ module ag.grid {
         }
 
         public getRightGap(): number {
-            // return this.eHeader.clientWidth - this.eHeaderContainer.clientWidth - this.ePinnedHeader.clientWidth;
-            return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
+            // return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
+            return 0;
         }
 
         private mouseWheelListener(event: any): boolean {
@@ -656,7 +681,9 @@ module ag.grid {
 
                 this.masterSlaveService.fireHorizontalScrollEvent(newLeftPosition);
 
-                this.layout.positionOverlayRowZone(newTopPosition);
+                this.layout.positionOverlayRowZone();
+                var rowUnderCursor = this.layout.getHoveredOn();
+                if (rowUnderCursor && this.layout.gridPanel.rowRenderer.isListenMouseMove) rowUnderCursor.listenMoveRef();
             });
 
             this.ePinnedColsViewport.addEventListener('scroll', () => {
@@ -668,6 +695,21 @@ module ag.grid {
             });
 
         }
+
+        private debounce(func: Function, wait: number, immediate?:boolean) {
+            var timeout;
+            return function() {
+                var context = this, args = arguments;
+                var later = function() {
+                    timeout = null;
+                    if (!immediate) func.apply(context, args);
+                };
+                var callNow = immediate && !timeout;
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+                if (callNow) func.apply(context, args);
+            };
+        };
 
         private requestDrawVirtualRows() {
             // if we are in IE or Safari, then we only redraw if there was no scroll event
@@ -689,12 +731,12 @@ module ag.grid {
                 var scrollLagCounterCopy = this.scrollLagCounter;
                 setTimeout( ()=> {
                     if (this.scrollLagCounter === scrollLagCounterCopy) {
-                        this.rowRenderer.drawVirtualRows();
+                        this.debounce(this.rowRenderer.drawVirtualRows.bind(this.rowRenderer), 500, true)();
                     }
                 }, 50);
             // all other browsers, afaik, are fine, so just do the redraw
             } else {
-                this.rowRenderer.drawVirtualRows();
+                this.debounce(this.rowRenderer.drawVirtualRows.bind(this.rowRenderer), 500, true)();
             }
         }
 

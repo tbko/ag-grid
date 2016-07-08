@@ -118,9 +118,6 @@ module ag.grid {
         }
 
         private setupComponents() {
-            if (document.querySelector('.ag-body .ag-cell[colid="order"]') && this.column.colId === 'order') {
-                // debugger;
-            }
             this.vGridCell = new ag.vdom.VHtmlElement("div");
             this.vGridCell.setAttribute("col", (this.column.index !== undefined && this.column.index !== null) ? this.column.index.toString() : '');
 
@@ -664,6 +661,7 @@ module ag.grid {
 
         private useCellRenderer(cellRenderer: Function | {}, preValue?:any): any {
             var colDef = this.column.colDef;
+            var that = this;
 
             var rendererParams = {
                 value: preValue || this.value,

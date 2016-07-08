@@ -15,6 +15,7 @@ module ag.grid {
 
         private groupHeaders: boolean;
         private headerHeight: number;
+        private actionTemplate: any;
         private rowHeight: number;
         private rowHeightExtra: number;
         private floatingTopRowData: any[];
@@ -24,6 +25,7 @@ module ag.grid {
             this.gridOptions = gridOptions;
 
             this.headerHeight = gridOptions.headerHeight;
+            this.actionTemplate = gridOptions.actionTemplate;
             this.groupHeaders = gridOptions.groupHeaders;
             this.rowHeight = gridOptions.rowHeight;
             this.rowHeightExtra = gridOptions.rowHeightExtra;
@@ -108,6 +110,17 @@ module ag.grid {
         public getWidthGap() { return this.gridOptions.widthGap; }
         public getMaxRows() { return this.gridOptions.maxRows; }
         public getMinRows() { return this.gridOptions.minRows; }
+        public isRowDrug(options={}) {
+            if (typeof this.gridOptions.isRowDrug === 'function') {
+                return this.gridOptions.isRowDrug(options);
+            }
+            return this.gridOptions.isRowDrug;
+        }
+        public isRowDrop(options={}) {
+            if (typeof this.gridOptions.isRowDrop === 'function') {
+                return this.gridOptions.isRowDrop(options);
+            }
+        }
         public setMetrics(metrics: any): void {
             this.gridOptions.metrics = metrics;
         }
@@ -144,6 +157,9 @@ module ag.grid {
             }
         }
         public setHeaderHeight(headerHeight: number): void { this.headerHeight = headerHeight; }
+        public getActionTemplate(): any | Function {
+            return this.actionTemplate;
+        }
 
         public isGroupHeaders(): boolean { return isTrue(this.groupHeaders); }
         public setGroupHeaders(groupHeaders: boolean): void { this.groupHeaders = groupHeaders; }
@@ -231,6 +247,26 @@ module ag.grid {
                     return defaultValue;
                 }
             };
+        }
+
+        public getHeightOption(): number {
+            return this.gridOptions.heightOption;
+        }
+
+        public isHeightMixed(): boolean {
+            return this.gridOptions.heightOption.toString(2).split('').filter((el) =>{return el != '0' }).length > 1;
+        }
+
+        public isHeightUnspecified(): boolean {
+            return this.gridOptions.heightOption == 0;
+        }
+
+        public isHeightGiven(): boolean {
+            return !!(this.gridOptions.heightOption & 1);
+        }
+
+        public isHeightFullScreen(): boolean {
+            return !!(this.gridOptions.heightOption & 2);
         }
 
         // responsible for calling the onXXX functions on gridOptions

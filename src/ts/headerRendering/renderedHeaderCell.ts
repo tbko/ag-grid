@@ -145,7 +145,13 @@ module ag.grid {
 
             // label div
             var headerCellLabel = document.createElement("div");
+            // if (this.column.colDef.suppressResize) {
+            //     headerCellLabel.className = "ag-header-cell-label ag-header-cell-fullsize";
+            // } else {
+            //     headerCellLabel.className = "ag-header-cell-label";
+            // }
             headerCellLabel.className = "ag-header-cell-label";
+
             if (this.gridOptionsWrapper.isGroupHeaders() && this.parentGroup && this.parentGroup.getVisibleColumnsCount() > 1) {
                 headerCellLabel.setAttribute('colId', this.column.colId);
             }
@@ -196,8 +202,8 @@ module ag.grid {
                 }
                 headerCellRenderer = function() {
                     return `
-                    <div class="ag-header-cell-actionbox ag-js-draghandler">
-                      <div class="ag-header-text">
+                    <div class="ag-header-cell-actionbox ag-js-draghandler" title="${headerNameValue || ''}" >
+                      <div class="ag-header-text" >
                         ${headerNameValue || ''}
                       </div>
                       <div class="ag-header-action">
@@ -222,14 +228,19 @@ module ag.grid {
 
             if (this.headerElements.frame) {
                 this.eHeaderCell.appendChild(headerCellLabel);
+                // if (!this.headerElements.last) {
+                //     this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
+                // }
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
             } else {
                 this.eHeaderCell = headerCellLabel;
             }
 
+            var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
             if (this.headerElements.drag) {
-                var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
                 if (dragHandler) this.setupDND(dragHandler);
+            } else {
+                dragHandler.classList.remove('ag-js-draghandler');
             }
 
             if (this.headerElements.sort) {
@@ -337,13 +348,12 @@ module ag.grid {
 
             // start/stop dragging header
             dragHandler.addEventListener('dragstart', function(event: DragEvent) {
-                // debugger;
                 if (that.eHeaderCell.parentElement.classList.contains('ag-header-group-cell-with-group')) {
                     that.eHeaderCell.parentElement.parentElement.classList.add('ag-dragging');
                 } else {
                     that.eHeaderCell.classList.add('ag-dragging');
                 }
-                event.dataTransfer.setData('text/plain', that.column.colId);
+                event.dataTransfer.setData('text', that.column.colId);
             });
 
             dragHandler.addEventListener('dragover', function(event: DragEvent) {
@@ -451,7 +461,7 @@ module ag.grid {
             // swap columns on drop
             this.eHeaderCell.addEventListener('drop', function(event:DragEvent) {
                 var freezeIndex = that.columnController.getPinnedColumnCount();
-                var dragData = event.dataTransfer.getData('text/plain');
+                var dragData = event.dataTransfer.getData('text');
                 var srcColumn = that.columnController.getColumn(dragData);
                 if (!srcColumn) {
                     srcColumn = that.columnController.getColumnGroup(dragData).bracketHeader.column
@@ -485,7 +495,10 @@ module ag.grid {
                 }
 
                 for (var idx = 0; idx < srcColumnAttrs.colEndIndex - srcColumnAttrs.colStartIndex + 1; idx++) {
-                    that.columnController.moveColumn(fromIdx, toIdx);
+                    // fetch indexes from all columns for visible ones as moveColumn works with all cilomns list
+                    var fromIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[fromIdx]);
+                    var toIdxInAll = that.columnController.getAllColumns().indexOf(that.columnController.getDisplayedColumns()[toIdx]);
+                    that.columnController.moveColumn(fromIdxInAll, toIdxInAll);
                     if (!directionRight) {
                         toIdx++;
                         fromIdx++;
@@ -573,11 +586,26 @@ module ag.grid {
             }
         }
 
+        sortDirectionMap: { [s: string]: string; } = {
+            'asc': 'up',
+            'desc': 'down'
+        }
+
         public refreshSortIcon(): void {
             // update visibility of icons
             var sortAscending = this.column.sort === constants.ASC;
             var sortDescending = this.column.sort === constants.DESC;
             var unSort = this.column.sort !== constants.DESC && this.column.sort !== constants.ASC;
+
+            
+            var sortTypeIcon = this.column.colDef.sortNumeric ? 'arrow' : 'alpha'
+            
+            if (unSort) return;
+
+            Array.prototype.slice.call(this.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function(el: HTMLElement) {
+                el.classList.remove('active');
+            });
+            this.eHeaderCell.querySelector(`.icon-sort-${sortTypeIcon}-${this.sortDirectionMap[this.column.sort]}`).classList.add('active');
 
             if (sortAscending) _.querySelectorAll_replaceCssClass(
                 this.getGui(),
@@ -657,14 +685,15 @@ module ag.grid {
         private addSortHandling(headerCellLabel: HTMLElement) {
             var that = this;
 
-            headerCellLabel.querySelector('.ag-js-draghandler').addEventListener("click", function (event: any) {
+            var clickListenerEl = headerCellLabel.querySelector('.ag-js-draghandler');
+            if (!clickListenerEl) {
+                clickListenerEl = headerCellLabel;
+            }
+
+            clickListenerEl.addEventListener("click", function (event: any) {
                 // debugger
                 if (!that.gridOptionsWrapper.isEnableSorting()) {
                     return;
-                }
-                var sortDirectionMap: { [s: string]: string; } = {
-                    'asc': 'up',
-                    'desc': 'down'
                 }
 
                 // update sort on current col
@@ -674,7 +703,7 @@ module ag.grid {
                     Array.prototype.slice.call(that.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function(el: HTMLElement) {
                         el.classList.remove('active');
                     });
-                    that.eHeaderCell.querySelector(`.icon-sort-${sortTypeIcon}-${sortDirectionMap[that.column.sort]}`).classList.add('active');
+                    that.eHeaderCell.querySelector(`.icon-sort-${sortTypeIcon}-${that.sortDirectionMap[that.column.sort]}`).classList.add('active');
                 }
 
 
@@ -716,59 +745,59 @@ module ag.grid {
             this.columnController.setColumnWidth(this.column, newWidth, finished);
         }
 
-        public reflowText(elText: HTMLElement, allText: string) {
-            //cut text in element adding ellipsis. Element with CSS:
-            // text-overflow: ellipsis
-            // word-wrap: normal
-            // overflow: hidden
-            // white-space: normal
-            // max-height: 57px - total height
-            // line-height: 19px - single line height
-            var words = allText.split(' ');
-            var overflown = false;
-            if (!elText) {
-                return;
-            }
-            elText.innerHTML = words[0];
+        // public reflowText(elText: HTMLElement, allText: string) {
+        //     //cut text in element adding ellipsis. Element with CSS:
+        //     // text-overflow: ellipsis
+        //     // word-wrap: normal
+        //     // overflow: hidden
+        //     // white-space: normal
+        //     // max-height: 57px - total height
+        //     // line-height: 19px - single line height
+        //     var words = allText.split(' ');
+        //     var overflown = false;
+        //     if (!elText) {
+        //         return;
+        //     }
+        //     elText.innerHTML = words[0];
 
-            // find the word thab breaks last allowed line
-            for (var i = 1; i < words.length; i++) {
-                elText.innerHTML = elText.innerHTML + ' ' + words[i];
-                // if (this.column.colId === 'agreementNumber') {
-                //     debugger;
-                // }
-                if (elText.scrollHeight !== elText.clientHeight) {
-                    overflown = true;
-                    break;
-                    // console.log(`broke on ${i} word`);
-                }
-            }
+        //     // find the word thab breaks last allowed line
+        //     for (var i = 1; i < words.length; i++) {
+        //         elText.innerHTML = elText.innerHTML + ' ' + words[i];
+        //         // if (this.column.colId === 'agreementNumber') {
+        //         //     debugger;
+        //         // }
+        //         if (elText.scrollHeight !== elText.clientHeight) {
+        //             overflown = true;
+        //             break;
+        //             // console.log(`broke on ${i} word`);
+        //         }
+        //     }
 
-            // bite out by one char until overflown is gone adding ellipsis to the tail
-            if (overflown) {
-                // debugger;
-                var displayText = elText.innerHTML + '…';
-                // console.log(displayText);
+        //     // bite out by one char until overflown is gone adding ellipsis to the tail
+        //     if (overflown) {
+        //         // debugger;
+        //         var displayText = elText.innerHTML + '…';
+        //         // console.log(displayText);
 
-                do {
+        //         do {
 
-                    do {
-                        displayText = displayText.slice(0, -2) + '…';
-                    } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
+        //             do {
+        //                 displayText = displayText.slice(0, -2) + '…';
+        //             } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
 
-                    elText.innerHTML = displayText;
-                    // console.log(displayText);
+        //             elText.innerHTML = displayText;
+        //             // console.log(displayText);
 
-                } while (
-                    displayText.length > 1
-                    &&
-                    elText.scrollHeight !== elText.clientHeight
-                );
-            } else {
-                // console.log('not overflown');
-            }
+        //         } while (
+        //             displayText.length > 1
+        //             &&
+        //             elText.scrollHeight !== elText.clientHeight
+        //         );
+        //     } else {
+        //         // console.log('not overflown');
+        //     }
 
-        }
+        // }
 
         public onIndividualColumnResized(column: Column) {
             if (this.column !== column || this.lockedForResize) {
@@ -781,7 +810,7 @@ module ag.grid {
 
             var elText = this.getGui().querySelector('.ag-header-text');
             var allText = this.columnController.getDisplayNameForCol(this.column);
-            this.reflowText(<HTMLElement>elText, allText);
+            // _.reflowText(<HTMLElement>elText, allText);
 
             this.lockedForResize = false;
         }

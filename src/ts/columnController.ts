@@ -243,6 +243,7 @@ module ag.grid {
         }
 
         public moveColumn(fromIndex: number, toIndex: number): void {
+            this.allColumns = this.allColumns.filter((el) => { return el.pivotIndex === void 0; });
             var column = this.allColumns[fromIndex];
             this.allColumns.splice(fromIndex, 1);
             this.allColumns.splice(toIndex, 0, column);
@@ -284,7 +285,6 @@ module ag.grid {
         }
 
         public setColumnVisible(column: Column, visible: boolean): void {
-            // debugger;
             column.visible = visible;
 
             this.updateModel();
@@ -377,6 +377,7 @@ module ag.grid {
                 }
                 // if pivot
                 if (typeof stateItem.pivotIndex === 'number' && stateItem.pivotIndex >= 0) {
+                    oldColumn.pivotIndex = stateItem.pivotIndex;
                     that.pivotColumns.push(oldColumn);
                 }
                 that.allColumns.push(oldColumn);
@@ -389,6 +390,7 @@ module ag.grid {
                 oldColumn.aggFunc = null;
                 that.allColumns.push(oldColumn);
             });
+
 
             this.pivotColumns.sort(function (colA: any, colB: any): number {
                 return colA.pivotIndex - colB.pivotIndex;
@@ -517,7 +519,6 @@ module ag.grid {
 
         // called from API
         public hideColumns(colIds: any, hide: any) {
-            // debugger;
             var updatedCols: Column[] = [];
             this.allColumns.forEach( (column: Column) => {
                 var idThisCol = column.colId;
@@ -648,7 +649,6 @@ module ag.grid {
                 return;
             }
 
-            // debugger;
 
             // split the columns into groups
             var currentGroup = <any> null;

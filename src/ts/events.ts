@@ -45,9 +45,11 @@ module ag.grid {
         public static EVENT_ROW_DOUBLE_CLICKED = 'rowDoubleClicked';
         public static EVENT_READY = 'ready';
         public static EVENT_MULTITOOL_CLICK = 'multitoolClicked';
+        public static EVENT_ROW_REORDER = 'rowReordered';
         public static EVENT_SELECTION_STATE_CHANGED = 'selectionStateChanged';
         public static EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE = 'rowsListenMouseMove';
         public static EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE = 'rowsStopListenMouseMove';
+        public static EVENT_ROWS_MOUSE_IN = 'rowsMouseIn';
         public static EVENT_DO_NOTHING = 'doNothing';
     }
 

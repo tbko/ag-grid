@@ -29,6 +29,7 @@ module ag.grid {
         private topPX: string;
         private heightPX: string;
         private headerHeight: number;
+        private rowHeight: number;
 
         private isListenMove: boolean;
         public listenMoveRef: EventListener;
@@ -51,6 +52,11 @@ module ag.grid {
         private valueService: ValueService;
         private eventService: EventService;
 
+        public timing: number;
+        public timingReflow: number;
+
+        private isHovered: boolean;
+
         constructor(gridOptionsWrapper: GridOptionsWrapper,
                     valueService: ValueService,
                     parentScope: any,
@@ -69,6 +75,7 @@ module ag.grid {
                     rowIndex: number,
                     eventService: EventService,
                     rowsBefore?: number,
+                    topPx?: number,
                     readyToDraw: boolean = true) {
             this.gridOptionsWrapper = gridOptionsWrapper;
             this.valueService = valueService;
@@ -87,6 +94,9 @@ module ag.grid {
             this.pinning = columnController.isPinning();
             this.eventService = eventService;
             this.headerHeight = 0;
+            this.rowHeight = 0;
+            this.timing = 0;
+            this.isHovered = false;
 
             var eRoot: HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
 
@@ -95,6 +105,8 @@ module ag.grid {
 
             var baseHeight:number = this.gridOptionsWrapper.getRowHeight();
             var baseHeightExtra:number = this.gridOptionsWrapper.getRowHeightExtra();
+            var maxRows: number = this.gridOptionsWrapper.getMaxRows();
+            var minRows: number = this.gridOptionsWrapper.getMinRows();
 
             this.isListenMove = false;
             this.listenMoveRef = null;
@@ -138,22 +150,30 @@ module ag.grid {
                 }
             }
 
-            // if showing scrolls, position on the container
-            this.top = baseHeight * rowsBefore;
-            this.topPX = `${this.top}px`;
-            this.height = baseHeight * (this.maxRowsNeeded || 1);
-            this.heightPX = `${this.height}px`;
+            var verticalGap = 15; // top/bottom padding + borders (px) default: 15
+            var baseHeight = baseHeight; // filed single row height (px) default: 30
+            var singleLineHeight = baseHeight - verticalGap; // (px) 
+            var numberOfLines = maxRows; // from settings (count)
+            var totalLineHeight = singleLineHeight * numberOfLines; // content height (px)
+            var rowHeight = totalLineHeight + verticalGap; // height of grid line (px)
 
+            // if showing scrolls, position on the container
+            // this.top = rowHeight * rowIndex;
+            this.top = topPx;
+            this.topPX = `${this.top}px`;
             if (!this.gridOptionsWrapper.isForPrint()) {
                 this.vBodyRow.style.top = this.topPX;
                 if (this.pinning) {
                     this.vPinnedRow.style.top = this.topPX;
                 }
             }
-            this.vBodyRow.style.height =  this.heightPX;
-            if (this.pinning) {
-                this.vPinnedRow.style.height = this.heightPX;
-            }
+
+            // this.height = baseHeight * (this.maxRowsNeeded || 1);
+            // this.heightPX = `${this.height}px`;
+            // this.vBodyRow.style.height =  this.heightPX;
+            // if (this.pinning) {
+            //     this.vPinnedRow.style.height = this.heightPX;
+            // }
 
             // if group item, insert the first row
             if (rowIsHeaderThatSpans) {
@@ -171,9 +191,114 @@ module ag.grid {
                     this.$compile(this.vPinnedRow.getElement())(this.scope);
                 }
             }
+            this.rowHeight = 0;
             if (readyToDraw) {
                 this.insertInDOM();
+                this.renderAndMeasureHeight(
+                    totalLineHeight,
+                    singleLineHeight,
+                    baseHeight,
+                    rowHeight,
+                    maxRows,
+                    minRows,
+                    verticalGap
+                );
+
             }
+        }
+
+        private renderAndMeasureHeight(
+            totalLineHeight: number, singleLineHeight: number,
+            baseHeight: number, rowHeight: number,
+            maxRows: number, minRows: number,
+            verticalGap: number,
+
+        ) {
+
+            var keys = Object.keys(this.renderedCells);
+            for (let idx = keys.length; idx-- > 0; ) {
+            // for (var key in this.renderedCells) {
+
+                var cellObj: RenderedCell = this.renderedCells[keys[idx]];
+                var cellObjEl: any = cellObj.getVGridCell();
+                cellObjEl = cellObjEl.getElement();
+                // var foundElementToWrap = cellObjEl.querySelector('.ag-text-wrap');
+                var foundElementToWrap = cellObjEl.getElementsByClassName('ag-text-wrap')[0];
+
+                if (!foundElementToWrap) {
+                    continue;
+                }
+
+                if (maxRows == minRows) {
+                    foundElementToWrap.style['max-height'] = `${totalLineHeight}px`;
+                    foundElementToWrap.style['height'] = `${totalLineHeight}px`;
+                    foundElementToWrap.style['line-height'] = `${singleLineHeight}px`;
+
+                    _.reflowText(foundElementToWrap, foundElementToWrap.innerHTML);
+                    this.rowHeight = rowHeight;
+                } else {
+                    foundElementToWrap.style['max-height'] = ``;
+                    foundElementToWrap.style['height'] = ``;
+                    foundElementToWrap.style['line-height'] = `${singleLineHeight}px`;
+                    foundElementToWrap.style['overflow'] = `visible`;
+                    var requiredHeight = foundElementToWrap.scrollHeight + verticalGap;
+                    this.rowHeight = requiredHeight > this.rowHeight ? requiredHeight : this.rowHeight;
+                }
+
+
+            };
+
+            if (!this.rowHeight) {
+                this.rowHeight = baseHeight;
+            }
+
+            this.height = this.rowHeight;
+            this.heightPX = `${this.height}px`;
+            this.vBodyRow.element.style.height =  this.heightPX;
+            if (this.pinning) {
+                this.vPinnedRow.element.style.height = this.heightPX;
+            }
+            
+        }
+
+        private renderAndMeasureHeightSome(
+            totalLineHeight: number, singleLineHeight: number,
+            baseHeight: number, rowHeight: number,
+            maxRows: number, minRows: number,
+            verticalGap: number,
+
+        ) {
+            if (!this.rowHeight) {
+                this.rowHeight = baseHeight;
+            }
+            this.height = this.rowHeight;
+            this.heightPX = `${this.height}px`;
+            this.vBodyRow.element.style.height =  this.heightPX;
+            if (this.pinning) {
+                this.vPinnedRow.element.style.height = this.heightPX;
+            }
+        }
+
+        public positionTop(px: number) {
+            this.top = px;
+            this.topPX = `${this.top}px`;
+            if (!this.gridOptionsWrapper.isForPrint()) {
+                this.vBodyRow.element.style.top = this.topPX;
+                if (this.pinning) {
+                    this.vPinnedRow.element.style.top = this.topPX;
+                }
+            }          
+        }
+
+        public getHeight(): number {
+            return this.rowHeight;
+        }
+
+        public getVerticalFrame(): any {
+            return {
+                top: this.top,
+                bottom: this.top + this.height
+            };
         }
 
         public insertInDOM() {
@@ -246,6 +371,10 @@ module ag.grid {
             return this.node.id;
         }
 
+        public getNode(): any {
+            return this.node;
+        }
+
         private drawNormalRow() {
             var columns = this.columnController.getDisplayedColumns();
             var maxRowsNeeded = 0;
@@ -277,6 +406,16 @@ module ag.grid {
                 } else {
                     this.vBodyRow.appendChild(vGridCell);
                 }
+                // debugger;
+                // vGridCell.addElementAttachedListener(function(a){
+                //     if (a.getAttribute('v_element_id') === '3800') {
+                //         console.log(a);
+                //         console.log(a.parentElement);
+                //         debugger;
+                //         console.log(document.body.contains(a));
+                //         // a.parentElement.add
+                //     }
+                // });
 
                 this.renderedCells[column.index] = renderedCell;
             }
@@ -424,10 +563,13 @@ module ag.grid {
             var vRow = new ag.vdom.VHtmlElement('div');
             var that = this;
 
-            function listenMove(event: any) {
-                console.log(event);
+            var listenMove = function listenMove(event: any) {
                 var eRoot:HTMLElement = _.findParentWithClass(that.eBodyContainer, 'ag-root');
+                var eOverlayZone: HTMLElement = <HTMLElement>eRoot.querySelector('.ag-overlay-row-zone');
                 var eRowOverlay:HTMLElement = <HTMLElement>document.querySelector('#ag-overlay-row');
+                var headerHeight = (that.gridOptionsWrapper && that.gridOptionsWrapper.getHeaderHeight()) || 0;
+                var thisRowElement = vRow.getElement();
+
 
                 that.rowRenderer.setHoveredOn(null);
 
@@ -435,14 +577,17 @@ module ag.grid {
                     if (that.node.group) {
                         eRowOverlay.style.display = 'none';
                     } else {
-                        // var eventTarget$('.ag-row[row="74"]')[0].parentNode.parentNode.parentNode.querySelector('.ag-body-viewport').scrollTop
                         eRowOverlay.style.display = '';
-                        eRowOverlay.style.top = `${that.top}px`;
+
+                        eRowOverlay.style.top = `${
+                            thisRowElement.offsetTop - that.eBodyContainer.parentElement.scrollTop - 1 - parseInt(eOverlayZone.style.top) + headerHeight
+                        }px`;
                         eRowOverlay.style.height = that.heightPX;
                         that.rowRenderer.setHoveredOn(that);
                     }
                 }
 
+                that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
                 that.rowRenderer.setListenMouseMove();
                 that.isListenMove = false;
                 that.vBodyRow.getElement().removeEventListener('mousemove', listenMove);
@@ -461,6 +606,40 @@ module ag.grid {
             vRow.addEventListener("dblclick", function (event: any) {
                 var agEvent = that.createEvent(event, this);
                 that.eventService.dispatchEvent(Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
+            });
+            vRow.addEventListener("mouseenter", function (event: any) {
+                let counterpartEl: HTMLElement;
+                this.isHovered = true;
+                vRow.addClass('ag-row-hover');
+                listenMove();
+                if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
+                    counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(
+                        `.ag-body-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
+                    );
+                    if (counterpartEl) counterpartEl.classList.add('ag-row-hover');
+                } else if (vRow.element.parentElement.classList.contains('ag-body-container')) {
+                    counterpartEl = vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(
+                        `.ag-pinned-cols-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
+                    );
+                    if (counterpartEl) counterpartEl.classList.add('ag-row-hover');
+                }
+            });
+            vRow.addEventListener("mouseleave", function (event: any) {
+                let counterpartEl: HTMLElement;
+                this.isHovered = false;
+                vRow.removeClass('ag-row-hover');
+                document.querySelector('#ag-overlay-row').style.display = 'none';
+                if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
+                    counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(
+                        `.ag-body-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
+                    );
+                    if (counterpartEl) counterpartEl.classList.remove('ag-row-hover');
+                } else if (vRow.element.parentElement.classList.contains('ag-body-container')) {
+                    counterpartEl = vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(
+                        `.ag-pinned-cols-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
+                    );
+                    if (counterpartEl) counterpartEl.classList.remove('ag-row-hover');
+                }
             });
 
             return vRow;
@@ -500,8 +679,19 @@ module ag.grid {
             var classes: string[] = [];
 
             classes.push('ag-row');
+            if (this.gridOptionsWrapper.isRowDrug(this) && this.gridOptionsWrapper.gridOptions.groupKeys && ~this.gridOptionsWrapper.gridOptions.groupKeys.indexOf('order_0')) {
+                classes.push('ag-js-draghandler');
+            }
 
             classes.push(this.rowIndex % 2 == 0 ? "ag-row-even" : "ag-row-odd");
+
+            if (this.node.data && this.node.data.order && this.node.data.order.isParent) {
+                classes.push('ag-row-group');
+            }
+
+            if (this.node.data && this.node.data.isParentAccepted) {
+                classes.push('ag-row_inactive');
+            }
 
             if (this.selectionController.isNodeSelected(this.node)) {
                 classes.push("ag-row-selected");

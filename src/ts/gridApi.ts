@@ -255,6 +255,14 @@ module ag.grid {
             this.grid.ensureNodeVisible(comparator);
         }
 
+        public scrollToPx(topPx:number) {
+            this.gridPanel.scrollToPx(topPx);
+        }
+
+        public getScrollPx(): number {
+            return this.gridPanel.getScrollPx();
+        }
+
         public forEachInMemory(callback: Function) {
             console.warn('ag-Grid: please use forEachNode instead of forEachInMemory, method is same, I just renamed it, forEachInMemory is deprecated');
             this.forEachNode(callback);

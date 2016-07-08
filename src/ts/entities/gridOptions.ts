@@ -5,6 +5,7 @@ module ag.grid {
     export interface GridOptions {
 
         // set once in init, can never change
+        heightClasses: string[];
         virtualPaging?: boolean;
         toolPanelSuppressPivot?: boolean;
         toolPanelSuppressValues?: boolean;
@@ -40,9 +41,13 @@ module ag.grid {
         widthGap: number;
         maxRows: number;
         minRows: number;
+        isRowDrug: any;
+        isRowDrop: any;
         metrics: any;
+        actionTemplate: any;
 
         // just set once
+        heightOption: number;
         localeText?: any;
         localeTextFunc?: Function;
         suppressScrollLag?: boolean;
@@ -96,6 +101,7 @@ module ag.grid {
 
         // events
         onMultitoolClicked?(params: any): void;
+        onRowReordered?(params: any): void;
         onSelectionStateChanged?(params: any): void;
         onReady?(api: any): void;
         onModelUpdated?(): void;

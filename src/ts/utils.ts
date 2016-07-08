@@ -91,6 +91,96 @@ module ag.grid {
 
         }
 
+        static reflowText(elText: HTMLElement, allText: string) {
+            // debugger
+            var words = allText.split(' ');
+            var overflown = false;
+            if (!elText) {
+                return;
+            }
+            var tail = '…';
+            var text: string;
+            var lastWord: string[];
+            var lastPart = '';
+            var ltterToAdd;
+
+            let isOverflown = (elText) => Math.abs(elText.scrollHeight - elText.clientHeight) > 2
+
+            var cutPoint = words.length;
+            while (isOverflown(elText)) {
+                text = words.slice(0, cutPoint--).join(' ')
+                elText.innerHTML = text + tail;
+            }
+            lastWord = (' ' + (words[cutPoint+1] || '')).split('')
+            if (lastWord && lastWord.length > 1) {
+                // if (lastPart.length > 2) {
+                //     debugger;
+                // }
+                while (!isOverflown(elText) && lastWord.length) {
+                    elText.innerHTML = text + lastPart + tail;
+                    ltterToAdd = lastWord.shift();
+                    lastPart += ltterToAdd;
+                }
+                elText.innerHTML = text + lastPart.slice(0, -2) + tail;
+                // elText.innerHTML = words.slice(0, cutPoint).join(' ') + tail;
+            //     // var lastWord = words[cutPoint + 2] || words[cutPoint + 1]
+            //     var lastWord = words[cutPoint + 1];
+            //     cutPoint = 0;
+
+            //     while (lastWord && cutPoint < lastWord.length && Math.abs(elText.scrollHeight - elText.clientHeight) <= 2) {
+            //         console.log(lastWord, cutPoint);
+            //         elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint++) + tail;
+            //     }
+            //     if (cutPoint < 2) {
+            //         elText.innerHTML = text + tail;
+            //     } else {
+            //         elText.innerHTML = text + ' ' + lastWord.slice(0, cutPoint - 2) + tail;
+            //     }
+            }
+
+
+            // elText.innerHTML = words[0];
+
+            // // find the word that breaks last allowed line
+            // for (var i = 1; i < words.length; i++) {
+            //     elText.innerHTML = elText.innerHTML + ' ' + words[i];
+            //     // if (this.column.colId === 'agreementNumber') {
+            //     //     debugger;
+            //     // }
+            //     if (Math.abs(elText.scrollHeight - elText.clientHeight) > 2) {
+            //         overflown = true;
+            //         break;
+            //         // console.log(`broke on ${i} word`);
+            //     }
+            // }
+
+            // // bite out by one char until overflown is gone adding ellipsis to the tail
+            // if (overflown) {
+            //     // debugger;
+            //     var displayText = elText.innerHTML + v;
+            //     // console.log(displayText);
+
+            //     do {
+
+            //         do {
+            //             displayText = displayText.slice(0, -2) + '…';
+            //         } while (displayText.slice(-2, -1) === ' '); //get rid of tail spaces
+
+            //         elText.innerHTML = displayText;
+            //         // console.log(displayText);
+
+            //     } while (
+            //         displayText.length > 1
+            //         &&
+            //         Math.abs(elText.scrollHeight - elText.clientHeight) > 2
+            //     );
+            // } else {
+            //     // console.log('not overflown');
+            // }
+
+        }
+
+
         static iterateObject(object: any, callback: (key:string, value: any) => void) {
             var keys = Object.keys(object);
             for (var i = 0; i < keys.length; i++) {
@@ -230,7 +320,7 @@ module ag.grid {
             }
 
             var eventMatchers:any = {
-                'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll|DOMMouseScroll)$/,
+                'HTMLEvents': /^(?:load|unload|abort|error|select|change|submit|reset|focus|blur|resize|scroll|wheel|DOMMouseScroll|MSPointerMove|pointermove)$/,
                 'MouseEvents': /^(?:click|dblclick|mouse(?:down|up|over|move|out|enter|leave|wheel))$/
             }
 
