@@ -542,13 +542,17 @@ module ag.grid {
             let tmpl: string[] | string = [''];
 
             if (!actions) {
-
+                var ii = 1;
+                var margin = "";
                 actions = this.gridOptionsWrapper.getActionTemplate();
                 for (var k in actions) {
+                    if (Object.keys(actions).length != ii)
+                        margin = "m-r-sm";
+                    else
+                        margin = ""
                     var v = actions[k];
-                    (<string[]>tmpl).push(`
-                    <a title="${v}" href="#"><span id="ag-action-row-${k}" class="i-${k}" style="pointer-events:all;"></span></a>
-                    `);
+                    (<string[]>tmpl).push(`<a class="${margin}" title="${v}" href="#"><span id="ag-action-row-${k}" class="i-${k}" style="pointer-events:all;"></span></a>`);
+                    ii++;
                 }
                 // tmpl = `
                 //     <a title="Редактировать" href="#"><span id="ag-action-row-edit" class="i-edit" style="pointer-events:all;"></span></a>
@@ -602,16 +606,14 @@ module ag.grid {
                         </li>
                     `;
                 }
-                var singleTemplate = (data) => {
+                var singleTemplate = (data, margin) => {
                     return `
-                    <a title="${data.title}" href= "\\#" >
-                        <span class="i-${data.code} js-${data.code}" style= "pointer-events:all;" >
-                        </span>
-                    </a>
+                    <a class="${margin}" title="${data.title}" href= "\\#" ><span class="i-${data.code} js-${data.code}" style= "pointer-events:all;" ></span></a>
                     `;
                 }
 
-
+                var k = 1;
+                var margin;
                 for (let actionItem of actions) {
 
                     let data: any = {
@@ -645,10 +647,15 @@ module ag.grid {
                         (<string[]>tmpl).push(menuTemplateEnd(data));
 
                     } else {
+                        if (k != actions.length)
+                            margin = "m-r-sm";
+                        else
+                            margin = "";
 
-                        (<string[]>tmpl).push(singleTemplate(data));
+                        (<string[]>tmpl).push(singleTemplate(data, margin));
 
                     }
+                    k++;
 
                 }
 

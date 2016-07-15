@@ -8286,10 +8286,17 @@ var ag;
             BorderLayout.prototype.createOverlayRowTemplate = function (actions, availableHeightForMenu) {
                 var tmpl = [''];
                 if (!actions) {
+                    var ii = 1;
+                    var margin = "";
                     actions = this.gridOptionsWrapper.getActionTemplate();
                     for (var k in actions) {
+                        if (Object.keys(actions).length != ii)
+                            margin = "m-r-sm";
+                        else
+                            margin = "";
                         var v = actions[k];
-                        tmpl.push("\n                    <a title=\"" + v + "\" href=\"#\"><span id=\"ag-action-row-" + k + "\" class=\"i-" + k + "\" style=\"pointer-events:all;\"></span></a>\n                    ");
+                        tmpl.push("<a class=\"" + margin + "\" title=\"" + v + "\" href=\"#\"><span id=\"ag-action-row-" + k + "\" class=\"i-" + k + "\" style=\"pointer-events:all;\"></span></a>");
+                        ii++;
                     }
                 }
                 else {
@@ -8305,9 +8312,11 @@ var ag;
                     var menuTemplateItemLink = function (data) {
                         return "\n                        <li>\n                            <a class=\"link-icon link-" + data.itemCode + " k-visible k-action-elem js-" + data.itemCode + "\" href=\"" + data.itemLink + "\">\n                                <span class=\"content-center\">\n                                    " + data.itemTitle + "\n                                </span>\n                            </a>\n                        </li>\n                    ";
                     };
-                    var singleTemplate = function (data) {
-                        return "\n                    <a title=\"" + data.title + "\" href= \"\\#\" >\n                        <span class=\"i-" + data.code + " js-" + data.code + "\" style= \"pointer-events:all;\" >\n                        </span>\n                    </a>\n                    ";
+                    var singleTemplate = function (data, margin) {
+                        return "\n                    <a class=\"" + margin + "\" title=\"" + data.title + "\" href= \"\\#\" ><span class=\"i-" + data.code + " js-" + data.code + "\" style= \"pointer-events:all;\" ></span></a>\n                    ";
                     };
+                    var k = 1;
+                    var margin;
                     for (var _i = 0; _i < actions.length; _i++) {
                         var actionItem = actions[_i];
                         var data = {
@@ -8339,8 +8348,13 @@ var ag;
                             tmpl.push(menuTemplateEnd(data));
                         }
                         else {
-                            tmpl.push(singleTemplate(data));
+                            if (k != actions.length)
+                                margin = "m-r-sm";
+                            else
+                                margin = "";
+                            tmpl.push(singleTemplate(data, margin));
                         }
+                        k++;
                     }
                 }
                 tmpl = tmpl.join('');
