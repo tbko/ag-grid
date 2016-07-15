@@ -792,7 +792,7 @@ module ag.grid {
             }
 
             function isMiddlePart(event: DragEvent) {
-                return !(isLowerPart(event) && isUpperPart(event));
+                return !(isLowerPart(event) || isUpperPart(event));
             }
 
             let [dragHandlers, dragTargets] = ['ag-js-draghandler', 'ag-js-dragtarget'].map((styleName)=>{
@@ -962,6 +962,8 @@ module ag.grid {
             function onDragDrop(event: DragEvent, dropType: string) {
 
                 // debugger
+                console.log(event.currentTarget);
+                var lowerPart = isLowerPart(event);
                 
                 var maxLevels = that.gridOptionsWrapper.getGroupKeys().length;
 
@@ -1111,6 +1113,15 @@ module ag.grid {
                 // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
 
                 // that.gridOptionsWrapper.getApi().refreshPivot();
+                console.log(`
+                    source Id: ${sourceNodeId}
+                    destination Id: ${destinationNodeId}
+                    destination Parent Id: ${destinationParentId}
+                    destination order at level: ${destOrderAtLevel}
+                    drop type (inside|level): ${dropType}
+                    is lower part?: ${lowerPart}
+                    wanna be shifted: ${wannaBeShifted}
+                 `);
 
                 var moveData = {
                     flatData: flatData,
@@ -1118,12 +1129,11 @@ module ag.grid {
                     destinationNodeId: dropType == 'level' ? destinationParentId : destinationNodeId,
                     destinationOrder: (
                         destOrderAtLevel && dropType == 'level' ?
-                        (isLowerPart(event) ? destOrderAtLevel + (wannaBeShifted ? 0 : 1) : destOrderAtLevel) :
+                        (lowerPart ? destOrderAtLevel + (wannaBeShifted ? 0 : 1) : destOrderAtLevel) :
                         null
                     )
                 }
                 moveData.curNode = curNode;
-
 
                 that.eventService.dispatchEvent(Events.EVENT_ROW_REORDER, moveData);
 

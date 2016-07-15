@@ -4958,7 +4958,7 @@ var ag;
                     return lowerPoint < getMousePoint(event);
                 }
                 function isMiddlePart(event) {
-                    return !(isLowerPart(event) && isUpperPart(event));
+                    return !(isLowerPart(event) || isUpperPart(event));
                 }
                 var _a = ['ag-js-draghandler', 'ag-js-dragtarget'].map(function (styleName) {
                     return (ePinRow ? [].slice.call(ePinRow.querySelectorAll('.' + styleName)) : []).concat((ePinRow ? ePinRow.classList.contains(styleName) : false) ? ePinRow : []).concat([].slice.call(eBodyRow.querySelectorAll('.' + styleName))).concat(eBodyRow.classList.contains(styleName) ? eBodyRow : []);
@@ -5096,6 +5096,8 @@ var ag;
                 }
                 function onDragDrop(event, dropType) {
                     // debugger
+                    console.log(event.currentTarget);
+                    var lowerPart = isLowerPart(event);
                     var maxLevels = that.gridOptionsWrapper.getGroupKeys().length;
                     var sourceOrderIndex = that.getSourceOrderIndex();
                     var destOrderIndex = that.getOrderIndex(thisRowIndex);
@@ -5225,12 +5227,13 @@ var ag;
                     that.gridOptionsWrapper.gridOptions.wrapper.reGroup(newGroupingKeys);
                     // that.gridOptionsWrapper.gridOptions.groupKeys = newGroupingKeys;
                     // that.gridOptionsWrapper.getApi().refreshPivot();
+                    console.log("\n                    source Id: " + sourceNodeId + "\n                    destination Id: " + destinationNodeId + "\n                    destination Parent Id: " + destinationParentId + "\n                    destination order at level: " + destOrderAtLevel + "\n                    drop type (inside|level): " + dropType + "\n                    is lower part?: " + lowerPart + "\n                    wanna be shifted: " + wannaBeShifted + "\n                 ");
                     var moveData = {
                         flatData: flatData,
                         sourceNodeId: sourceNodeId,
                         destinationNodeId: dropType == 'level' ? destinationParentId : destinationNodeId,
                         destinationOrder: (destOrderAtLevel && dropType == 'level' ?
-                            (isLowerPart(event) ? destOrderAtLevel + (wannaBeShifted ? 0 : 1) : destOrderAtLevel) :
+                            (lowerPart ? destOrderAtLevel + (wannaBeShifted ? 0 : 1) : destOrderAtLevel) :
                             null)
                     };
                     moveData.curNode = curNode;
