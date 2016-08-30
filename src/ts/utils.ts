@@ -107,7 +107,7 @@ module ag.grid {
             let isOverflown = (elText) => Math.abs(elText.scrollHeight - elText.clientHeight) > 2
 
             var cutPoint = words.length;
-            while (isOverflown(elText)) {
+            while (elText && elText.length && isOverflown(elText)) {
                 text = words.slice(0, cutPoint--).join(' ')
                 elText.innerHTML = text + tail;
             }

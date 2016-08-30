@@ -614,7 +614,7 @@ module ag.grid {
                     mappedData.push(node);
                 }
                 if (node.group && node.expanded) {
-                    // debugger;
+
                     this.addToMap(mappedData, node.childrenAfterSort);
 
                     // put a footer in if user is looking for it

@@ -528,7 +528,6 @@ module ag.grid {
             var direction = 1;
             var fromIdx = this.firstVirtualRenderedRow;
             var toIdx = this.lastVirtualRenderedRow;
-            // debugger;
             if ( (this.firstVirtualRenderedRow || 0) < Math.min.apply(null, rowsToRemove.length ? rowsToRemove : [0])) {
                 direction = -1;
                 fromIdx = this.lastVirtualRenderedRow;
@@ -961,8 +960,6 @@ module ag.grid {
 
             function onDragDrop(event: DragEvent, dropType: string) {
 
-                // debugger
-                console.log(event.currentTarget);
                 var lowerPart = isLowerPart(event);
                 
                 var maxLevels = that.gridOptionsWrapper.getGroupKeys().length;
@@ -998,7 +995,6 @@ module ag.grid {
 
                 // console.log(`Порядок назанчения: ${destOrderAtLevel};\nПод: ${isLowerHalf(event)}\nСброс: ${dropType}\nПосле в том же: ${wannaBeShifted}`);
 
-                // debugger;
                 // 1. Для элементов с порядковым номером источника и всех его дочерних элементов
                 // (все элементы, имеющие префикс с номером источника в порядковом номере и следующие за ним, если есть такие)
                 // меняем в порядковом номере префикс совпадающий с номером источника на номер назначения

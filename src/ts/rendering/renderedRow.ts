@@ -573,7 +573,7 @@ module ag.grid {
 
                 that.rowRenderer.setHoveredOn(null);
 
-                if (that.node) {
+                if (that.node && eRowOverlay) {
                     if (that.node.group) {
                         eRowOverlay.style.display = 'none';
                     } else {
@@ -628,7 +628,10 @@ module ag.grid {
                 let counterpartEl: HTMLElement;
                 this.isHovered = false;
                 vRow.removeClass('ag-row-hover');
-                document.querySelector('#ag-overlay-row').style.display = 'none';
+                let overlayRow = document.querySelector('#ag-overlay-row');
+                if (overlayRow) {
+                    overlayRow.style.display = 'none';
+                }
                 if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
                     counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(
                         `.ag-body-container .ag-row[row="${vRow.element.getAttribute('row')}"]`

@@ -691,8 +691,7 @@ module ag.grid {
             }
 
             clickListenerEl.addEventListener("click", function (event: any) {
-                // debugger
-                if (!that.gridOptionsWrapper.isEnableSorting()) {
+                if (!that.gridOptionsWrapper.isEnableSorting() || (that.column && that.column.colDef.suppressSorting)) {
                     return;
                 }
 

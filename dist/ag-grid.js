@@ -191,7 +191,7 @@ var ag;
                 var ltterToAdd;
                 var isOverflown = function (elText) { return Math.abs(elText.scrollHeight - elText.clientHeight) > 2; };
                 var cutPoint = words.length;
-                while (isOverflown(elText)) {
+                while (elText && elText.length && isOverflown(elText)) {
                     text = words.slice(0, cutPoint--).join(' ');
                     elText.innerHTML = text + tail;
                 }
@@ -3596,7 +3596,7 @@ var ag;
                     var headerHeight = (that.gridOptionsWrapper && that.gridOptionsWrapper.getHeaderHeight()) || 0;
                     var thisRowElement = vRow.getElement();
                     that.rowRenderer.setHoveredOn(null);
-                    if (that.node) {
+                    if (that.node && eRowOverlay) {
                         if (that.node.group) {
                             eRowOverlay.style.display = 'none';
                         }
@@ -3645,7 +3645,10 @@ var ag;
                     var counterpartEl;
                     this.isHovered = false;
                     vRow.removeClass('ag-row-hover');
-                    document.querySelector('#ag-overlay-row').style.display = 'none';
+                    var overlayRow = document.querySelector('#ag-overlay-row');
+                    if (overlayRow) {
+                        overlayRow.style.display = 'none';
+                    }
                     if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
                         counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]");
                         if (counterpartEl)
@@ -4747,7 +4750,6 @@ var ag;
                 var direction = 1;
                 var fromIdx = this.firstVirtualRenderedRow;
                 var toIdx = this.lastVirtualRenderedRow;
-                // debugger;
                 if ((this.firstVirtualRenderedRow || 0) < Math.min.apply(null, rowsToRemove.length ? rowsToRemove : [0])) {
                     direction = -1;
                     fromIdx = this.lastVirtualRenderedRow;
@@ -5095,8 +5097,6 @@ var ag;
                     }
                 }
                 function onDragDrop(event, dropType) {
-                    // debugger
-                    console.log(event.currentTarget);
                     var lowerPart = isLowerPart(event);
                     var maxLevels = that.gridOptionsWrapper.getGroupKeys().length;
                     var sourceOrderIndex = that.getSourceOrderIndex();
@@ -5124,7 +5124,6 @@ var ag;
                     var wannaBeShifted = (sourceParentIndex == destParentIndex &&
                         sourceOrderIndex < destOrderIndex);
                     // console.log(`Порядок назанчения: ${destOrderAtLevel};\nПод: ${isLowerHalf(event)}\nСброс: ${dropType}\nПосле в том же: ${wannaBeShifted}`);
-                    // debugger;
                     // 1. Для элементов с порядковым номером источника и всех его дочерних элементов
                     // (все элементы, имеющие префикс с номером источника в порядковом номере и следующие за ним, если есть такие)
                     // меняем в порядковом номере префикс совпадающий с номером источника на номер назначения
@@ -7288,7 +7287,6 @@ var ag;
                         mappedData.push(node);
                     }
                     if (node.group && node.expanded) {
-                        // debugger;
                         this.addToMap(mappedData, node.childrenAfterSort);
                         // put a footer in if user is looking for it
                         if (this.gridOptionsWrapper.isGroupIncludeFooter()) {
@@ -12062,8 +12060,7 @@ var ag;
                     clickListenerEl = headerCellLabel;
                 }
                 clickListenerEl.addEventListener("click", function (event) {
-                    // debugger
-                    if (!that.gridOptionsWrapper.isEnableSorting()) {
+                    if (!that.gridOptionsWrapper.isEnableSorting() || (that.column && that.column.colDef.suppressSorting)) {
                         return;
                     }
                     // update sort on current col
