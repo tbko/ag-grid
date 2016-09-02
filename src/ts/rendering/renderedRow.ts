@@ -570,6 +570,18 @@ module ag.grid {
                 var headerHeight = (that.gridOptionsWrapper && that.gridOptionsWrapper.getHeaderHeight()) || 0;
                 var thisRowElement = vRow.getElement();
 
+                if (event) {
+                    var x = event.clientX;
+                    var y = event.clientY;
+                    var elementMouseIsOver = document.elementFromPoint(x, y);
+                }
+
+                if (elementMouseIsOver && elementMouseIsOver.classList) {
+                    if (!elementMouseIsOver.classList.contains('ag-cell')) {
+                        return;
+                    }
+                }
+
 
                 that.rowRenderer.setHoveredOn(null);
 
@@ -587,7 +599,11 @@ module ag.grid {
                     }
                 }
 
-                that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
+                if (!eRowOverlay.firstElementChild.firstElementChild.firstElementChild) {
+                    that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
+                }
+                // debugger;
+
                 that.rowRenderer.setListenMouseMove();
                 that.isListenMove = false;
                 that.vBodyRow.getElement().removeEventListener('mousemove', listenMove);
