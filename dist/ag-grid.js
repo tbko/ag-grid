@@ -1919,6 +1919,9 @@ var ag;
                 var row = this.gridOptions.metrics.row;
                 return row.paddingTop + row.paddingBottom;
             };
+            GridOptionsWrapper.prototype.getExtraRowWidth = function () {
+                return (this.gridOptions.rowWidthExtra || 0);
+            };
             GridOptionsWrapper.prototype.getFullHeaderHeight = function () {
                 var header = this.gridOptions.metrics.header;
                 return header.height;
@@ -4867,7 +4870,7 @@ var ag;
                 }
                 var renderedRow = new grid.RenderedRow(this.gridOptionsWrapper, this.valueService, this.$scope, this.angularGrid, this.columnModel, this.expressionService, this.cellRendererMap, this.selectionRendererFactory, this.$compile, this.templateService, this.selectionController, this, this.eBodyContainer, this.ePinnedColsContainer, node, rowIndex, this.eventService, rowsBefore, topPx, realDraw);
                 if (realDraw) {
-                    renderedRow.setMainRowWidth(mainRowWidth);
+                    renderedRow.setMainRowWidth(mainRowWidth + this.gridOptionsWrapper.getExtraRowWidth());
                     this.renderedRows[rowIndex] = renderedRow;
                     if (this.orderColumn) {
                         orderedCell = renderedRow.renderedCells[this.orderColumn.index];
@@ -12537,7 +12540,8 @@ var ag;
             // + angularGrid -> for setting body width
             // + rowController -> setting main row widths (when inserting and resizing)
             ColumnController.prototype.getBodyContainerWidth = function () {
-                return this.getTotalColWidth(false);
+                var w = this.getTotalColWidth(false);
+                return w;
             };
             // + rowController
             ColumnController.prototype.getValueColumns = function () {

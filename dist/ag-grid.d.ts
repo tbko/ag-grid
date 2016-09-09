@@ -501,6 +501,7 @@ declare module ag.grid {
         getFullRowHeight(): number;
         getBaseRowHeight(): number;
         getPaddingRowHeight(): number;
+        getExtraRowWidth(): number;
         getFullHeaderHeight(): number;
         getHeaderHeight(): number;
         setHeaderHeight(headerHeight: number): void;
@@ -1574,6 +1575,7 @@ declare module ag.grid {
         unSortIcon?: boolean;
         rowHeight?: number;
         rowHeightExtra?: number;
+        rowWidthExtra?: number;
         rowBuffer?: number;
         enableColResize?: boolean;
         enableCellExpressions?: boolean;

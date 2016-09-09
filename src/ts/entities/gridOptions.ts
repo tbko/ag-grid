@@ -18,6 +18,7 @@ module ag.grid {
         unSortIcon?: boolean;
         rowHeight?: number;
         rowHeightExtra?: number;
+        rowWidthExtra?: number;
         rowBuffer?: number;
         enableColResize?: boolean;
         enableCellExpressions?: boolean;

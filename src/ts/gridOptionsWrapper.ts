@@ -136,6 +136,9 @@ module ag.grid {
             var row: any = this.gridOptions.metrics.row;
             return row.paddingTop + row.paddingBottom;
         }
+        public getExtraRowWidth(): number {
+            return (this.gridOptions.rowWidthExtra || 0);
+        }
         public getFullHeaderHeight(): number {
             var header: any = this.gridOptions.metrics.header;
             return header.height;

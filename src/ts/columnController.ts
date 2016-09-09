@@ -258,7 +258,8 @@ module ag.grid {
         // + angularGrid -> for setting body width
         // + rowController -> setting main row widths (when inserting and resizing)
         public getBodyContainerWidth(): number {
-            return this.getTotalColWidth(false);
+            let w = this.getTotalColWidth(false);
+            return w;
         }
 
         // + rowController

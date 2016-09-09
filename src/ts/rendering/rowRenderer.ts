@@ -651,7 +651,7 @@ module ag.grid {
                 rowsBefore, topPx, realDraw);
 
             if (realDraw) {
-                renderedRow.setMainRowWidth(mainRowWidth);
+                renderedRow.setMainRowWidth(mainRowWidth + this.gridOptionsWrapper.getExtraRowWidth());
                 this.renderedRows[rowIndex] = renderedRow;
 
                 if (this.orderColumn) {
