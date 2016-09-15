@@ -100,8 +100,8 @@ module ag.grid {
             this.eventService = eventService;
             // makes code below more readable if we pull 'forPrint' out
             this.forPrint = this.gridOptionsWrapper.isForPrint();
-            this.setupComponents();
             this.scrollWidth = _.getScrollbarWidth();
+            this.setupComponents();
 
             this.columnModel = columnModel;
             this.rowRenderer = rowRenderer;
@@ -224,6 +224,7 @@ module ag.grid {
             if (this.gridOptionsWrapper.isSuppressHorizontalScroll()) {
                 this.eBodyViewport.style.overflowX = 'hidden';
             }
+            this.eBodyViewport.style.marginRight = `-${this.scrollWidth}px`;
         }
 
         public initRowOverlay() {
@@ -519,6 +520,12 @@ module ag.grid {
                 // Firefox
                 this.ePinnedColsViewport.addEventListener('DOMMouseScroll', this.mouseWheelListener.bind(this));
 
+                // IE9, Chrome, Safari, Opera
+                this.eBodyViewport.addEventListener('mousewheel', this.mouseWheelListenerSilencer.bind(this));
+                this.eBodyViewport.addEventListener('wheel', this.mouseWheelListenerSilencer.bind(this));
+                // Firefox
+                this.eBodyViewport.addEventListener('DOMMouseScroll', this.mouseWheelListenerSilencer.bind(this));
+
             }
         }
 
@@ -527,7 +534,13 @@ module ag.grid {
             return 0;
         }
 
-        private mouseWheelListener(event: any): boolean {
+        private mouseWheelListenerSilencer(event: any): boolean {
+            return;
+            event.preventDefault();
+            return false;
+        }
+
+        public mouseWheelListener(event: any): boolean {
             var delta: number;
             if (event.deltaY && event.deltaX != 0) {
                 // tested on chrome
@@ -540,10 +553,14 @@ module ag.grid {
                 delta = event.detail * 20;
             } else {
                 // couldn't find delta
-                return;
+                delta = 0;
+                // return;
             }
 
             var newTopPosition = this.eBodyViewport.scrollTop + delta;
+            if (!delta) {
+                newTopPosition = event.currentTarget.scrollTop;
+            }
             this.eBodyViewport.scrollTop = newTopPosition;
 
             // if we don't prevent default, then the whole browser will scroll also as well as the grid
@@ -664,7 +681,11 @@ module ag.grid {
             var lastLeftPosition = -1;
             var lastTopPosition = -1;
 
-            this.eBodyViewport.addEventListener('scroll', () => {
+            this.eBodyViewport.addEventListener('scroll', (event: any) => {
+                // event.preventDefault();
+                // event.stopPropagation();
+                // return false;
+
                 var newLeftPosition = this.eBodyViewport.scrollLeft;
                 var newTopPosition = this.eBodyViewport.scrollTop;
 
@@ -717,6 +738,7 @@ module ag.grid {
             // a bad scrolling feel, where the redraws clog the scroll experience
             // (makes the scroll clunky and sticky). this method is like throttling
             // the scroll events.
+
             var useScrollLag: boolean;
             // let the user override scroll lag option
             if (this.gridOptionsWrapper.isSuppressScrollLag()) {
@@ -747,9 +769,11 @@ module ag.grid {
             this.eFloatingTopContainer.style.left = -bodyLeftPosition + 'px';
         }
 
-        private scrollPinned(bodyTopPosition: any) {
+        public scrollPinned(bodyTopPosition: any) {
             // this.ePinnedColsContainer.style.transform = 'translate3d(0,' + -bodyTopPosition + 'px,0)';
             this.ePinnedColsContainer.style.top = -bodyTopPosition + 'px';
+            // this.scrollToPx(bodyTopPosition);
+            // this.requestDrawVirtualRows();
         }
     }
 }

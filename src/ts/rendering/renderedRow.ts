@@ -207,6 +207,10 @@ module ag.grid {
             }
         }
 
+        private onRowStop() {
+            console.log('event mouse out');
+        }
+
         private renderAndMeasureHeight(
             totalLineHeight: number, singleLineHeight: number,
             baseHeight: number, rowHeight: number,
@@ -406,12 +410,10 @@ module ag.grid {
                 } else {
                     this.vBodyRow.appendChild(vGridCell);
                 }
-                // debugger;
                 // vGridCell.addElementAttachedListener(function(a){
                 //     if (a.getAttribute('v_element_id') === '3800') {
                 //         console.log(a);
                 //         console.log(a.parentElement);
-                //         debugger;
                 //         console.log(document.body.contains(a));
                 //         // a.parentElement.add
                 //     }
@@ -559,11 +561,34 @@ module ag.grid {
             return agEvent;
         }
 
+        private shutDownHover (event: any) {
+            let counterpartEl: HTMLElement;
+            this.isHovered = false;
+            this.vBodyRow.removeClass('ag-row-hover');
+            let overlayRow = <HTMLElement> document.querySelector('#ag-overlay-row');
+            if (overlayRow) {
+                overlayRow.style.display = 'none';
+            }
+            if (this.vBodyRow.element.parentElement && this.vBodyRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
+                counterpartEl = this.vBodyRow.element.parentElement.parentElement.parentElement.querySelector(
+                    `.ag-body-container .ag-row[row="${this.vBodyRow.element.getAttribute('row')}"]`
+                );
+                if (counterpartEl) counterpartEl.classList.remove('ag-row-hover');
+            } else if (this.vBodyRow.element.parentElement && this.vBodyRow.element.parentElement.classList.contains('ag-body-container')) {
+                counterpartEl = this.vBodyRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(
+                    `.ag-pinned-cols-container .ag-row[row="${this.vBodyRow.element.getAttribute('row')}"]`
+                );
+                if (counterpartEl) counterpartEl.classList.remove('ag-row-hover');
+            }
+            this.eventService.removeEventListener(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.shutDownHover.bind(this));
+        }
+
         private createRowContainer() {
             var vRow = new ag.vdom.VHtmlElement('div');
             var that = this;
 
-            var listenMove = function listenMove(event: any) {
+
+            let listenMove = function listenMove(event: any) {
                 var eRoot:HTMLElement = _.findParentWithClass(that.eBodyContainer, 'ag-root');
                 var eOverlayZone: HTMLElement = <HTMLElement>eRoot.querySelector('.ag-overlay-row-zone');
                 var eRowOverlay:HTMLElement = <HTMLElement>document.querySelector('#ag-overlay-row');
@@ -602,7 +627,6 @@ module ag.grid {
                 if (!eRowOverlay.firstElementChild.firstElementChild.firstElementChild) {
                     that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
                 }
-                // debugger;
 
                 that.rowRenderer.setListenMouseMove();
                 that.isListenMove = false;
@@ -624,10 +648,11 @@ module ag.grid {
                 that.eventService.dispatchEvent(Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
             });
             vRow.addEventListener("mouseenter", function (event: any) {
+                that.eventService.addEventListener(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, that.shutDownHover.bind(that));
                 let counterpartEl: HTMLElement;
-                this.isHovered = true;
+                that.isHovered = true;
                 vRow.addClass('ag-row-hover');
-                listenMove();
+                listenMove(undefined);
                 if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
                     counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(
                         `.ag-body-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
@@ -640,26 +665,7 @@ module ag.grid {
                     if (counterpartEl) counterpartEl.classList.add('ag-row-hover');
                 }
             });
-            vRow.addEventListener("mouseleave", function (event: any) {
-                let counterpartEl: HTMLElement;
-                this.isHovered = false;
-                vRow.removeClass('ag-row-hover');
-                let overlayRow = document.querySelector('#ag-overlay-row');
-                if (overlayRow) {
-                    overlayRow.style.display = 'none';
-                }
-                if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
-                    counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(
-                        `.ag-body-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
-                    );
-                    if (counterpartEl) counterpartEl.classList.remove('ag-row-hover');
-                } else if (vRow.element.parentElement.classList.contains('ag-body-container')) {
-                    counterpartEl = vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(
-                        `.ag-pinned-cols-container .ag-row[row="${vRow.element.getAttribute('row')}"]`
-                    );
-                    if (counterpartEl) counterpartEl.classList.remove('ag-row-hover');
-                }
-            });
+            vRow.addEventListener("mouseleave", this.shutDownHover.bind(this));
 
             return vRow;
         }
@@ -706,6 +712,7 @@ module ag.grid {
 
             if (this.node.data && this.node.data.order && this.node.data.order.isParent) {
                 classes.push('ag-row-group');
+                classes.push(`ag-row-group-level-${this.node.data.order.orderNumber.split('.').length - 1}`);
             }
 
             if (this.node.data && this.node.data.isParentAccepted) {

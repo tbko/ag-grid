@@ -259,6 +259,10 @@ module ag.grid {
             this.gridPanel.scrollToPx(topPx);
         }
 
+        public vScrollFreeze(event: any) {
+            this.gridPanel.mouseWheelListener(event);
+        }
+
         public getScrollPx(): number {
             return this.gridPanel.getScrollPx();
         }

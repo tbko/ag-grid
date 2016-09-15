@@ -358,6 +358,7 @@ module ag.grid {
         }
 
         private getScrollWidth(): number {
+            return 0;
             var el = this.viewportBodyEl;
             return el.getBoundingClientRect().width - el.clientWidth;
         }
@@ -691,7 +692,8 @@ module ag.grid {
                     actionData.actions,
                     availableHeightForMenu
                 );
-                
+
+
                 this.eOverlayRowWrapper.appendChild(
                     tempDiv.firstElementChild
                 );
@@ -724,6 +726,11 @@ module ag.grid {
                 this.eOverlayRowWrapper.appendChild(
                     _.loadTemplate(this.createOverlayRowTemplate().trim())
                 );
+
+                let tempDiv = document.createElement("div");
+                tempDiv.className = 'ag-overlay-drag'
+                this.eOverlayRowWrapper.appendChild(tempDiv);
+
                 actionClickSelector = '#ag-action-row-'
                 
             }

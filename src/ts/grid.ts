@@ -154,7 +154,7 @@ module ag.grid {
                 setTimeout(function () {
                     that.doLayout();
                     that.periodicallyDoLayout();
-                }, 500);
+                }, 50000000);
             }
         }
 
@@ -562,13 +562,13 @@ module ag.grid {
         public updateModelAndRefresh(step: any, refreshFromIndex?: any) {
             this.inMemoryRowController.updateModel(step);
             this.rowRenderer.refreshView(refreshFromIndex);
-            var orderColumn = this.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
-            if (orderColumn && this.rowRenderer.maxOrderColumnWidth) {
-                this.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(
-                    orderColumn,
-                    this.rowRenderer.maxOrderColumnWidth
-                );
-            }
+            // var orderColumn = this.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
+            // if (orderColumn && this.rowRenderer.maxOrderColumnWidth) {
+            //     this.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(
+            //         orderColumn,
+            //         this.rowRenderer.maxOrderColumnWidth
+            //     );
+            // }
         }
 
         public setRowData(rows?: any, firstId?: any) {

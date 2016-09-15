@@ -713,6 +713,7 @@ declare module ag.grid {
         constructor(gridOptionsWrapper: GridOptionsWrapper, valueService: ValueService, parentScope: any, angularGrid: Grid, columnController: ColumnController, expressionService: ExpressionService, cellRendererMap: {
             [key: string]: any;
         }, selectionRendererFactory: SelectionRendererFactory, $compile: any, templateService: TemplateService, selectionController: SelectionController, rowRenderer: RowRenderer, eBodyContainer: HTMLElement, ePinnedContainer: HTMLElement, node: any, rowIndex: number, eventService: EventService, rowsBefore?: number, topPx?: number, readyToDraw?: boolean);
+        private onRowStop();
         private renderAndMeasureHeight(totalLineHeight, singleLineHeight, baseHeight, rowHeight, maxRows, minRows, verticalGap);
         private renderAndMeasureHeightSome(totalLineHeight, singleLineHeight, baseHeight, rowHeight, maxRows, minRows, verticalGap);
         positionTop(px: number): void;
@@ -740,6 +741,7 @@ declare module ag.grid {
         private addDynamicStyles();
         private createParams();
         private createEvent(event, eventSource);
+        private shutDownHover(event);
         private createRowContainer();
         isListenForMove(newValue?: boolean): boolean;
         getRowNode(): any;
@@ -1399,7 +1401,8 @@ declare module ag.grid {
         private queryHtmlElement(selector);
         private findElements();
         getRightGap(): number;
-        private mouseWheelListener(event);
+        private mouseWheelListenerSilencer(event);
+        mouseWheelListener(event: any): boolean;
         setBodyContainerWidth(): void;
         setPinnedColContainerWidth(): void;
         showPinnedColContainersIfNeeded(): void;
@@ -1412,7 +1415,7 @@ declare module ag.grid {
         private debounce(func, wait, immediate?);
         private requestDrawVirtualRows();
         private scrollHeader(bodyLeftPosition);
-        private scrollPinned(bodyTopPosition);
+        scrollPinned(bodyTopPosition: any): void;
     }
 }
 declare module ag.grid {
@@ -1763,6 +1766,7 @@ declare module ag.grid {
         ensureIndexVisible(index: any): void;
         ensureNodeVisible(comparator: any): void;
         scrollToPx(topPx: number): void;
+        vScrollFreeze(event: any): void;
         getScrollPx(): number;
         forEachInMemory(callback: Function): void;
         forEachNode(callback: Function): void;

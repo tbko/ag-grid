@@ -3289,6 +3289,9 @@ var ag;
                     this.renderAndMeasureHeight(totalLineHeight, singleLineHeight, baseHeight, rowHeight, maxRows, minRows, verticalGap);
                 }
             }
+            RenderedRow.prototype.onRowStop = function () {
+                console.log('event mouse out');
+            };
             RenderedRow.prototype.renderAndMeasureHeight = function (totalLineHeight, singleLineHeight, baseHeight, rowHeight, maxRows, minRows, verticalGap) {
                 var keys = Object.keys(this.renderedCells);
                 for (var idx = keys.length; idx-- > 0;) {
@@ -3589,6 +3592,27 @@ var ag;
                 agEvent.eventSource = eventSource;
                 return agEvent;
             };
+            RenderedRow.prototype.shutDownHover = function (event) {
+                // debugger
+                var counterpartEl;
+                this.isHovered = false;
+                this.vBodyRow.removeClass('ag-row-hover');
+                var overlayRow = document.querySelector('#ag-overlay-row');
+                if (overlayRow) {
+                    overlayRow.style.display = 'none';
+                }
+                if (this.vBodyRow.element.parentElement && this.vBodyRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
+                    counterpartEl = this.vBodyRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + this.vBodyRow.element.getAttribute('row') + "\"]");
+                    if (counterpartEl)
+                        counterpartEl.classList.remove('ag-row-hover');
+                }
+                else if (this.vBodyRow.element.parentElement && this.vBodyRow.element.parentElement.classList.contains('ag-body-container')) {
+                    counterpartEl = this.vBodyRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(".ag-pinned-cols-container .ag-row[row=\"" + this.vBodyRow.element.getAttribute('row') + "\"]");
+                    if (counterpartEl)
+                        counterpartEl.classList.remove('ag-row-hover');
+                }
+                this.eventService.removeEventListener(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.shutDownHover.bind(this));
+            };
             RenderedRow.prototype.createRowContainer = function () {
                 var vRow = new ag.vdom.VHtmlElement('div');
                 var that = this;
@@ -3623,7 +3647,6 @@ var ag;
                     if (!eRowOverlay.firstElementChild.firstElementChild.firstElementChild) {
                         that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
                     }
-                    // debugger;
                     that.rowRenderer.setListenMouseMove();
                     that.isListenMove = false;
                     that.vBodyRow.getElement().removeEventListener('mousemove', listenMove);
@@ -3642,10 +3665,11 @@ var ag;
                     that.eventService.dispatchEvent(grid.Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
                 });
                 vRow.addEventListener("mouseenter", function (event) {
+                    that.eventService.addEventListener(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, that.shutDownHover.bind(that));
                     var counterpartEl;
-                    this.isHovered = true;
+                    that.isHovered = true;
                     vRow.addClass('ag-row-hover');
-                    listenMove();
+                    listenMove(undefined);
                     if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
                         counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]");
                         if (counterpartEl)
@@ -3657,25 +3681,7 @@ var ag;
                             counterpartEl.classList.add('ag-row-hover');
                     }
                 });
-                vRow.addEventListener("mouseleave", function (event) {
-                    var counterpartEl;
-                    this.isHovered = false;
-                    vRow.removeClass('ag-row-hover');
-                    var overlayRow = document.querySelector('#ag-overlay-row');
-                    if (overlayRow) {
-                        overlayRow.style.display = 'none';
-                    }
-                    if (vRow.element.parentElement.classList.contains('ag-pinned-cols-container')) {
-                        counterpartEl = vRow.element.parentElement.parentElement.parentElement.querySelector(".ag-body-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]");
-                        if (counterpartEl)
-                            counterpartEl.classList.remove('ag-row-hover');
-                    }
-                    else if (vRow.element.parentElement.classList.contains('ag-body-container')) {
-                        counterpartEl = vRow.element.parentElement.parentElement.parentElement.parentElement.querySelector(".ag-pinned-cols-container .ag-row[row=\"" + vRow.element.getAttribute('row') + "\"]");
-                        if (counterpartEl)
-                            counterpartEl.classList.remove('ag-row-hover');
-                    }
-                });
+                vRow.addEventListener("mouseleave", this.shutDownHover.bind(this));
                 return vRow;
             };
             RenderedRow.prototype.isListenForMove = function (newValue) {
@@ -3711,6 +3717,7 @@ var ag;
                 classes.push(this.rowIndex % 2 == 0 ? "ag-row-even" : "ag-row-odd");
                 if (this.node.data && this.node.data.order && this.node.data.order.isParent) {
                     classes.push('ag-row-group');
+                    classes.push("ag-row-group-level-" + (this.node.data.order.orderNumber.split('.').length - 1));
                 }
                 if (this.node.data && this.node.data.isParentAccepted) {
                     classes.push('ag-row_inactive');
@@ -8155,6 +8162,7 @@ var ag;
                 return this.eGui;
             };
             BorderLayout.prototype.getScrollWidth = function () {
+                return 0;
                 var el = this.viewportBodyEl;
                 return el.getBoundingClientRect().width - el.clientWidth;
             };
@@ -8415,6 +8423,9 @@ var ag;
                     this.isActionsRedrawn = false;
                     document.querySelector('.ag-body-viewport').appendChild(this.eOverlayRowZoneWrapper);
                     this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
+                    var tempDiv = document.createElement("div");
+                    tempDiv.className = 'ag-overlay-drag';
+                    this.eOverlayRowWrapper.appendChild(tempDiv);
                     actionClickSelector = '#ag-action-row-';
                 }
                 for (var k in actions) {
@@ -8586,8 +8597,8 @@ var ag;
                 this.eventService = eventService;
                 // makes code below more readable if we pull 'forPrint' out
                 this.forPrint = this.gridOptionsWrapper.isForPrint();
-                this.setupComponents();
                 this.scrollWidth = _.getScrollbarWidth();
+                this.setupComponents();
                 this.columnModel = columnModel;
                 this.rowRenderer = rowRenderer;
                 this.masterSlaveService = masterSlaveService;
@@ -8696,6 +8707,7 @@ var ag;
                 if (this.gridOptionsWrapper.isSuppressHorizontalScroll()) {
                     this.eBodyViewport.style.overflowX = 'hidden';
                 }
+                this.eBodyViewport.style.marginRight = "-" + this.scrollWidth + "px";
             };
             GridPanel.prototype.initRowOverlay = function () {
                 this.layout.positionOverlayRowZone();
@@ -8923,11 +8935,21 @@ var ag;
                     this.ePinnedColsViewport.addEventListener('wheel', this.mouseWheelListener.bind(this));
                     // Firefox
                     this.ePinnedColsViewport.addEventListener('DOMMouseScroll', this.mouseWheelListener.bind(this));
+                    // IE9, Chrome, Safari, Opera
+                    this.eBodyViewport.addEventListener('mousewheel', this.mouseWheelListenerSilencer.bind(this));
+                    this.eBodyViewport.addEventListener('wheel', this.mouseWheelListenerSilencer.bind(this));
+                    // Firefox
+                    this.eBodyViewport.addEventListener('DOMMouseScroll', this.mouseWheelListenerSilencer.bind(this));
                 }
             };
             GridPanel.prototype.getRightGap = function () {
                 // return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
                 return 0;
+            };
+            GridPanel.prototype.mouseWheelListenerSilencer = function (event) {
+                return;
+                event.preventDefault();
+                return false;
             };
             GridPanel.prototype.mouseWheelListener = function (event) {
                 var delta;
@@ -8945,9 +8967,12 @@ var ag;
                 }
                 else {
                     // couldn't find delta
-                    return;
+                    delta = 0;
                 }
                 var newTopPosition = this.eBodyViewport.scrollTop + delta;
+                if (!delta) {
+                    newTopPosition = event.currentTarget.scrollTop;
+                }
                 this.eBodyViewport.scrollTop = newTopPosition;
                 // if we don't prevent default, then the whole browser will scroll also as well as the grid
                 event.preventDefault();
@@ -9047,7 +9072,10 @@ var ag;
                 }
                 var lastLeftPosition = -1;
                 var lastTopPosition = -1;
-                this.eBodyViewport.addEventListener('scroll', function () {
+                this.eBodyViewport.addEventListener('scroll', function (event) {
+                    // event.preventDefault();
+                    // event.stopPropagation();
+                    // return false;
                     var newLeftPosition = _this.eBodyViewport.scrollLeft;
                     var newTopPosition = _this.eBodyViewport.scrollTop;
                     if (newLeftPosition !== lastLeftPosition) {
@@ -9091,12 +9119,12 @@ var ag;
             };
             ;
             GridPanel.prototype.requestDrawVirtualRows = function () {
-                var _this = this;
                 // if we are in IE or Safari, then we only redraw if there was no scroll event
                 // in the 50ms following this scroll event. without this, these browsers have
                 // a bad scrolling feel, where the redraws clog the scroll experience
                 // (makes the scroll clunky and sticky). this method is like throttling
                 // the scroll events.
+                var _this = this;
                 var useScrollLag;
                 // let the user override scroll lag option
                 if (this.gridOptionsWrapper.isSuppressScrollLag()) {
@@ -9130,6 +9158,8 @@ var ag;
             GridPanel.prototype.scrollPinned = function (bodyTopPosition) {
                 // this.ePinnedColsContainer.style.transform = 'translate3d(0,' + -bodyTopPosition + 'px,0)';
                 this.ePinnedColsContainer.style.top = -bodyTopPosition + 'px';
+                // this.scrollToPx(bodyTopPosition);
+                // this.requestDrawVirtualRows();
             };
             return GridPanel;
         })();
@@ -10129,6 +10159,9 @@ var ag;
             GridApi.prototype.scrollToPx = function (topPx) {
                 this.gridPanel.scrollToPx(topPx);
             };
+            GridApi.prototype.vScrollFreeze = function (event) {
+                this.gridPanel.mouseWheelListener(event);
+            };
             GridApi.prototype.getScrollPx = function () {
                 return this.gridPanel.getScrollPx();
             };
@@ -10633,7 +10666,7 @@ var ag;
                     setTimeout(function () {
                         that.doLayout();
                         that.periodicallyDoLayout();
-                    }, 500);
+                    }, 50000000);
                 }
             };
             Grid.prototype.selectHeightOption = function (heightClasses, eUserProvidedDiv) {
@@ -10981,10 +11014,13 @@ var ag;
             Grid.prototype.updateModelAndRefresh = function (step, refreshFromIndex) {
                 this.inMemoryRowController.updateModel(step);
                 this.rowRenderer.refreshView(refreshFromIndex);
-                var orderColumn = this.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
-                if (orderColumn && this.rowRenderer.maxOrderColumnWidth) {
-                    this.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(orderColumn, this.rowRenderer.maxOrderColumnWidth);
-                }
+                // var orderColumn = this.gridOptionsWrapper.gridOptions.columnApi.getColumn('order');
+                // if (orderColumn && this.rowRenderer.maxOrderColumnWidth) {
+                //     this.gridOptionsWrapper.gridOptions.columnApi.setColumnWidth(
+                //         orderColumn,
+                //         this.rowRenderer.maxOrderColumnWidth
+                //     );
+                // }
             };
             Grid.prototype.setRowData = function (rows, firstId) {
                 if (rows) {
