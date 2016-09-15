@@ -224,7 +224,7 @@ module ag.grid {
             if (this.gridOptionsWrapper.isSuppressHorizontalScroll()) {
                 this.eBodyViewport.style.overflowX = 'hidden';
             }
-            this.eBodyViewport.style.marginRight = `-${this.scrollWidth}px`;
+            // this.eBodyViewport.style.marginRight = `-${this.scrollWidth}px`;
         }
 
         public initRowOverlay() {

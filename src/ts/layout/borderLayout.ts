@@ -328,7 +328,7 @@ module ag.grid {
                 return;
             }
             // start processing overlay when move into zone
-            this.eOverlayRowWrapper.style.display = '';
+            this.eOverlayRowWrapper.style.display = 'none';
             this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
             return;
         }
@@ -677,12 +677,18 @@ module ag.grid {
             var rowBottom = parseInt(this.eOverlayRowWrapper.style.top) + parseInt(this.eOverlayRowWrapper.style.height);
             var availableHeightForMenu = overlayBottom - rowBottom;
 
+            // debugger
+
             if (rowData && typeof actions == 'function') {
 
                 actionData = actions({
                     data: rowData,
                     type: 'actionTemplate'
                 });
+                if (!actionData.actions.length) {
+                    this.eOverlayRowWrapper.style.display = 'none';
+                    return;
+                }
                 while (this.eOverlayRowWrapper.firstChild) {
                     this.eOverlayRowWrapper.removeChild(this.eOverlayRowWrapper.firstChild);
                 }
@@ -729,7 +735,7 @@ module ag.grid {
 
                 let tempDiv = document.createElement("div");
                 tempDiv.className = 'ag-overlay-drag'
-                this.eOverlayRowWrapper.appendChild(tempDiv);
+                // this.eOverlayRowWrapper.appendChild(tempDiv);
 
                 actionClickSelector = '#ag-action-row-'
                 
@@ -753,24 +759,7 @@ module ag.grid {
                     }
                 })(k);
             }
-            // this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
-            //     event.stopPropagation();
-            //     event.preventDefault();
-            //     this.rowEditListener(event);
-            //     return false; 
-            // });
-            // this.eOverlayRowWrapper.querySelector('#ag-action-row-delete').addEventListener('click', (event) => {
-            //     event.stopPropagation();
-            //     event.preventDefault();
-            //     this.rowDeleteListener(event);
-            //     return false; 
-            // });
-            // this.eOverlayRowWrapper.querySelector('#ag-action-row-split').addEventListener('click', (event) => {
-            //     event.stopPropagation();
-            //     event.preventDefault();
-            //     this.rowSplitListener(event);
-            //     return false; 
-            // });
+
         }
 
         public showOverlay(key: string) {

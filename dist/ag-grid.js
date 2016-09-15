@@ -3445,12 +3445,10 @@ var ag;
                     else {
                         this.vBodyRow.appendChild(vGridCell);
                     }
-                    // debugger;
                     // vGridCell.addElementAttachedListener(function(a){
                     //     if (a.getAttribute('v_element_id') === '3800') {
                     //         console.log(a);
                     //         console.log(a.parentElement);
-                    //         debugger;
                     //         console.log(document.body.contains(a));
                     //         // a.parentElement.add
                     //     }
@@ -3593,7 +3591,6 @@ var ag;
                 return agEvent;
             };
             RenderedRow.prototype.shutDownHover = function (event) {
-                // debugger
                 var counterpartEl;
                 this.isHovered = false;
                 this.vBodyRow.removeClass('ag-row-hover');
@@ -8134,7 +8131,7 @@ var ag;
                     return;
                 }
                 // start processing overlay when move into zone
-                this.eOverlayRowWrapper.style.display = '';
+                this.eOverlayRowWrapper.style.display = 'none';
                 this.eventService.dispatchEvent(grid.Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
                 return;
             };
@@ -8391,11 +8388,16 @@ var ag;
                 var overlayBottom = parseInt(this.eOverlayRowZoneWrapper.style.height);
                 var rowBottom = parseInt(this.eOverlayRowWrapper.style.top) + parseInt(this.eOverlayRowWrapper.style.height);
                 var availableHeightForMenu = overlayBottom - rowBottom;
+                // debugger
                 if (rowData && typeof actions == 'function') {
                     actionData = actions({
                         data: rowData,
                         type: 'actionTemplate'
                     });
+                    if (!actionData.actions.length) {
+                        this.eOverlayRowWrapper.style.display = 'none';
+                        return;
+                    }
                     while (this.eOverlayRowWrapper.firstChild) {
                         this.eOverlayRowWrapper.removeChild(this.eOverlayRowWrapper.firstChild);
                     }
@@ -8425,7 +8427,7 @@ var ag;
                     this.eOverlayRowWrapper.appendChild(_.loadTemplate(this.createOverlayRowTemplate().trim()));
                     var tempDiv = document.createElement("div");
                     tempDiv.className = 'ag-overlay-drag';
-                    this.eOverlayRowWrapper.appendChild(tempDiv);
+                    // this.eOverlayRowWrapper.appendChild(tempDiv);
                     actionClickSelector = '#ag-action-row-';
                 }
                 for (var k in actions) {
@@ -8444,24 +8446,6 @@ var ag;
                         }
                     })(k);
                 }
-                // this.eOverlayRowWrapper.querySelector('#ag-action-row-edit').addEventListener('click', (event) => {
-                //     event.stopPropagation();
-                //     event.preventDefault();
-                //     this.rowEditListener(event);
-                //     return false; 
-                // });
-                // this.eOverlayRowWrapper.querySelector('#ag-action-row-delete').addEventListener('click', (event) => {
-                //     event.stopPropagation();
-                //     event.preventDefault();
-                //     this.rowDeleteListener(event);
-                //     return false; 
-                // });
-                // this.eOverlayRowWrapper.querySelector('#ag-action-row-split').addEventListener('click', (event) => {
-                //     event.stopPropagation();
-                //     event.preventDefault();
-                //     this.rowSplitListener(event);
-                //     return false; 
-                // });
             };
             BorderLayout.prototype.showOverlay = function (key) {
                 var overlay = this.overlays ? this.overlays[key] : null;
@@ -8707,7 +8691,7 @@ var ag;
                 if (this.gridOptionsWrapper.isSuppressHorizontalScroll()) {
                     this.eBodyViewport.style.overflowX = 'hidden';
                 }
-                this.eBodyViewport.style.marginRight = "-" + this.scrollWidth + "px";
+                // this.eBodyViewport.style.marginRight = `-${this.scrollWidth}px`;
             };
             GridPanel.prototype.initRowOverlay = function () {
                 this.layout.positionOverlayRowZone();
@@ -10666,7 +10650,7 @@ var ag;
                     setTimeout(function () {
                         that.doLayout();
                         that.periodicallyDoLayout();
-                    }, 50000000);
+                    }, 300);
                 }
             };
             Grid.prototype.selectHeightOption = function (heightClasses, eUserProvidedDiv) {

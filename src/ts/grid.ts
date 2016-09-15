@@ -154,7 +154,7 @@ module ag.grid {
                 setTimeout(function () {
                     that.doLayout();
                     that.periodicallyDoLayout();
-                }, 50000000);
+                }, 300);
             }
         }
 
