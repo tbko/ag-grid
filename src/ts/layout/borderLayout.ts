@@ -358,7 +358,7 @@ module ag.grid {
         }
 
         private getScrollWidth(): number {
-            return 0;
+            // return 0;
             var el = this.viewportBodyEl;
             return el.getBoundingClientRect().width - el.clientWidth;
         }
@@ -677,7 +677,6 @@ module ag.grid {
             var rowBottom = parseInt(this.eOverlayRowWrapper.style.top) + parseInt(this.eOverlayRowWrapper.style.height);
             var availableHeightForMenu = overlayBottom - rowBottom;
 
-            // debugger
 
             if (rowData && typeof actions == 'function') {
 

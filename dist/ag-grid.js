@@ -3641,9 +3641,10 @@ var ag;
                             that.rowRenderer.setHoveredOn(that);
                         }
                     }
-                    if (!eRowOverlay.firstElementChild.firstElementChild.firstElementChild) {
-                        that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
-                    }
+                    // if (!eRowOverlay.firstElementChild.firstElementChild.firstElementChild) {
+                    //     that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
+                    // }
+                    that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
                     that.rowRenderer.setListenMouseMove();
                     that.isListenMove = false;
                     that.vBodyRow.getElement().removeEventListener('mousemove', listenMove);
@@ -8159,7 +8160,7 @@ var ag;
                 return this.eGui;
             };
             BorderLayout.prototype.getScrollWidth = function () {
-                return 0;
+                // return 0;
                 var el = this.viewportBodyEl;
                 return el.getBoundingClientRect().width - el.clientWidth;
             };
@@ -8388,7 +8389,6 @@ var ag;
                 var overlayBottom = parseInt(this.eOverlayRowZoneWrapper.style.height);
                 var rowBottom = parseInt(this.eOverlayRowWrapper.style.top) + parseInt(this.eOverlayRowWrapper.style.height);
                 var availableHeightForMenu = overlayBottom - rowBottom;
-                // debugger
                 if (rowData && typeof actions == 'function') {
                     actionData = actions({
                         data: rowData,
@@ -8927,8 +8927,8 @@ var ag;
                 }
             };
             GridPanel.prototype.getRightGap = function () {
-                // return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
-                return 0;
+                return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
+                // return 0;
             };
             GridPanel.prototype.mouseWheelListenerSilencer = function (event) {
                 return;

@@ -624,9 +624,10 @@ module ag.grid {
                     }
                 }
 
-                if (!eRowOverlay.firstElementChild.firstElementChild.firstElementChild) {
-                    that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
-                }
+                // if (!eRowOverlay.firstElementChild.firstElementChild.firstElementChild) {
+                //     that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
+                // }
+                that.rowRenderer.gridPanel.showOverlayRow(that.node.data);
 
                 that.rowRenderer.setListenMouseMove();
                 that.isListenMove = false;

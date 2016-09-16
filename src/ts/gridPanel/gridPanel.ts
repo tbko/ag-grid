@@ -530,8 +530,8 @@ module ag.grid {
         }
 
         public getRightGap(): number {
-            // return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
-            return 0;
+            return this.eBody.clientWidth - this.eBodyContainer.clientWidth - this.ePinnedColsContainer.clientWidth;
+            // return 0;
         }
 
         private mouseWheelListenerSilencer(event: any): boolean {
