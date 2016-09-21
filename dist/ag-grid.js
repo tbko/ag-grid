@@ -3727,6 +3727,7 @@ var ag;
                     classes.push("ag-row-group");
                     // if a group, put the level of the group in
                     classes.push("ag-row-level-" + this.node.level);
+                    classes.push("ag-row-group-level-" + this.node.level);
                     if (!this.node.footer && this.node.expanded) {
                         classes.push("ag-row-group-expanded");
                     }
