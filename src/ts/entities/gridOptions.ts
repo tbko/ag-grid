@@ -6,6 +6,7 @@ module ag.grid {
 
         // set once in init, can never change
         heightClasses: string[];
+        groupClasses: string[];
         virtualPaging?: boolean;
         toolPanelSuppressPivot?: boolean;
         toolPanelSuppressValues?: boolean;

@@ -98,6 +98,7 @@ module ag.grid {
             this.timing = 0;
             this.isHovered = false;
 
+
             var eRoot: HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
 
             var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
@@ -703,6 +704,8 @@ module ag.grid {
 
         private addDynamicClasses() {
             var classes: string[] = [];
+            var auxGroupClasses: string[];
+            var levelNumber: number = -1;
 
             classes.push('ag-row');
             if (this.gridOptionsWrapper.isRowDrug(this) && this.gridOptionsWrapper.gridOptions.groupKeys && ~this.gridOptionsWrapper.gridOptions.groupKeys.indexOf('order_0')) {
@@ -712,9 +715,11 @@ module ag.grid {
             classes.push(this.rowIndex % 2 == 0 ? "ag-row-even" : "ag-row-odd");
 
             if (this.node.data && this.node.data.order && this.node.data.order.isParent) {
+                levelNumber = this.node.data.order.orderNumber.split('.').length - 1;
                 classes.push('ag-row-group');
-                classes.push(`ag-row-group-level-${this.node.data.order.orderNumber.split('.').length - 1}`);
+                classes.push(`ag-row-group-level-${levelNumber}`);
             }
+
 
             if (this.node.data && this.node.data.isParentAccepted) {
                 classes.push('ag-row_inactive');
@@ -729,6 +734,7 @@ module ag.grid {
                 // if a group, put the level of the group in
                 classes.push("ag-row-level-" + this.node.level);
                 classes.push("ag-row-group-level-" + this.node.level);
+                levelNumber = this.node.level;
 
                 if (!this.node.footer && this.node.expanded) {
                     classes.push("ag-row-group-expanded");
@@ -746,6 +752,15 @@ module ag.grid {
                     classes.push("ag-row-level-" + (this.node.parent.level + 1));
                 } else {
                     classes.push("ag-row-level-0");
+                }
+            }
+
+            auxGroupClasses = this.gridOptionsWrapper.gridOptions.groupClasses || [];
+            if (levelNumber >= 0 && auxGroupClasses && auxGroupClasses.length) {
+                if (levelNumber <= auxGroupClasses.length) {
+                    classes.push(auxGroupClasses[levelNumber]);
+                } else {
+                    classes.push(auxGroupClasses[auxGroupClasses.length - 1]);
                 }
             }
 

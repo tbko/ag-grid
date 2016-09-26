@@ -1566,6 +1566,7 @@ declare module ag.grid {
 declare module ag.grid {
     interface GridOptions {
         heightClasses: string[];
+        groupClasses: string[];
         virtualPaging?: boolean;
         toolPanelSuppressPivot?: boolean;
         toolPanelSuppressValues?: boolean;
