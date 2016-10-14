@@ -399,6 +399,15 @@ module ag.grid {
             return this.eBodyViewport.scrollTop;
         }
 
+        public scrollToPxH(leftPx: number) {
+
+            this.eBodyViewport.scrollLeft = leftPx;
+        }
+
+        public getScrollPxH(): number {
+            return this.eBodyViewport.scrollLeft;
+        }
+
         public showLoadingOverlay(): void {
             if (!this.gridOptionsWrapper.isSuppressLoadingOverlay()) {
                 this.layout.showOverlay('loading');

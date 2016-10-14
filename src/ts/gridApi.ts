@@ -259,12 +259,20 @@ module ag.grid {
             this.gridPanel.scrollToPx(topPx);
         }
 
+        public scrollToPxH(leftPx:number) {
+            this.gridPanel.scrollToPxH(leftPx);
+        }
+
         public vScrollFreeze(event: any) {
             this.gridPanel.mouseWheelListener(event);
         }
 
         public getScrollPx(): number {
             return this.gridPanel.getScrollPx();
+        }
+
+        public getScrollPxH(): number {
+            return this.gridPanel.getScrollPxH();
         }
 
         public forEachInMemory(callback: Function) {

@@ -8834,6 +8834,12 @@ var ag;
             GridPanel.prototype.getScrollPx = function () {
                 return this.eBodyViewport.scrollTop;
             };
+            GridPanel.prototype.scrollToPxH = function (leftPx) {
+                this.eBodyViewport.scrollLeft = leftPx;
+            };
+            GridPanel.prototype.getScrollPxH = function () {
+                return this.eBodyViewport.scrollLeft;
+            };
             GridPanel.prototype.showLoadingOverlay = function () {
                 if (!this.gridOptionsWrapper.isSuppressLoadingOverlay()) {
                     this.layout.showOverlay('loading');
@@ -10157,11 +10163,17 @@ var ag;
             GridApi.prototype.scrollToPx = function (topPx) {
                 this.gridPanel.scrollToPx(topPx);
             };
+            GridApi.prototype.scrollToPxH = function (leftPx) {
+                this.gridPanel.scrollToPxH(leftPx);
+            };
             GridApi.prototype.vScrollFreeze = function (event) {
                 this.gridPanel.mouseWheelListener(event);
             };
             GridApi.prototype.getScrollPx = function () {
                 return this.gridPanel.getScrollPx();
+            };
+            GridApi.prototype.getScrollPxH = function () {
+                return this.gridPanel.getScrollPxH();
             };
             GridApi.prototype.forEachInMemory = function (callback) {
                 console.warn('ag-Grid: please use forEachNode instead of forEachInMemory, method is same, I just renamed it, forEachInMemory is deprecated');

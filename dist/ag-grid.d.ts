@@ -1382,6 +1382,8 @@ declare module ag.grid {
         ensureColIndexVisible(index: any): void;
         scrollToPx(topPx: number): void;
         getScrollPx(): number;
+        scrollToPxH(leftPx: number): void;
+        getScrollPxH(): number;
         showLoadingOverlay(): void;
         showNoRowsOverlay(): void;
         showToolOverlay(counter?: number): void;
@@ -1767,8 +1769,10 @@ declare module ag.grid {
         ensureIndexVisible(index: any): void;
         ensureNodeVisible(comparator: any): void;
         scrollToPx(topPx: number): void;
+        scrollToPxH(leftPx: number): void;
         vScrollFreeze(event: any): void;
         getScrollPx(): number;
+        getScrollPxH(): number;
         forEachInMemory(callback: Function): void;
         forEachNode(callback: Function): void;
         forEachNodeAfterFilter(callback: Function): void;
