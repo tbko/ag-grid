@@ -2566,7 +2566,8 @@ var ag;
     (function (grid) {
         var _ = grid.Utils;
         var RenderedCell = (function () {
-            function RenderedCell(isFirstColumn, column, $compile, rowRenderer, gridOptionsWrapper, expressionService, selectionRendererFactory, selectionController, templateService, cellRendererMap, node, rowIndex, scope, columnController, valueService, eventService) {
+            function RenderedCell(isFirstColumn, column, $compile, rowRenderer, gridOptionsWrapper, expressionService, selectionRendererFactory, selectionController, templateService, cellRendererMap, node, rowIndex, scope, columnController, valueService, eventService, customWidth) {
+                if (customWidth === void 0) { customWidth = ''; }
                 this.isFirstColumn = false;
                 this.isFirstColumn = isFirstColumn;
                 this.column = column;
@@ -2588,6 +2589,7 @@ var ag;
                 this.data = this.getDataForRow();
                 this.value = this.getValue();
                 this.rowsNeeded = 0;
+                this.customWidth = customWidth;
                 this.setupComponents();
             }
             RenderedCell.prototype.getColumn = function () {
@@ -2624,6 +2626,10 @@ var ag;
                 }
             };
             RenderedCell.prototype.setupComponents = function () {
+                var columnWidth = this.customWidth;
+                if (!columnWidth) {
+                    columnWidth = this.column.actualWidth + "px";
+                }
                 this.vGridCell = new ag.vdom.VHtmlElement("div");
                 this.vGridCell.setAttribute("col", (this.column.index !== undefined && this.column.index !== null) ? this.column.index.toString() : '');
                 this.vGridCell.setAttribute("colId", this.column.colId);
@@ -2639,7 +2645,7 @@ var ag;
                 if (!this.node.floating) {
                     this.addCellNavigationHandler();
                 }
-                this.vGridCell.addStyles({ width: this.column.actualWidth + "px" });
+                this.vGridCell.addStyles({ width: columnWidth });
                 this.createParentOfValue();
                 this.populateCell();
                 // Add cell value as tooltip to show long content if option set
@@ -3207,20 +3213,21 @@ var ag;
                 this.isHovered = false;
                 var eRoot = _.findParentWithClass(this.eBodyContainer, 'ag-root');
                 var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
-                var rowIsHeaderThatSpans = node.group && groupHeaderTakesEntireRow;
+                this.node = node;
+                node.structuredGroup = this.node.data && this.node.data.order && this.node.data.order.isParent && this.node.data.span;
+                var rowIsHeaderThatSpans = (node.group || node.structuredGroup) && groupHeaderTakesEntireRow;
                 var baseHeight = this.gridOptionsWrapper.getRowHeight();
                 var baseHeightExtra = this.gridOptionsWrapper.getRowHeightExtra();
                 var maxRows = this.gridOptionsWrapper.getMaxRows();
                 var minRows = this.gridOptionsWrapper.getMinRows();
                 this.isListenMove = false;
                 this.listenMoveRef = null;
-                this.vBodyRow = this.createRowContainer();
+                this.vBodyRow = this.createRowContainer(this.pinning);
                 if (this.pinning) {
                     this.vPinnedRow = this.createRowContainer();
                 }
                 this.maxRowsNeeded = 0;
                 this.rowIndex = rowIndex;
-                this.node = node;
                 this.scope = this.createChildScopeOrNull(node.data);
                 if (!rowIsHeaderThatSpans) {
                     this.drawNormalRow();
@@ -3610,8 +3617,33 @@ var ag;
                 }
                 this.eventService.removeEventListener(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.shutDownHover.bind(this));
             };
-            RenderedRow.prototype.createRowContainer = function () {
+            RenderedRow.prototype.createRowContainer = function (pinning) {
+                if (pinning === void 0) { pinning = false; }
                 var vRow = new ag.vdom.VHtmlElement('div');
+                var vStrip = new ag.vdom.VHtmlElement('div');
+                vStrip.addClass('ag-row-strip');
+                var rootName = '';
+                var rootStatus = '';
+                var rootStatusClass = '';
+                var rootBlocked = false;
+                if (!pinning) {
+                    if (this.node.data && this.node.data.dataRoot) {
+                        rootName = this.node.data.dataRoot.name || '';
+                        rootStatus = this.node.data.dataRoot.status || '';
+                        rootBlocked = this.node.data.dataRoot.blocked || false;
+                    }
+                    rootStatus = rootStatus.toLowerCase();
+                    if (rootStatus) {
+                        if (rootBlocked) {
+                            vStrip.addClass("ag-strip-status-blocked");
+                        }
+                        else {
+                            vStrip.addClass("ag-strip-status-" + rootStatus);
+                        }
+                    }
+                    vStrip.setAttribute('title', rootName);
+                    vRow.appendChild(vStrip);
+                }
                 var that = this;
                 var listenMove = function listenMove(event) {
                     var eRoot = _.findParentWithClass(that.eBodyContainer, 'ag-root');
@@ -3719,6 +3751,18 @@ var ag;
                     levelNumber = this.node.data.order.orderNumber.split('.').length - 1;
                     classes.push('ag-row-group');
                     classes.push("ag-row-group-level-" + levelNumber);
+                }
+                if (this.node.data && this.node.data.strip) {
+                    classes.push('ag-row-stripped');
+                }
+                if (this.node.data && this.node.data.type == 'structure') {
+                    classes.push('ag-row-group-structutre-background');
+                }
+                if (this.node.data && this.node.data.type == 'subprogram') {
+                    classes.push('ag-row-group-structutre-no_background');
+                }
+                if (this.node.data && this.node.data.type == 'project') {
+                    classes.push('ag-row-group-structutre-no_background');
                 }
                 if (this.node.data && this.node.data.isParentAccepted) {
                     classes.push('ag-row_inactive');
@@ -4736,7 +4780,6 @@ var ag;
                 // }
                 this.firstVirtualRenderedRow = first;
                 this.lastVirtualRenderedRow = last;
-                // console.log(first, last);
                 // this.ensureRowsRendered(preparedRows);
                 this.ensureRowsRendered(countLinesBefore);
             };
@@ -4792,6 +4835,20 @@ var ag;
                 }
                 for (var rowIndex = fromIdx; direction > 0 ? rowIndex <= toIdx : rowIndex >= toIdx; rowIndex += direction) {
                     var node = this.rowModel.getVirtualRow(rowIndex);
+                    var curIsStructure = false;
+                    if (node.data && node.data.type == 'structure') {
+                        curIsStructure = true;
+                    }
+                    var prevRow;
+                    if (rowIndex && curIsStructure) {
+                        prevRow = this.renderedRows[rowIndex - 1];
+                        if (prevRow) {
+                            prevRow.vBodyRow.addClass('ag-structure-end');
+                            if (prevRow.vPinnedRow) {
+                                prevRow.vPinnedRow.addClass('ag-structure-end');
+                            }
+                        }
+                    }
                     // see if item already there, and if yes, take it out of the 'to remove' array
                     if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
                         rowsToRemove.splice(rowsToRemove.indexOf(rowIndex.toString()), 1);
@@ -4800,9 +4857,6 @@ var ag;
                         topPx += this.renderedRows[rowIndex].getHeight();
                         continue;
                     }
-                    // if (rowIndex == 13) {
-                    // }
-                    // console.log(rowIndex, linesBeforePlusRenderedCount);
                     // check this row actually exists (in case overflow buffer window exceeds real data)
                     if (node) {
                         var rowRenderedBefore = this.renderedRows[rowIndex - 1];
@@ -4811,13 +4865,29 @@ var ag;
                             topPx = rowRenderedBefore.getVerticalFrame().bottom;
                         }
                         else if (rowRenderedAfter) {
+                            // console.log('row', rowRenderedAfter);
+                            // console.log('row frame', rowRenderedAfter.getVerticalFrame());
                             topPx = rowRenderedAfter.getVerticalFrame().top;
                         }
                         else {
-                            // console.log('no pre or after rendered rows', linesBeforeCount);
                             topPx = rowIndex * assumedRowHeghtPx;
                         }
                         var insertedRow = this.insertRow(node, rowIndex, mainRowWidth, linesBeforePlusRenderedCount, topPx);
+                        if ((insertedRow.rowIndex + 1) == totalRows) {
+                            insertedRow.vBodyRow.addClass('ag-structure-end');
+                            if (insertedRow.vPinnedRow) {
+                                insertedRow.vPinnedRow.addClass('ag-structure-end');
+                            }
+                        }
+                        if (curIsStructure) {
+                            insertedRow.vBodyRow.addClass('ag-structure-start');
+                            if (insertedRow.vPinnedRow) {
+                                insertedRow.vPinnedRow.addClass('ag-structure-start');
+                            }
+                        }
+                        // if (rowIndex < 1) {
+                        //     console.log(rowIndex, topPx);
+                        // }
                         if (rowRenderedAfter) {
                             insertedRow.positionTop(topPx - insertedRow.getHeight());
                         }

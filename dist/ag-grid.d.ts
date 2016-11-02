@@ -622,6 +622,7 @@ declare module ag.grid {
         private node;
         private rowIndex;
         private editingCell;
+        private customWidth;
         private scope;
         private isFirstColumn;
         private gridOptionsWrapper;
@@ -642,7 +643,7 @@ declare module ag.grid {
         private rowsNeeded;
         constructor(isFirstColumn: any, column: any, $compile: any, rowRenderer: RowRenderer, gridOptionsWrapper: GridOptionsWrapper, expressionService: ExpressionService, selectionRendererFactory: SelectionRendererFactory, selectionController: SelectionController, templateService: TemplateService, cellRendererMap: {
             [key: string]: any;
-        }, node: any, rowIndex: number, scope: any, columnController: ColumnController, valueService: ValueService, eventService: EventService);
+        }, node: any, rowIndex: number, scope: any, columnController: ColumnController, valueService: ValueService, eventService: EventService, customWidth?: string);
         getColumn(): Column;
         private getValue();
         getRowsNeeded(): number;
@@ -742,7 +743,7 @@ declare module ag.grid {
         private createParams();
         private createEvent(event, eventSource);
         private shutDownHover(event);
-        private createRowContainer();
+        private createRowContainer(pinning?);
         isListenForMove(newValue?: boolean): boolean;
         getRowNode(): any;
         getRowIndex(): any;

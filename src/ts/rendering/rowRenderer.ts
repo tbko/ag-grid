@@ -364,6 +364,7 @@ module ag.grid {
             var isGroup = groupKeys ? groupKeys.length : groupKeys;
             var countLinesBefore = 0;
 
+
             var verticalGap = 15; // top/bottom padding + borders (px) default: 15
 
             if (this.gridOptionsWrapper.isForPrint()) {
@@ -468,7 +469,6 @@ module ag.grid {
             this.firstVirtualRenderedRow = first;
             this.lastVirtualRenderedRow = last;
 
-            // console.log(first, last);
             // this.ensureRowsRendered(preparedRows);
             this.ensureRowsRendered(countLinesBefore);
 
@@ -524,6 +524,7 @@ module ag.grid {
 
             var rowKeys = Object.keys(this.renderedRows);
             var topPx = this.renderedAverageHeight * rowsBeforeCount;
+
             // add in new rows
             var direction = 1;
             var fromIdx = this.firstVirtualRenderedRow;
@@ -536,6 +537,22 @@ module ag.grid {
             for (var rowIndex = fromIdx; direction > 0 ? rowIndex <= toIdx : rowIndex >= toIdx; rowIndex += direction) {
                 var node = this.rowModel.getVirtualRow(rowIndex);
 
+                var curIsStructure: Boolean = false;
+                if (node.data && node.data.type == 'structure') {
+                    curIsStructure = true;
+                }
+
+                var prevRow;
+                if (rowIndex && curIsStructure) {
+                    prevRow = this.renderedRows[rowIndex - 1];
+                    if (prevRow) {
+                        prevRow.vBodyRow.addClass('ag-structure-end');
+                        if (prevRow.vPinnedRow) {
+                            prevRow.vPinnedRow.addClass('ag-structure-end');
+                        }
+                    }
+                }
+
                 // see if item already there, and if yes, take it out of the 'to remove' array
                 if (rowsToRemove.indexOf(rowIndex.toString()) >= 0) {
                     rowsToRemove.splice(rowsToRemove.indexOf(rowIndex.toString()), 1);
@@ -545,9 +562,6 @@ module ag.grid {
                     continue;
                 }
 
-                // if (rowIndex == 13) {
-                // }
-                // console.log(rowIndex, linesBeforePlusRenderedCount);
 
                 // check this row actually exists (in case overflow buffer window exceeds real data)
                 if (node) {
@@ -556,12 +570,28 @@ module ag.grid {
                     if (rowRenderedBefore) {
                         topPx = rowRenderedBefore.getVerticalFrame().bottom;
                     } else if (rowRenderedAfter) {
+                        // console.log('row', rowRenderedAfter);
+                        // console.log('row frame', rowRenderedAfter.getVerticalFrame());
                         topPx = rowRenderedAfter.getVerticalFrame().top;
                     } else {
-                        // console.log('no pre or after rendered rows', linesBeforeCount);
                         topPx = rowIndex * assumedRowHeghtPx;
                     }
                     var insertedRow = this.insertRow(node, rowIndex, mainRowWidth, linesBeforePlusRenderedCount, topPx);
+                    if ((insertedRow.rowIndex + 1) == totalRows) {
+                        insertedRow.vBodyRow.addClass('ag-structure-end');
+                        if (insertedRow.vPinnedRow) {
+                            insertedRow.vPinnedRow.addClass('ag-structure-end');
+                        }
+                    }
+                    if (curIsStructure) {
+                        insertedRow.vBodyRow.addClass('ag-structure-start')
+                        if (insertedRow.vPinnedRow) {
+                            insertedRow.vPinnedRow.addClass('ag-structure-start');
+                        }
+                    }
+                    // if (rowIndex < 1) {
+                    //     console.log(rowIndex, topPx);
+                    // }
                     if (rowRenderedAfter) {
                         insertedRow.positionTop(topPx - insertedRow.getHeight())
                     }

@@ -102,7 +102,10 @@ module ag.grid {
             var eRoot: HTMLElement = _.findParentWithClass(this.eBodyContainer, 'ag-root');
 
             var groupHeaderTakesEntireRow = this.gridOptionsWrapper.isGroupUseEntireRow();
-            var rowIsHeaderThatSpans = node.group && groupHeaderTakesEntireRow;
+            
+            this.node = node;
+            node.structuredGroup = this.node.data && this.node.data.order && this.node.data.order.isParent && this.node.data.span;
+            var rowIsHeaderThatSpans = (node.group || node.structuredGroup) && groupHeaderTakesEntireRow;
 
             var baseHeight:number = this.gridOptionsWrapper.getRowHeight();
             var baseHeightExtra:number = this.gridOptionsWrapper.getRowHeightExtra();
@@ -112,14 +115,13 @@ module ag.grid {
             this.isListenMove = false;
             this.listenMoveRef = null;
 
-            this.vBodyRow = this.createRowContainer();
+            this.vBodyRow = this.createRowContainer(this.pinning);
             if (this.pinning) {
                 this.vPinnedRow = this.createRowContainer();
             }
 
             this.maxRowsNeeded = 0;
             this.rowIndex = rowIndex;
-            this.node = node;
             this.scope = this.createChildScopeOrNull(node.data);
 
             if (!rowIsHeaderThatSpans) {
@@ -584,8 +586,33 @@ module ag.grid {
             this.eventService.removeEventListener(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.shutDownHover.bind(this));
         }
 
-        private createRowContainer() {
+        private createRowContainer(pinning: Boolean = false) {
             var vRow = new ag.vdom.VHtmlElement('div');
+            var vStrip = new ag.vdom.VHtmlElement('div');
+            vStrip.addClass('ag-row-strip');
+            var rootName = '';
+            var rootStatus = '';
+            var rootStatusClass = '';
+            var rootBlocked = false;
+
+            if (!pinning) {
+                if (this.node.data && this.node.data.dataRoot) {
+                    rootName = this.node.data.dataRoot.name || '';
+                    rootStatus = this.node.data.dataRoot.status || ''
+                    rootBlocked = this.node.data.dataRoot.blocked || false
+                }
+                rootStatus = rootStatus.toLowerCase();
+                if (rootStatus) {
+                    if (rootBlocked) {
+                        vStrip.addClass(`ag-strip-status-blocked`);
+                    } else {
+                        vStrip.addClass(`ag-strip-status-${rootStatus}`);
+                    }
+                }
+                vStrip.setAttribute('title', rootName);
+                vRow.appendChild(vStrip);
+            }
+
             var that = this;
 
 
@@ -720,6 +747,19 @@ module ag.grid {
                 classes.push(`ag-row-group-level-${levelNumber}`);
             }
 
+            if (this.node.data && this.node.data.strip) {
+                classes.push('ag-row-stripped');
+            }
+
+            if (this.node.data && this.node.data.type == 'structure') {
+                classes.push('ag-row-group-structutre-background');
+            }
+            if (this.node.data && this.node.data.type == 'subprogram') {
+                classes.push('ag-row-group-structutre-no_background');
+            }
+            if (this.node.data && this.node.data.type == 'project') {
+                classes.push('ag-row-group-structutre-no_background');
+            }
 
             if (this.node.data && this.node.data.isParentAccepted) {
                 classes.push('ag-row_inactive');

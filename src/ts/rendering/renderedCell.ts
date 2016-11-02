@@ -27,6 +27,7 @@ module ag.grid {
         private node: RowNode;
         private rowIndex: number;
         private editingCell: boolean;
+        private customWidth: string;
 
         private scope: any;
         private isFirstColumn: boolean = false;
@@ -54,7 +55,7 @@ module ag.grid {
                     selectionRendererFactory: SelectionRendererFactory, selectionController: SelectionController,
                     templateService: TemplateService, cellRendererMap: {[key: string]: any},
                     node: any, rowIndex: number, scope: any, columnController: ColumnController,
-                    valueService: ValueService, eventService: EventService) {
+                    valueService: ValueService, eventService: EventService, customWidth: string = '') {
 
             this.isFirstColumn = isFirstColumn;
             this.column = column;
@@ -78,6 +79,7 @@ module ag.grid {
             this.data = this.getDataForRow();
             this.value = this.getValue();
             this.rowsNeeded = 0;
+            this.customWidth = customWidth;
 
             this.setupComponents();
         }
@@ -118,6 +120,11 @@ module ag.grid {
         }
 
         private setupComponents() {
+            let columnWidth: string = this.customWidth;
+            if (!columnWidth) {
+                columnWidth = this.column.actualWidth + "px";
+            }
+
             this.vGridCell = new ag.vdom.VHtmlElement("div");
             this.vGridCell.setAttribute("col", (this.column.index !== undefined && this.column.index !== null) ? this.column.index.toString() : '');
 
@@ -139,7 +146,7 @@ module ag.grid {
                 this.addCellNavigationHandler();
             }
 
-            this.vGridCell.addStyles({width: this.column.actualWidth + "px"});
+            this.vGridCell.addStyles({width: columnWidth});
 
             this.createParentOfValue();
 
