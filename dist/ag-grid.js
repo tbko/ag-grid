@@ -1823,6 +1823,7 @@ var ag;
                     this.rowHeight = DEFAULT_ROW_HEIGHT;
                 }
                 this.checkForDeprecated();
+                this.accessViewCell();
             };
             GridOptionsWrapper.prototype.isRowSelection = function () { return this.gridOptions.rowSelection === "single" || this.gridOptions.rowSelection === "multiple"; };
             GridOptionsWrapper.prototype.isRowDeselection = function () { return isTrue(this.gridOptions.rowDeselection); };
@@ -2003,6 +2004,41 @@ var ag;
                     console.warn('ag-grid: as of v1.12.4 suppressDescSort is not used. Please use sortOrder instead.');
                 }
             };
+            GridOptionsWrapper.prototype.accessViewCell = function () {
+                var rowData = this.gridOptions.rowData;
+                var columns = this.gridOptions.columnDefs;
+                var fieldsAccesses, me = this;
+                if (!rowData[0] || !rowData[0].fieldsAccesses || !rowData[0].fieldsAccesses.length)
+                    return;
+                fieldsAccesses = rowData[0].fieldsAccesses;
+                fieldsAccesses = fieldsAccesses.reduce((function (result, item) {
+                    result[item.fieldName] = { read: item.read };
+                    return result;
+                }), {});
+                var hasAccessReadFun = function (accessAlias, fieldsAccesses) {
+                    var accessAliasArr, hasRead;
+                    accessAliasArr = accessAlias.split(" ");
+                    hasRead = true;
+                    _.each(accessAliasArr, (function (_this) {
+                        return function (item) {
+                            if (fieldsAccesses[item] && !fieldsAccesses[item].read && (typeof fieldsAccesses[item].read === "boolean")) {
+                                return hasRead = false;
+                            }
+                        };
+                    })(this));
+                    return hasRead;
+                };
+                _.forEach(columns, function (column) {
+                    var a, columnRule;
+                    a = rowData;
+                    accessCodeArr = column.accessCode.split(" ");
+                    hasAccessRead = hasAccessReadFun(column.accessCode, fieldsAccesses);
+                    if (column.accessCode && !hasAccessRead) {
+                        return column.cellRenderer = me.gridOptions.notAccessTemplateCell;
+                    }
+                });
+            };
+            ;
             GridOptionsWrapper.prototype.getPinnedColCount = function () {
                 // if not using scrolls, then pinned columns doesn't make
                 // sense, so always return 0
@@ -8405,19 +8441,48 @@ var ag;
                 }
                 else {
                     var menuTemplateStart = function (data) {
-                        return "\n                        <div\n                            class=\"k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm " + data.auxClass + "\"\n                            style=\"margin-left: -10px; pointer-events: all;\"\n                            title=\"" + data.title + "\"\n                        >\n                            <span\n                                class=\"b-options-btn b-options-btn_icon dropdown-toggle\"\n                                data-toggle=\"dropdown\"\n                                data-hover=\"dropdown\"\n                                aria-expanded=\"false\"\n                            >\n                                <span class=\"i-" + data.code + "\"> </span>\n                            </span>\n                            <ul class=\"dropdown-menu\">\n                    ";
+                        var attr = data.attribute;
+                        var className = "";
+                        var style = "pointer-events: all;";
+                        if (attr && attr.disabled) {
+                            className = "disabled";
+                            style = "pointer-events:none;";
+                        }
+                        return "\n                        <div\n                            class=\"k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm " + data.auxClass + "\"\n                            style=\"margin-left: -10px; pointer-events: all;\"\n                            title=\"" + data.title + "\"\n                        >\n                            <span\n                                class=\"b-options-btn b-options-btn_icon dropdown-toggle\"\n                                data-toggle=\"dropdown\"\n                                data-hover=\"dropdown\"\n                                aria-expanded=\"false\"\n                                style=\"" + style + "\"\n                            >\n                                <span class=\"i-" + data.code + "\"> </span>\n                            </span>\n                            <ul class=\"dropdown-menu\">\n                    ";
                     };
                     var menuTemplateEnd = function (data) {
                         return "\n                            </ul>\n                        </div>\n                    ";
                     };
                     var menuTemplateItem = function (data) {
-                        return "\n                        <li>\n                            <a class=\"k-visible k-action-elem js-" + (data.code || 'dummy') + "\" data-status-id=\"" + data.itemId + "\" href=\"\\#\">\n                                " + data.itemTitle + "\n                            </a>\n                        </li>\n                    ";
+                        var attr = data.attribute;
+                        var className = "";
+                        var style = "";
+                        if (attr && attr.disabled) {
+                            className = "disabled";
+                            style = "pointer-events:none;";
+                        }
+                        return "\n                        <li title=\"" + data.label + "\"\">\n                            <a style = \"" + style + "\" class=\"k-visible k-action-elem " + className + " js-" + (data.code || 'dummy') + "\" data-status-id=\"" + data.itemId + "\" href=\"\\#\">\n                                " + data.itemTitle + "\n                            </a>\n                        </li>\n                    ";
                     };
                     var menuTemplateItemLink = function (data) {
-                        return "\n                        <li>\n                            <a class=\"link-icon link-" + data.itemCode + " k-visible k-action-elem js-" + data.itemCode + "\" href=\"" + data.itemLink + "\">\n                                <span class=\"content-center\">\n                                    " + data.itemTitle + "\n                                </span>\n                            </a>\n                        </li>\n                    ";
+                        var attr = data.attribute;
+                        var className = "";
+                        var style = "";
+                        if (attr && attr.disabled) {
+                            className = "disabled";
+                            style = "pointer-events:none;";
+                        }
+                        return "\n                        <li title=\"" + data.label + "\"\">\n                            <a style = \"" + style + "\" class=\"link-icon link-" + data.itemCode + " " + className + " k-visible k-action-elem js-" + data.itemCode + "\" href=\"" + data.itemLink + "\">\n                                <span class=\"content-center\">\n                                    " + data.itemTitle + "\n                                </span>\n                            </a>\n                        </li>\n                    ";
                     };
                     var singleTemplate = function (data, margin) {
-                        return "\n                    <a class=\"" + margin + "\" title=\"" + data.title + "\" href= \"\\#\" ><span class=\"i-" + data.code + " js-" + data.code + "\" style= \"pointer-events:all;\" ></span></a>\n                    ";
+                        var styleIcon = "pointer-events:all;";
+                        var attr = data.attribute;
+                        var className;
+                        if (attr && attr.disabled) {
+                            className = "disabled";
+                            styleIcon = "";
+                            var styleA = "pointer-events:all; cursor: default";
+                        }
+                        return "\n                    <a class=\" " + margin + "\" title=\"" + data.title + "\" href= \"\\#\" style=\"" + styleA + "\" ><span class=\"pi-icon i-" + data.code + "  " + className + " js-" + data.code + "\" style= \"" + styleIcon + "\" ></span></a>\n                    ";
                     };
                     var k = 1;
                     var margin;
@@ -8425,7 +8490,8 @@ var ag;
                         var actionItem = actions[_i];
                         var data = {
                             title: actionItem.title,
-                            code: actionItem.code
+                            code: actionItem.code,
+                            attribute: actionItem.attribute
                         };
                         if ('children' in actionItem) {
                             var menuHeight = actionItem.children.length * 30 + 10;
@@ -8436,6 +8502,8 @@ var ag;
                                 var content = void 0;
                                 data.itemId = menuItem.id;
                                 data.itemTitle = menuItem.title;
+                                data.label = menuItem.label || "";
+                                data.attribute = menuItem.attribute;
                                 data.itemLink = menuItem.link;
                                 data.itemCode = menuItem.code;
                                 if (data.itemLink) {

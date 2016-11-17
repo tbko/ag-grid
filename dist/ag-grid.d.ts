@@ -518,6 +518,7 @@ declare module ag.grid {
         getColWidth(): number;
         getRowBuffer(): number;
         private checkForDeprecated();
+        private accessViewCell();
         getPinnedColCount(): number;
         getLocaleTextFunc(): Function;
         getHeightOption(): number;

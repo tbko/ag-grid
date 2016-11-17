@@ -564,6 +564,13 @@ module ag.grid {
             } else {
 
                 let menuTemplateStart = (data) => {
+                    var attr = data.attribute;
+                    var className = "";
+                    var style = "pointer-events: all;";
+                    if (attr && attr.disabled) {
+                        className = "disabled";
+                        style = "pointer-events:none;";
+                    }
                     return `
                         <div
                             class="k-visible pi-dropdown-options pi-dropdown-options_hover btn-group k-action-elem_more m-r-sm ${data.auxClass}"
@@ -575,6 +582,7 @@ module ag.grid {
                                 data-toggle="dropdown"
                                 data-hover="dropdown"
                                 aria-expanded="false"
+                                style="${style}"
                             >
                                 <span class="i-${data.code}"> </span>
                             </span>
@@ -588,18 +596,34 @@ module ag.grid {
                     `;
                 }
                 var menuTemplateItem = (data) => {
+
+                    var attr = data.attribute;
+                    var className = "";
+                    var style = "";
+                    if (attr && attr.disabled) {
+                        className = "disabled";
+                        style = "pointer-events:none;"
+                    }
                     return `
-                        <li>
-                            <a class="k-visible k-action-elem js-${data.code || 'dummy'}" data-status-id="${data.itemId}" href="\\#">
+                        <li title="${data.label}"">
+                            <a style = "${style}" class="k-visible k-action-elem ${className} js-${data.code || 'dummy'}" data-status-id="${data.itemId}" href="\\#">
                                 ${data.itemTitle}
                             </a>
                         </li>
                     `;
                 }
                 var menuTemplateItemLink = (data) => {
+                    var attr = data.attribute;
+                    var className = "";
+                    var style = "";
+                    if (attr && attr.disabled) {
+                        className = "disabled";
+                        style = "pointer-events:none;"
+
+                    }
                     return `
-                        <li>
-                            <a class="link-icon link-${data.itemCode} k-visible k-action-elem js-${data.itemCode}" href="${data.itemLink}">
+                        <li title="${data.label}"">
+                            <a style = "${style}" class="link-icon link-${data.itemCode} ${className} k-visible k-action-elem js-${data.itemCode}" href="${data.itemLink}">
                                 <span class="content-center">
                                     ${data.itemTitle}
                                 </span>
@@ -608,8 +632,17 @@ module ag.grid {
                     `;
                 }
                 var singleTemplate = (data, margin) => {
+                    var styleIcon = "pointer-events:all;"
+                    var attr = data.attribute;
+                    var className;
+                    if (attr && attr.disabled) {
+                        className = "disabled"
+                        styleIcon = "";
+                        var styleA = "pointer-events:all; cursor: default"
+
+                    }
                     return `
-                    <a class="${margin}" title="${data.title}" href= "\\#" ><span class="i-${data.code} js-${data.code}" style= "pointer-events:all;" ></span></a>
+                    <a class=" ${margin}" title="${data.title}" href= "\\#" style="${styleA}" ><span class="pi-icon i-${data.code}  ${className} js-${data.code}" style= "${styleIcon}" ></span></a>
                     `;
                 }
 
@@ -619,7 +652,8 @@ module ag.grid {
 
                     let data: any = {
                         title: actionItem.title,
-                        code: actionItem.code
+                        code: actionItem.code,
+                        attribute: actionItem.attribute
                     }
 
                     if ('children' in actionItem) {
@@ -632,6 +666,8 @@ module ag.grid {
                             let content: string;
                             data.itemId = menuItem.id;
                             data.itemTitle = menuItem.title;
+                            data.label = menuItem.label || "";
+                            data.attribute = menuItem.attribute
                             data.itemLink = menuItem.link;
                             data.itemCode = menuItem.code;
 
