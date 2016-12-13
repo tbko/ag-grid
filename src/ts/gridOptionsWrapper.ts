@@ -238,6 +238,8 @@ module ag.grid {
             }), {});
             var hasAccessReadFun = function(accessAlias, fieldsAccesses) {
                 var accessAliasArr, hasRead;
+                if (!accessAlias)
+                    return true
                 accessAliasArr = accessAlias.split(" ");
                 hasRead = true;
                 _.each(accessAliasArr, (function(_this) {
@@ -252,8 +254,6 @@ module ag.grid {
 
             _.forEach(columns, function(column) {
                 var a, columnRule;
-                a = rowData;
-                accessCodeArr = column.accessCode.split(" ")
                 hasAccessRead = hasAccessReadFun(column.accessCode, fieldsAccesses)
                 if (column.accessCode && !hasAccessRead) {
                     return column.cellRenderer = me.gridOptions.notAccessTemplateCell;
