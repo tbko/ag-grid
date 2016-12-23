@@ -40,6 +40,7 @@ module ag.grid {
             }
 
             this.checkForDeprecated();
+            this.accessViewCell();
         }
 
         public isRowSelection() { return this.gridOptions.rowSelection === "single" || this.gridOptions.rowSelection === "multiple"; }
@@ -222,6 +223,44 @@ module ag.grid {
                 console.warn('ag-grid: as of v1.12.4 suppressDescSort is not used. Please use sortOrder instead.');
             }
         }
+        private accessViewCell() {
+            var rowData = this.gridOptions.rowData;
+            var columns = this.gridOptions.columnDefs;
+            var fieldsAccesses, me = this;
+            if (!rowData[0] || !rowData[0].fieldsAccesses || !rowData[0].fieldsAccesses.length)
+                return;
+            
+            fieldsAccesses = rowData[0].fieldsAccesses;
+            
+            fieldsAccesses = fieldsAccesses.reduce((function(result, item) {
+                result[item.fieldName] = { read: item.read };
+                return result;
+            }), {});
+            var hasAccessReadFun = function(accessAlias, fieldsAccesses) {
+                var accessAliasArr, hasRead;
+                if (!accessAlias)
+                    return true
+                accessAliasArr = accessAlias.split(" ");
+                hasRead = true;
+                _.each(accessAliasArr, (function(_this) {
+                    return function(item) {
+                        if (fieldsAccesses[item] && !fieldsAccesses[item].read && (typeof fieldsAccesses[item].read === "boolean")) {
+                            return hasRead = false;
+                        }
+                    };
+                })(this));
+                return hasRead;
+            }
+
+            _.forEach(columns, function(column) {
+                var a, columnRule;
+                hasAccessRead = hasAccessReadFun(column.accessCode, fieldsAccesses)
+                if (column.accessCode && !hasAccessRead) {
+                    return column.cellRenderer = me.gridOptions.notAccessTemplateCell;
+                }
+            });
+        };
+
 
         public getPinnedColCount() {
             // if not using scrolls, then pinned columns doesn't make
