@@ -609,7 +609,29 @@ module ag.grid {
                 }
                 var singleTemplate = (data, margin) => {
                     return `
-                    <a class="${margin}" title="${data.title}" href= "\\#" ><span class="i-${data.code} js-${data.code}" style= "pointer-events:all;" ></span></a>
+                    <a
+                        class="${margin}"
+                        title="${data.title}"
+                        href= "\\#"
+                        data-jump=${data.jumpCode}
+                        data-id="${data.jumpId}"
+                        data-variant=${data.jumpVariant}
+                        data-bread_crumb-link="#?page=${data.jumpCode}"
+                        data-bread_crumb-text="${data.curPageTitle}"
+                        data-bread_crumb-hint="${data.curPageHint}"
+                    >
+                        <span
+                          class="i-${data.code} js-${data.code}"
+                          style= "pointer-events:all;"
+                          data-jump=${data.jumpCode}
+                          data-id="${data.jumpId}"
+                          data-variant=${data.jumpVariant}
+                          data-bread_crumb-link="#?page=${data.jumpCode}"
+                          data-bread_crumb-text="${data.curPageTitle}"
+                          data-bread_crumb-hint="${data.curPageHint}"
+                        >
+                        </span>
+                    </a>
                     `;
                 }
 
@@ -619,7 +641,12 @@ module ag.grid {
 
                     let data: any = {
                         title: actionItem.title,
-                        code: actionItem.code
+                        code: actionItem.code,
+                        jumpCode: actionItem.jumpCode,
+                        jumpVariant: actionItem.jumpVariant,
+                        jumpId: actionItem.jumpId,
+                        curPageTitle: actionItem.curPageTitle,
+                        curPageHint: actionItem.curPageHint
                     }
 
                     if ('children' in actionItem) {

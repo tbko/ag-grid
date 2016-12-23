@@ -8417,7 +8417,7 @@ var ag;
                         return "\n                        <li>\n                            <a class=\"link-icon link-" + data.itemCode + " k-visible k-action-elem js-" + data.itemCode + "\" href=\"" + data.itemLink + "\">\n                                <span class=\"content-center\">\n                                    " + data.itemTitle + "\n                                </span>\n                            </a>\n                        </li>\n                    ";
                     };
                     var singleTemplate = function (data, margin) {
-                        return "\n                    <a class=\"" + margin + "\" title=\"" + data.title + "\" href= \"\\#\" ><span class=\"i-" + data.code + " js-" + data.code + "\" style= \"pointer-events:all;\" ></span></a>\n                    ";
+                        return "\n                    <a\n                        class=\"" + margin + "\"\n                        title=\"" + data.title + "\"\n                        href= \"\\#\"\n                        data-jump=" + data.jumpCode + "\n                        data-id=\"" + data.jumpId + "\"\n                        data-variant=" + data.jumpVariant + "\n                        data-bread_crumb-link=\"#?page=" + data.jumpCode + "\"\n                        data-bread_crumb-text=\"" + data.curPageTitle + "\"\n                        data-bread_crumb-hint=\"" + data.curPageHint + "\"\n                    >\n                        <span\n                          class=\"i-" + data.code + " js-" + data.code + "\"\n                          style= \"pointer-events:all;\"\n                          data-jump=" + data.jumpCode + "\n                          data-id=\"" + data.jumpId + "\"\n                          data-variant=" + data.jumpVariant + "\n                          data-bread_crumb-link=\"#?page=" + data.jumpCode + "\"\n                          data-bread_crumb-text=\"" + data.curPageTitle + "\"\n                          data-bread_crumb-hint=\"" + data.curPageHint + "\"\n                        >\n                        </span>\n                    </a>\n                    ";
                     };
                     var k = 1;
                     var margin;
@@ -8425,7 +8425,12 @@ var ag;
                         var actionItem = actions[_i];
                         var data = {
                             title: actionItem.title,
-                            code: actionItem.code
+                            code: actionItem.code,
+                            jumpCode: actionItem.jumpCode,
+                            jumpVariant: actionItem.jumpVariant,
+                            jumpId: actionItem.jumpId,
+                            curPageTitle: actionItem.curPageTitle,
+                            curPageHint: actionItem.curPageHint
                         };
                         if ('children' in actionItem) {
                             var menuHeight = actionItem.children.length * 30 + 10;
