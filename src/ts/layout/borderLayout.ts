@@ -298,7 +298,7 @@ module ag.grid {
             
             // relay mouse events to underlying element
             var coordinates: any;
-            (<HTMLElement>event.target).style.display = 'none';
+            // (<HTMLElement>event.target).style.display = 'none';
             if (event.clientX) {
                 coordinates = {
                     pointerX: event.clientX,
@@ -313,13 +313,13 @@ module ag.grid {
 
         private rowOverlayLeaveListener(event: any): boolean {
             // stop processing overlay when move out of zone
-            this.eOverlayRowWrapper.style.display = 'none';
+            // this.eOverlayRowWrapper.style.display = 'none';
             this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE);
             return;
         }
 
         private rowOverlayEnterListener(event: any): boolean {
-            (<HTMLElement>event.target).style.display = 'none';
+            // (<HTMLElement>event.target).style.display = 'none';
             var underEl = document.elementFromPoint(event.clientX, event.clientY);
             var emptySpaceUnder = underEl.classList.contains('ag-body-viewport');
             (<HTMLElement>event.target).style.display = '';
@@ -328,7 +328,7 @@ module ag.grid {
                 return;
             }
             // start processing overlay when move into zone
-            this.eOverlayRowWrapper.style.display = 'none';
+            // this.eOverlayRowWrapper.style.display = 'none';
             this.eventService.dispatchEvent(Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
             return;
         }
@@ -680,7 +680,7 @@ module ag.grid {
                         jumpVariant: actionItem.jumpVariant,
                         jumpId: actionItem.jumpId,
                         curPageTitle: actionItem.curPageTitle,
-                        curPageHint: actionItem.curPageHint
+                        curPageHint: actionItem.curPageHint,
                         attribute: actionItem.attribute
                     }
 

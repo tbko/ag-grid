@@ -583,7 +583,7 @@ module ag.grid {
                 );
                 if (counterpartEl) counterpartEl.classList.remove('ag-row-hover');
             }
-            this.eventService.removeEventListener(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.shutDownHover.bind(this));
+            this.eventService.removeEventListener(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.stopListenMouseMoveFn);
         }
 
         private createRowContainer(pinning: Boolean = false) {
@@ -677,7 +677,8 @@ module ag.grid {
                 that.eventService.dispatchEvent(Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
             });
             vRow.addEventListener("mouseenter", function (event: any) {
-                that.eventService.addEventListener(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, that.shutDownHover.bind(that));
+                that.stopListenMouseMoveFn = that.shutDownHover.bind(that)
+                that.eventService.addEventListener(Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, that.stopListenMouseMoveFn);
                 let counterpartEl: HTMLElement;
                 that.isHovered = true;
                 vRow.addClass('ag-row-hover');

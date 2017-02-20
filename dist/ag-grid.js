@@ -3651,7 +3651,7 @@ var ag;
                     if (counterpartEl)
                         counterpartEl.classList.remove('ag-row-hover');
                 }
-                this.eventService.removeEventListener(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.shutDownHover.bind(this));
+                this.eventService.removeEventListener(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, this.stopListenMouseMoveFn);
             };
             RenderedRow.prototype.createRowContainer = function (pinning) {
                 if (pinning === void 0) { pinning = false; }
@@ -3731,7 +3731,8 @@ var ag;
                     that.eventService.dispatchEvent(grid.Events.EVENT_ROW_DOUBLE_CLICKED, agEvent);
                 });
                 vRow.addEventListener("mouseenter", function (event) {
-                    that.eventService.addEventListener(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, that.shutDownHover.bind(that));
+                    that.stopListenMouseMoveFn = that.shutDownHover.bind(that);
+                    that.eventService.addEventListener(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE, that.stopListenMouseMoveFn);
                     var counterpartEl;
                     that.isHovered = true;
                     vRow.addClass('ag-row-hover');
@@ -8223,7 +8224,7 @@ var ag;
             BorderLayout.prototype.overlayEventThrough = function (event) {
                 // relay mouse events to underlying element
                 var coordinates;
-                event.target.style.display = 'none';
+                // (<HTMLElement>event.target).style.display = 'none';
                 if (event.clientX) {
                     coordinates = {
                         pointerX: event.clientX,
@@ -8238,12 +8239,12 @@ var ag;
             };
             BorderLayout.prototype.rowOverlayLeaveListener = function (event) {
                 // stop processing overlay when move out of zone
-                this.eOverlayRowWrapper.style.display = 'none';
+                // this.eOverlayRowWrapper.style.display = 'none';
                 this.eventService.dispatchEvent(grid.Events.EVENT_ALL_ROWS_STOP_LISTEN_MOUSE_MOVE);
                 return;
             };
             BorderLayout.prototype.rowOverlayEnterListener = function (event) {
-                event.target.style.display = 'none';
+                // (<HTMLElement>event.target).style.display = 'none';
                 var underEl = document.elementFromPoint(event.clientX, event.clientY);
                 var emptySpaceUnder = underEl.classList.contains('ag-body-viewport');
                 event.target.style.display = '';
@@ -8252,7 +8253,7 @@ var ag;
                     return;
                 }
                 // start processing overlay when move into zone
-                this.eOverlayRowWrapper.style.display = 'none';
+                // this.eOverlayRowWrapper.style.display = 'none';
                 this.eventService.dispatchEvent(grid.Events.EVENT_ALL_ROWS_LISTEN_MOUSE_MOVE);
                 return;
             };
