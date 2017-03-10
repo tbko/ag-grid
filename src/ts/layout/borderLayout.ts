@@ -663,12 +663,10 @@ module ag.grid {
                           data-bread_crumb-link="#?page=${data.jumpCode}"
                           data-bread_crumb-text="${data.curPageTitle}"
                           data-bread_crumb-hint="${data.curPageHint}"
-                        >
-                        </span>
-                    </a>
+                        ></span></a>
                     `;
                 }
-
+                var dd;
                 var k = 1;
                 var margin;
                 for (let actionItem of actions) {
