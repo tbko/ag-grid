@@ -666,7 +666,6 @@ module ag.grid {
                         ></span></a>
                     `;
                 }
-                var dd;
                 var k = 1;
                 var margin;
                 for (let actionItem of actions) {
