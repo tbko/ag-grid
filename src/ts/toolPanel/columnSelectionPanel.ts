@@ -40,6 +40,10 @@ module ag.grid {
 
         private columnCellRenderer(params: any) {
             var column = params.value;
+            if (!column) {
+                return;
+            }
+
             var colDisplayName = this.columnController.getDisplayNameForCol(column);
 
             var eResult = document.createElement('span');

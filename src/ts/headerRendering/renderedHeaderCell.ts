@@ -232,6 +232,7 @@ module ag.grid {
                 //     this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
                 // }
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
+
             } else {
                 this.eHeaderCell = headerCellLabel;
             }
@@ -605,7 +606,10 @@ module ag.grid {
             Array.prototype.slice.call(this.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function(el: HTMLElement) {
                 el.classList.remove('active');
             });
-            this.eHeaderCell.querySelector(`.icon-sort-${sortTypeIcon}-${this.sortDirectionMap[this.column.sort]}`).classList.add('active');
+            const sortIconEl = this.eHeaderCell.querySelector(`.icon-sort-${sortTypeIcon}-${this.sortDirectionMap[this.column.sort]}`);
+            if (sortIconEl) {
+                sortIconEl.classList.add('active');
+            }
 
             if (sortAscending) _.querySelectorAll_replaceCssClass(
                 this.getGui(),

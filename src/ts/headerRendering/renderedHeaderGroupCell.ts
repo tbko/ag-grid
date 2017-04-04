@@ -225,6 +225,8 @@ module ag.grid {
             // set the new width to the group header
             var newWidthPx = newWidth + "px";
             this.eHeaderGroupCell.style.width = newWidthPx;
+
+
             this.columnGroup.actualWidth = newWidth;
 
             // distribute the new width to the child headers

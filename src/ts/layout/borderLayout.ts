@@ -409,9 +409,11 @@ module ag.grid {
                 var lastHeaderEl = <HTMLElement>this.rootEl.querySelector('.ag-header-container .ag-header-cell:last-child');
                 var scrollWidth = this.getScrollWidth();
                 
-                if (scrollWidth) {
-                    lastHeaderEl.style.width = (this.headerEl.offsetWidth - lastHeaderEl.offsetLeft) + 'px';
-                }
+                // if (scrollWidth) {
+                //     lastHeaderEl.style.width = (this.headerEl.offsetWidth - lastHeaderEl.offsetLeft) + 'px';
+                //     console.log(lastHeaderEl.style.width);
+
+                // }
                 var rootWidth = Math.min(
                     this.containerBodyEl.offsetWidth + this.containerPinnedEl.offsetWidth + scrollWidth,
                     this.gridPanel.getRootPanel().offsetWidth

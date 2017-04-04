@@ -243,7 +243,7 @@ module ag.grid {
         }
 
         public moveColumn(fromIndex: number, toIndex: number): void {
-            this.allColumns = this.allColumns.filter((el) => { return el.pivotIndex === void 0; });
+            this.allColumns = this.allColumns.filter((el) => { return el && el.pivotIndex === void 0; });
             var column = this.allColumns[fromIndex];
             this.allColumns.splice(fromIndex, 1);
             this.allColumns.splice(toIndex, 0, column);
@@ -429,6 +429,9 @@ module ag.grid {
                     continue;
                 }
                 for (var i = 0; i < list.length; i++) {
+                    if (!list[i]) {
+                        continue;
+                    }
                     var colDefMatches = list[i].colDef === key;
                     var idMatches = list[i].colId === key;
                     if (colDefMatches || idMatches) {
@@ -441,7 +444,15 @@ module ag.grid {
 
         public getDisplayNameForCol(column: any): string {
 
+            if (!column) {
+                return;
+            }
+
             var colDef = column.colDef;
+            if (!colDef) {
+                return;
+            }
+
             var headerValueGetter = colDef.headerValueGetter;
 
             if (headerValueGetter) {
@@ -725,6 +736,9 @@ module ag.grid {
 
             for (var i = 0; i < this.allColumns.length; i++) {
                 var column = this.allColumns[i];
+                if (!column) {
+                    continue;
+                }                
                 var hideBecauseOfPivot = this.pivotColumns.indexOf(column) >= 0
                     && this.gridOptionsWrapper.isGroupHidePivotColumns();
                 if (column.visible && !hideBecauseOfPivot) {

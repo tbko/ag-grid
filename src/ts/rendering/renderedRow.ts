@@ -753,7 +753,7 @@ module ag.grid {
             }
 
             if (this.node.data && this.node.data.type == 'structure') {
-                classes.push('ag-row-group-structutre-background');
+                classes.push('ag-row-group-structutre-no_background');
             }
             if (this.node.data && this.node.data.type == 'subprogram') {
                 classes.push('ag-row-group-structutre-no_background');

@@ -3793,7 +3793,7 @@ var ag;
                     classes.push('ag-row-stripped');
                 }
                 if (this.node.data && this.node.data.type == 'structure') {
-                    classes.push('ag-row-group-structutre-background');
+                    classes.push('ag-row-group-structutre-no_background');
                 }
                 if (this.node.data && this.node.data.type == 'subprogram') {
                     classes.push('ag-row-group-structutre-no_background');
@@ -8320,9 +8320,10 @@ var ag;
                 if (this.name != 'eRootPanel' && this.rootEl) {
                     var lastHeaderEl = this.rootEl.querySelector('.ag-header-container .ag-header-cell:last-child');
                     var scrollWidth = this.getScrollWidth();
-                    if (scrollWidth) {
-                        lastHeaderEl.style.width = (this.headerEl.offsetWidth - lastHeaderEl.offsetLeft) + 'px';
-                    }
+                    // if (scrollWidth) {
+                    //     lastHeaderEl.style.width = (this.headerEl.offsetWidth - lastHeaderEl.offsetLeft) + 'px';
+                    //     console.log(lastHeaderEl.style.width);
+                    // }
                     var rootWidth = Math.min(this.containerBodyEl.offsetWidth + this.containerPinnedEl.offsetWidth + scrollWidth, this.gridPanel.getRootPanel().offsetWidth) + 'px';
                     this.eGui.style.width = rootWidth;
                 }
@@ -9582,6 +9583,9 @@ var ag;
             };
             ColumnSelectionPanel.prototype.columnCellRenderer = function (params) {
                 var column = params.value;
+                if (!column) {
+                    return;
+                }
                 var colDisplayName = this.columnController.getDisplayNameForCol(column);
                 var eResult = document.createElement('span');
                 var eVisibleIcons = document.createElement('span');
@@ -12207,7 +12211,10 @@ var ag;
                 Array.prototype.slice.call(this.eHeaderCell.querySelectorAll('.ag-sort-icon'), 0).forEach(function (el) {
                     el.classList.remove('active');
                 });
-                this.eHeaderCell.querySelector(".icon-sort-" + sortTypeIcon + "-" + this.sortDirectionMap[this.column.sort]).classList.add('active');
+                var sortIconEl = this.eHeaderCell.querySelector(".icon-sort-" + sortTypeIcon + "-" + this.sortDirectionMap[this.column.sort]);
+                if (sortIconEl) {
+                    sortIconEl.classList.add('active');
+                }
                 if (sortAscending)
                     _.querySelectorAll_replaceCssClass(this.getGui(), '.pi-ag-header-cell-sort-icon', 'pi-ag-header-cell-sort-icon-up', 'pi-ag-header-cell-sort-icon-down');
                 if (sortDescending)
@@ -12716,7 +12723,7 @@ var ag;
                 this.eventService.dispatchEvent(grid.Events.EVENT_COLUMN_PIVOT_CHANGE, event);
             };
             ColumnController.prototype.moveColumn = function (fromIndex, toIndex) {
-                this.allColumns = this.allColumns.filter(function (el) { return el.pivotIndex === void 0; });
+                this.allColumns = this.allColumns.filter(function (el) { return el && el.pivotIndex === void 0; });
                 var column = this.allColumns[fromIndex];
                 this.allColumns.splice(fromIndex, 1);
                 this.allColumns.splice(toIndex, 0, column);
@@ -12885,6 +12892,9 @@ var ag;
                         continue;
                     }
                     for (var i = 0; i < list.length; i++) {
+                        if (!list[i]) {
+                            continue;
+                        }
                         var colDefMatches = list[i].colDef === key;
                         var idMatches = list[i].colId === key;
                         if (colDefMatches || idMatches) {
@@ -12894,7 +12904,13 @@ var ag;
                 }
             };
             ColumnController.prototype.getDisplayNameForCol = function (column) {
+                if (!column) {
+                    return;
+                }
                 var colDef = column.colDef;
+                if (!colDef) {
+                    return;
+                }
                 var headerValueGetter = colDef.headerValueGetter;
                 if (headerValueGetter) {
                     var params = {
@@ -13159,6 +13175,9 @@ var ag;
                 }
                 for (var i = 0; i < this.allColumns.length; i++) {
                     var column = this.allColumns[i];
+                    if (!column) {
+                        continue;
+                    }
                     var hideBecauseOfPivot = this.pivotColumns.indexOf(column) >= 0
                         && this.gridOptionsWrapper.isGroupHidePivotColumns();
                     if (column.visible && !hideBecauseOfPivot) {
