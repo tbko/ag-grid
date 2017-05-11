@@ -227,11 +227,15 @@ module ag.grid {
             var rowData = this.gridOptions.rowData;
             var columns = this.gridOptions.columnDefs;
             var fieldsAccesses, me = this;
-            if (!rowData[0] || !rowData[0].fieldsAccesses || !rowData[0].fieldsAccesses.length)
+            
+            var permissionRoles = this.gridOptions.permissionRoles.items 
+              
+            if (!rowData[0] || !rowData[0].entityAccessId || !permissionRoles)
                 return;
-            
-            fieldsAccesses = rowData[0].fieldsAccesses;
-            
+            var entityAccessId = rowData[0].entityAccessId
+            if (entityAccessId.split(".")[0] == "models")
+                entityAccessId = entityAccessId.split(".").slice(1).join(".")
+            fieldsAccesses = permissionRoles[entityAccessId].fieldsAccesses
             fieldsAccesses = fieldsAccesses.reduce((function(result, item) {
                 result[item.fieldName] = { read: item.read };
                 return result;
