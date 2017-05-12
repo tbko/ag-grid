@@ -227,8 +227,9 @@ module ag.grid {
             var rowData = this.gridOptions.rowData;
             var columns = this.gridOptions.columnDefs;
             var fieldsAccesses, me = this;
-            
-            var permissionRoles = this.gridOptions.permissionRoles.items 
+            var permissionRoles;
+            if (this.gridOptions.permissionRole)
+                permissionRoles = this.gridOptions.permissionRoles.items 
               
             if (!rowData[0] || !rowData[0].entityAccessId || !permissionRoles)
                 return;
