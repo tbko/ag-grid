@@ -10129,7 +10129,7 @@ var ag;
                 this.masterSlaveService = masterSlaveService;
                 this.eventService = eventService;
                 this.csvCreator = new grid_3.CsvCreator(this.inMemoryRowController, this.columnController, this.grid, this.valueService);
-                console.log('it`s a test #2');
+                console.log('it`s a test #3');
             }
             /** Used internally by grid. Not intended to be used by the client. Interface may change between releases. */
             GridApi.prototype.__getMasterSlaveService = function () {
