@@ -2009,7 +2009,7 @@ var ag;
                 var columns = this.gridOptions.columnDefs;
                 var fieldsAccesses, me = this;
                 var permissionRoles;
-                if (this.gridOptions.permissionRole)
+                if (this.gridOptions.permissionRoles)
                     permissionRoles = this.gridOptions.permissionRoles.items;
                 if (!rowData[0] || !rowData[0].entityAccessId || !permissionRoles)
                     return;
@@ -10129,6 +10129,7 @@ var ag;
                 this.masterSlaveService = masterSlaveService;
                 this.eventService = eventService;
                 this.csvCreator = new grid_3.CsvCreator(this.inMemoryRowController, this.columnController, this.grid, this.valueService);
+                console.log('it`s a test #2');
             }
             /** Used internally by grid. Not intended to be used by the client. Interface may change between releases. */
             GridApi.prototype.__getMasterSlaveService = function () {
