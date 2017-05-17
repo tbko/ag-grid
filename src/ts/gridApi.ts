@@ -22,7 +22,6 @@ module ag.grid {
                     private masterSlaveService: MasterSlaveService,
                     private eventService: EventService) {
             this.csvCreator = new CsvCreator(this.inMemoryRowController, this.columnController, this.grid, this.valueService);
-            console.log('it`s a test #3');
         }
 
         /** Used internally by grid. Not intended to be used by the client. Interface may change between releases. */
