@@ -145,6 +145,7 @@ module ag.grid {
             recursivelySelect(topLevelNodes);
 
             this.syncSelectedRowsAndCallListener();
+            this.eventService.dispatchEvent(Events.EVENT_SELECT_ALL)
         }
 
         public selectNode(node: any, tryMulti: any, suppressEvents?: any) {

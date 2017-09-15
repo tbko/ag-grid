@@ -178,6 +178,7 @@ module ag.grid {
         public deselectAll() {
             this.selectionController.deselectAll();
             this.rowRenderer.refreshView();
+            this.eventService.dispatchEvent(Events.EVENT_DESELECT_ALL)
         }
 
         public recomputeAggregates() {

@@ -34,6 +34,8 @@ module ag.grid {
         public rowSelected = new _ng.EventEmitter();
         public rowDeselected = new _ng.EventEmitter();
         public selectionChanged = new _ng.EventEmitter();
+        public selectedAll = new _ng.EventEmitter();
+        public deselectedAll = new _ng.EventEmitter();
         public beforeFilterChanged = new _ng.EventEmitter();
         public afterFilterChanged = new _ng.EventEmitter();
         public filterModified = new _ng.EventEmitter();
@@ -162,6 +164,8 @@ module ag.grid {
                 case Events.EVENT_ROW_SELECTED: emitter = this.rowSelected; break;
                 case Events.EVENT_ROW_DESELECTED: emitter = this.rowDeselected; break;
                 case Events.EVENT_SELECTION_CHANGED: emitter = this.selectionChanged; break;
+                case Events.EVENT_SELECT_ALL: emitter = this.selectedAll; break;
+                case Events.EVENT_DESELECT_ALL: emitter = this.deselectedAll; break;
                 case Events.EVENT_BEFORE_FILTER_CHANGED: emitter = this.beforeFilterChanged; break;
                 case Events.EVENT_AFTER_FILTER_CHANGED: emitter = this.afterFilterChanged; break;
                 case Events.EVENT_AFTER_SORT_CHANGED: emitter = this.afterSortChanged; break;
@@ -201,7 +205,7 @@ module ag.grid {
                 outputs: [
                     // core grid events
                     'modelUpdated', 'cellClicked', 'cellDoubleClicked', 'cellContextMenu', 'cellValueChanged', 'cellFocused',
-                    'rowSelected', 'rowDeselected', 'selectionChanged', 'beforeFilterChanged', 'afterFilterChanged',
+                    'rowSelected', 'rowDeselected', 'selectionChanged', 'selectedAll', 'deselectedAll', 'beforeFilterChanged', 'afterFilterChanged',
                     'filterModified', 'beforeSortChanged', 'afterSortChanged', 'virtualRowRemoved',
                     'rowClicked', 'rowDoubleClicked', 'ready',
                     // column events
