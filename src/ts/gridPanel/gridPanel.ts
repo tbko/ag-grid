@@ -212,11 +212,11 @@ module ag.grid {
                 selectionParams.countSelected = selectedLength
                 that.eventService.dispatchEvent(Events.EVENT_SELECTION_STATE_CHANGED, selectionParams);
 
-                if (selectedLength > 1) {
-                    that.showToolOverlay(selectedLength)
-                } else {
-                    that.hideOverlay();
-                }
+                // if (selectedLength > 1) {
+                //     that.showToolOverlay(selectedLength)
+                // } else {
+                //     that.hideOverlay();
+                // }
             })
 
             this.addScrollListener();
