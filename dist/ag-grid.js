@@ -5707,6 +5707,7 @@ var ag;
                 var topLevelNodes = this.rowModel.getTopLevelNodes();
                 recursivelySelect(topLevelNodes);
                 this.syncSelectedRowsAndCallListener();
+                this.eventService.dispatchEvent(grid.Events.EVENT_SELECT_ALL);
             };
             SelectionController.prototype.selectNode = function (node, tryMulti, suppressEvents) {
                 var multiSelect = this.gridOptionsWrapper.isRowSelectionMulti() && tryMulti;
@@ -8845,12 +8846,11 @@ var ag;
                     }
                     selectionParams.countSelected = selectedLength;
                     that.eventService.dispatchEvent(grid_1.Events.EVENT_SELECTION_STATE_CHANGED, selectionParams);
-                    if (selectedLength > 1) {
-                        that.showToolOverlay(selectedLength);
-                    }
-                    else {
-                        that.hideOverlay();
-                    }
+                    // if (selectedLength > 1) {
+                    //     that.showToolOverlay(selectedLength)
+                    // } else {
+                    //     that.hideOverlay();
+                    // }
                 });
                 this.addScrollListener();
                 if (this.gridOptionsWrapper.isSuppressHorizontalScroll()) {
@@ -10253,6 +10253,7 @@ var ag;
             GridApi.prototype.deselectAll = function () {
                 this.selectionController.deselectAll();
                 this.rowRenderer.refreshView();
+                this.eventService.dispatchEvent(grid_3.Events.EVENT_DESELECT_ALL);
             };
             GridApi.prototype.recomputeAggregates = function () {
                 this.inMemoryRowController.doAggregate();
@@ -10577,6 +10578,8 @@ var ag;
             Events.EVENT_ROW_SELECTED = 'rowSelected';
             Events.EVENT_ROW_DESELECTED = 'rowDeselected';
             Events.EVENT_SELECTION_CHANGED = 'selectionChanged';
+            Events.EVENT_SELECT_ALL = 'selectedAll';
+            Events.EVENT_DESELECT_ALL = 'deselectedAll';
             Events.EVENT_BEFORE_FILTER_CHANGED = 'beforeFilterChanged';
             Events.EVENT_AFTER_FILTER_CHANGED = 'afterFilterChanged';
             Events.EVENT_FILTER_MODIFIED = 'filterModified';
@@ -13466,6 +13469,8 @@ var ag;
                 this.rowSelected = new _ng.EventEmitter();
                 this.rowDeselected = new _ng.EventEmitter();
                 this.selectionChanged = new _ng.EventEmitter();
+                this.selectedAll = new _ng.EventEmitter();
+                this.deselectedAll = new _ng.EventEmitter();
                 this.beforeFilterChanged = new _ng.EventEmitter();
                 this.afterFilterChanged = new _ng.EventEmitter();
                 this.filterModified = new _ng.EventEmitter();
@@ -13555,6 +13560,12 @@ var ag;
                     case grid.Events.EVENT_SELECTION_CHANGED:
                         emitter = this.selectionChanged;
                         break;
+                    case grid.Events.EVENT_SELECT_ALL:
+                        emitter = this.selectedAll;
+                        break;
+                    case grid.Events.EVENT_DESELECT_ALL:
+                        emitter = this.deselectedAll;
+                        break;
                     case grid.Events.EVENT_BEFORE_FILTER_CHANGED:
                         emitter = this.beforeFilterChanged;
                         break;
@@ -13604,7 +13615,7 @@ var ag;
                     outputs: [
                         // core grid events
                         'modelUpdated', 'cellClicked', 'cellDoubleClicked', 'cellContextMenu', 'cellValueChanged', 'cellFocused',
-                        'rowSelected', 'rowDeselected', 'selectionChanged', 'beforeFilterChanged', 'afterFilterChanged',
+                        'rowSelected', 'rowDeselected', 'selectionChanged', 'selectedAll', 'deselectedAll', 'beforeFilterChanged', 'afterFilterChanged',
                         'filterModified', 'beforeSortChanged', 'afterSortChanged', 'virtualRowRemoved',
                         'rowClicked', 'rowDoubleClicked', 'ready',
                         // column events
