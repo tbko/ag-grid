@@ -1859,6 +1859,8 @@ declare module ag.grid {
         static EVENT_ROW_SELECTED: string;
         static EVENT_ROW_DESELECTED: string;
         static EVENT_SELECTION_CHANGED: string;
+        static EVENT_SELECT_ALL: string;
+        static EVENT_DESELECT_ALL: string;
         static EVENT_BEFORE_FILTER_CHANGED: string;
         static EVENT_AFTER_FILTER_CHANGED: string;
         static EVENT_FILTER_MODIFIED: string;
@@ -2216,6 +2218,8 @@ declare module ag.grid {
         rowSelected: any;
         rowDeselected: any;
         selectionChanged: any;
+        selectedAll: any;
+        deselectedAll: any;
         beforeFilterChanged: any;
         afterFilterChanged: any;
         filterModified: any;
