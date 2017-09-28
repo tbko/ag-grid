@@ -8605,6 +8605,10 @@ var ag;
                         var actionElements = that.eOverlayRowWrapper.querySelectorAll("" + actionClickSelector + k);
                         for (var _i = 0; _i < actionElements.length; _i++) {
                             var actionElement = actionElements[_i];
+                            actionElement.addEventListener('mousedown', function (event) {
+                                event.stopPropagation();
+                                event.preventDefault();
+                            });
                             actionElement.addEventListener('click', function (event) {
                                 event.stopPropagation();
                                 event.preventDefault();

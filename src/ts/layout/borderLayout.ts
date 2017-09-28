@@ -812,6 +812,10 @@ module ag.grid {
                     var actionElements = that.eOverlayRowWrapper.querySelectorAll(`${actionClickSelector}${k}`);
 
                     for (let actionElement of actionElements) {
+                         actionElement.addEventListener('mousedown', (event) => {
+                            event.stopPropagation();
+                            event.preventDefault();
+                        });
                         actionElement.addEventListener('click', (event) => {
                             event.stopPropagation();
                             event.preventDefault();
