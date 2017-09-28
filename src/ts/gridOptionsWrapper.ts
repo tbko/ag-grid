@@ -43,6 +43,7 @@ module ag.grid {
             this.accessViewCell();
         }
 
+        public selectionCardinality() { return this.gridOptions.cardinality; }
         public isRowSelection() { return this.gridOptions.rowSelection === "single" || this.gridOptions.rowSelection === "multiple"; }
         public isRowDeselection() { return isTrue(this.gridOptions.rowDeselection); }
         public isRowSelectionMulti() { return this.gridOptions.rowSelection === 'multiple'; }

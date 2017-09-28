@@ -1825,6 +1825,7 @@ var ag;
                 this.checkForDeprecated();
                 this.accessViewCell();
             };
+            GridOptionsWrapper.prototype.selectionCardinality = function () { return this.gridOptions.cardinality; };
             GridOptionsWrapper.prototype.isRowSelection = function () { return this.gridOptions.rowSelection === "single" || this.gridOptions.rowSelection === "multiple"; };
             GridOptionsWrapper.prototype.isRowDeselection = function () { return isTrue(this.gridOptions.rowDeselection); };
             GridOptionsWrapper.prototype.isRowSelectionMulti = function () { return this.gridOptions.rowSelection === 'multiple'; };
@@ -3038,7 +3039,8 @@ var ag;
                 ;
                 // checker ekement with listeners
                 var checkbox = document.createElement('input');
-                checkbox.type = "checkbox";
+                var selectionCardinality = this.gridOptionsWrapper.selectionCardinality();
+                checkbox.type = selectionCardinality === '1' ? "radio" : 'checkbox';
                 checkbox.name = "name";
                 checkbox.className = 'ag-selection-checkbox';
                 checkbox.addEventListener('click', function (event) {
@@ -3052,7 +3054,7 @@ var ag;
                 eCheckBoxIcon.className = 'input-icon';
                 //container and label for checker with icon
                 var eCheckBoxSpan = document.createElement("span");
-                eCheckBoxSpan.className = 'checkbox-input';
+                eCheckBoxSpan.className = checkbox.type + "-input";
                 eCheckBoxSpan.appendChild(checkbox);
                 eCheckBoxSpan.appendChild(eCheckBoxIcon);
                 var eCheckBoxLabel = document.createElement("label");
@@ -6732,7 +6734,7 @@ var ag;
             HeaderRenderer.prototype.toggleSelectAll = function (pamparams) {
                 // toggle header state for all checker columns
                 this.headerElements.forEach(function (headerElement) {
-                    if (headerElement && headerElement.column && headerElement.column.colDef.checkboxSelection) {
+                    if (headerElement && headerElement.column && headerElement.column.colDef.checkboxSelection && headerElement.column.colDef.headerCheckboxSelection) {
                         headerElement.toggle(pamparams.allSelected, pamparams.someSelected);
                     }
                     if (headerElement && headerElement.columnGroup) {
@@ -6751,7 +6753,7 @@ var ag;
                 displayedColumns.forEach(function (column, idx) {
                     // only include the first x cols
                     var headerCellRenderer = grid.RenderedHeaderCell;
-                    if (column.colDef.checkboxSelection) {
+                    if (column.colDef.checkboxSelection && column.colDef.headerCheckboxSelection) {
                         headerCellRenderer = grid.RenderedHeaderCheckerCell;
                     }
                     // debugger;

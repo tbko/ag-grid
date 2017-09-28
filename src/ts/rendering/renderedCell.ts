@@ -538,7 +538,8 @@ module ag.grid {
             };
             // checker ekement with listeners
             var checkbox = document.createElement('input');
-            checkbox.type = "checkbox";
+            var selectionCardinality = this.gridOptionsWrapper.selectionCardinality()
+            checkbox.type = selectionCardinality === '1' ? "radio" : 'checkbox';
             checkbox.name = "name";
             checkbox.className = 'ag-selection-checkbox';
 
@@ -555,7 +556,7 @@ module ag.grid {
 
             //container and label for checker with icon
             var eCheckBoxSpan = document.createElement("span");
-            eCheckBoxSpan.className = 'checkbox-input';
+            eCheckBoxSpan.className = `${checkbox.type}-input`;
             eCheckBoxSpan.appendChild(checkbox);
             eCheckBoxSpan.appendChild(eCheckBoxIcon);
             var eCheckBoxLabel = document.createElement("label");

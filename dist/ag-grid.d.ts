@@ -207,6 +207,7 @@ declare module ag.grid {
 }
 declare module ag.grid {
     interface ColDef {
+        headerCheckboxSelection?: boolean;
         /** If apply wrap text into multiple string after other renderers */
         wrapped?: boolean;
         /** If sorting by default, set it here. Set to 'asc' or 'desc' */
@@ -428,6 +429,7 @@ declare module ag.grid {
         private floatingTopRowData;
         private floatingBottomRowData;
         init(gridOptions: GridOptions, eventService: EventService): void;
+        selectionCardinality(): string;
         isRowSelection(): boolean;
         isRowDeselection(): boolean;
         isRowSelectionMulti(): boolean;
@@ -1644,6 +1646,7 @@ declare module ag.grid {
         pinnedColumnCount?: number;
         groupHeaders?: boolean;
         headerHeight?: number;
+        cardinality: string;
         groupRowInnerRenderer?(params: any): void;
         groupRowRenderer?: Function | Object;
         isScrollLag?(): boolean;

@@ -88,6 +88,7 @@ module ag.grid {
         // in properties
         groupHeaders?: boolean;
         headerHeight?: number;
+        cardinality: string;
 
         // callbacks
         groupRowInnerRenderer?(params: any): void;
