@@ -6734,7 +6734,7 @@ var ag;
             HeaderRenderer.prototype.toggleSelectAll = function (pamparams) {
                 // toggle header state for all checker columns
                 this.headerElements.forEach(function (headerElement) {
-                    if (headerElement && headerElement.column && headerElement.column.colDef.checkboxSelection && headerElement.column.colDef.headerCheckboxSelection) {
+                    if (headerElement && headerElement.column && headerElement.column.colDef.checkboxSelection && !headerElement.column.colDef.headerSupressCheckboxSelection) {
                         headerElement.toggle(pamparams.allSelected, pamparams.someSelected);
                     }
                     if (headerElement && headerElement.columnGroup) {
@@ -6753,7 +6753,7 @@ var ag;
                 displayedColumns.forEach(function (column, idx) {
                     // only include the first x cols
                     var headerCellRenderer = grid.RenderedHeaderCell;
-                    if (column.colDef.checkboxSelection && column.colDef.headerCheckboxSelection) {
+                    if (column.colDef.checkboxSelection && !column.colDef.headerSupressCheckboxSelection) {
                         headerCellRenderer = grid.RenderedHeaderCheckerCell;
                     }
                     // debugger;

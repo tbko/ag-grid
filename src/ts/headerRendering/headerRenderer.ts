@@ -178,7 +178,7 @@ module ag.grid {
         public toggleSelectAll(pamparams: any) {
             // toggle header state for all checker columns
             this.headerElements.forEach( (headerElement: any) => {
-                if (headerElement && headerElement.column && headerElement.column.colDef.checkboxSelection && headerElement.column.colDef.headerCheckboxSelection) {
+                if (headerElement && headerElement.column && headerElement.column.colDef.checkboxSelection && !headerElement.column.colDef.headerSupressCheckboxSelection) {
                     headerElement.toggle(pamparams.allSelected, pamparams.someSelected);
                 }
                 if (headerElement && headerElement.columnGroup) {
@@ -198,7 +198,7 @@ module ag.grid {
             displayedColumns.forEach( (column: Column, idx: Number) => {
                 // only include the first x cols
                 var headerCellRenderer: any = RenderedHeaderCell;
-                if (column.colDef.checkboxSelection && column.colDef.headerCheckboxSelection) {
+                if (column.colDef.checkboxSelection && !column.colDef.headerSupressCheckboxSelection) {
                     headerCellRenderer = RenderedHeaderCheckerCell;
                 }
                 // debugger;

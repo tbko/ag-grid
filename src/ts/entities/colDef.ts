@@ -1,7 +1,7 @@
 module ag.grid {
 
     export interface ColDef {
-        headerCheckboxSelection?: boolean;
+        headerSupressCheckboxSelection?: boolean;
 
         /** If apply wrap text into multiple string after other renderers */
         wrapped?: boolean;
