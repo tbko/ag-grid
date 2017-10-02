@@ -166,6 +166,10 @@ module ag.grid {
             // headerCellLabel.appendChild(this.eFilterIcon);
 
             // render the cell, use a renderer if one is provided
+            var headerNameHint
+            if (this.column.colDef && this.column.colDef.headerHint){
+                headerNameHint = this.column.colDef.headerHint;
+            }
             var headerNameValue = this.columnController.getDisplayNameForCol(this.column);
             var headerCellRenderer: any;
             if (this.column.colDef.headerCellRenderer) { // first look for a renderer in col def
@@ -202,7 +206,7 @@ module ag.grid {
                 }
                 headerCellRenderer = function() {
                     return `
-                    <div class="ag-header-cell-actionbox ag-js-draghandler" title="${headerNameValue || ''}" >
+                    <div class="ag-header-cell-actionbox ag-js-draghandler" title="${headerNameHint || headerNameValue || ''}" >
                       <div class="ag-header-text" >
                         ${headerNameValue || ''}
                       </div>

@@ -11858,6 +11858,10 @@ var ag;
                 // _.addCssClass(this.eFilterIcon, 'ag-header-icon');
                 // headerCellLabel.appendChild(this.eFilterIcon);
                 // render the cell, use a renderer if one is provided
+                var headerNameHint;
+                if (this.column.colDef && this.column.colDef.headerHint) {
+                    headerNameHint = this.column.colDef.headerHint;
+                }
                 var headerNameValue = this.columnController.getDisplayNameForCol(this.column);
                 var headerCellRenderer;
                 if (this.column.colDef.headerCellRenderer) {
@@ -11877,7 +11881,7 @@ var ag;
                         freezeBlock = "\n                    <div class=\"ag-header-action-lock ag-locked-icon\">\n                      <div class=\"pi-table-column-locked\" >\n                          <label>\n                              <span class=\"checkbox-input\">\n                                  <input id=\"ag-js-freeze\" name=\"locked\" type=\"checkbox\" />\n                                  <span class=\"input-icon\"></span>\n                              </span>\n                          </label>\n                      </div>\n                    </div>\n                    ";
                     }
                     headerCellRenderer = function () {
-                        return "\n                    <div class=\"ag-header-cell-actionbox ag-js-draghandler\" title=\"" + (headerNameValue || '') + "\" >\n                      <div class=\"ag-header-text\" >\n                        " + (headerNameValue || '') + "\n                      </div>\n                      <div class=\"ag-header-action\">\n                        " + freezeBlock + "    \n                        " + sortBlock + "    \n                      </div>\n                    </div>                    \n                    ";
+                        return "\n                    <div class=\"ag-header-cell-actionbox ag-js-draghandler\" title=\"" + (headerNameHint || headerNameValue || '') + "\" >\n                      <div class=\"ag-header-text\" >\n                        " + (headerNameValue || '') + "\n                      </div>\n                      <div class=\"ag-header-action\">\n                        " + freezeBlock + "    \n                        " + sortBlock + "    \n                      </div>\n                    </div>                    \n                    ";
                     };
                 }
                 if (headerCellRenderer) {
