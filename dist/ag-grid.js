@@ -3128,6 +3128,40 @@ var ag;
                 // template gets preference, then cellRenderer, then do it ourselves
                 var colDef = this.column.colDef;
                 var resultCellRenderer;
+                var getNestedValue = function (obj, key) {
+                    return key.split(".").reduce(function (result, key) {
+                        if (result)
+                            return result[key];
+                    }, obj);
+                };
+                if (colDef.pathAttribute) {
+                    if (typeof (colDef.pathAttribute) == "object") {
+                        var splitPathArray = colDef.pathAttribute.reduce(function (res, next) {
+                            res.push(next.split(".").splice(-1, 1)[0]);
+                            return res;
+                        }, []);
+                        var splitPath = colDef.pathAttribute[0].split(".");
+                        splitPath.splice(-1, 1);
+                        splitPath.push("originKeyAttributes");
+                        var originKeyAttributes = getNestedValue(this.data, splitPath.join("."));
+                        if (originKeyAttributes && splitPathArray.some(function (item) { return originKeyAttributes.indexOf(item) == -1; })) {
+                            resultCellRenderer = colDef.notAccessTemplateCell();
+                            this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
+                            return;
+                        }
+                    }
+                    else {
+                        var splitPath = colDef.pathAttribute.split(".");
+                        var detected = splitPath.splice(-1, 1)[0];
+                        splitPath.push("originKeyAttributes");
+                        var originKeyAttributes = getNestedValue(this.data, splitPath.join("."));
+                        if (originKeyAttributes && originKeyAttributes.indexOf(detected) == -1) {
+                            resultCellRenderer = colDef.notAccessTemplateCell();
+                            this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
+                            return;
+                        }
+                    }
+                }
                 if (colDef.template) {
                     this.vParentOfValue.setInnerHtml(colDef.template);
                 }
