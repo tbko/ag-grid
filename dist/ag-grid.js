@@ -1823,7 +1823,8 @@ var ag;
                     this.rowHeight = DEFAULT_ROW_HEIGHT;
                 }
                 this.checkForDeprecated();
-                this.accessViewCell();
+                if (this.gridOptions.oldDecisionCheckAccess)
+                    this.accessViewCell();
             };
             GridOptionsWrapper.prototype.selectionCardinality = function () { return this.gridOptions.cardinality; };
             GridOptionsWrapper.prototype.isRowSelection = function () { return this.gridOptions.rowSelection === "single" || this.gridOptions.rowSelection === "multiple"; };
