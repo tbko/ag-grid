@@ -40,7 +40,8 @@ module ag.grid {
             }
 
             this.checkForDeprecated();
-            this.accessViewCell();
+            if (this.gridOptions.oldDecisionCheckAccess)
+                this.accessViewCell();
         }
 
         public selectionCardinality() { return this.gridOptions.cardinality; }
