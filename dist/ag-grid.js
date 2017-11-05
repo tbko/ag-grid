@@ -1823,8 +1823,18 @@ var ag;
                     this.rowHeight = DEFAULT_ROW_HEIGHT;
                 }
                 this.checkForDeprecated();
-                if (this.gridOptions.oldDecisionCheckAccess)
-                    this.accessViewCell();
+            };
+            GridOptionsWrapper.prototype.getStubTemplates = function () {
+                var rowData = this.gridOptions.rowData;
+                var multipleAccessIds = _.compact(_.uniq(rowData.map(function (rowEl) { return rowEl.entityAccessId; }))) || [];
+                var templates = [];
+                if (multipleAccessIds) {
+                    templates = [
+                        this.gridOptions.notShownTemplateCell,
+                        this.gridOptions.notAccessTemplateCell,
+                    ];
+                }
+                return templates;
             };
             GridOptionsWrapper.prototype.selectionCardinality = function () { return this.gridOptions.cardinality; };
             GridOptionsWrapper.prototype.isRowSelection = function () { return this.gridOptions.rowSelection === "single" || this.gridOptions.rowSelection === "multiple"; };
@@ -2006,47 +2016,6 @@ var ag;
                     console.warn('ag-grid: as of v1.12.4 suppressDescSort is not used. Please use sortOrder instead.');
                 }
             };
-            GridOptionsWrapper.prototype.accessViewCell = function () {
-                var rowData = this.gridOptions.rowData;
-                var columns = this.gridOptions.columnDefs;
-                var fieldsAccesses, me = this;
-                var permissionRoles;
-                if (this.gridOptions.permissionRoles)
-                    permissionRoles = this.gridOptions.permissionRoles.items;
-                if (!rowData[0] || !rowData[0].entityAccessId || !permissionRoles)
-                    return;
-                var entityAccessId = rowData[0].entityAccessId;
-                if (entityAccessId.split(".")[0] == "models")
-                    entityAccessId = entityAccessId.split(".").slice(1).join(".");
-                fieldsAccesses = permissionRoles[entityAccessId].fieldsAccesses || [];
-                fieldsAccesses = fieldsAccesses.reduce((function (result, item) {
-                    result[item.fieldName] = { read: item.read };
-                    return result;
-                }), {});
-                var hasAccessReadFun = function (accessAlias, fieldsAccesses) {
-                    var accessAliasArr, hasRead;
-                    if (!accessAlias)
-                        return true;
-                    accessAliasArr = accessAlias.split(" ");
-                    hasRead = true;
-                    _.each(accessAliasArr, (function (_this) {
-                        return function (item) {
-                            if (fieldsAccesses[item] && !fieldsAccesses[item].read && (typeof fieldsAccesses[item].read === "boolean")) {
-                                return hasRead = false;
-                            }
-                        };
-                    })(this));
-                    return hasRead;
-                };
-                _.forEach(columns, function (column) {
-                    var a, columnRule;
-                    hasAccessRead = hasAccessReadFun(column.accessCode, fieldsAccesses);
-                    if (column.accessCode && !hasAccessRead) {
-                        return column.cellRenderer = me.gridOptions.notAccessTemplateCell;
-                    }
-                });
-            };
-            ;
             GridOptionsWrapper.prototype.getPinnedColCount = function () {
                 // if not using scrolls, then pinned columns doesn't make
                 // sense, so always return 0
@@ -3129,40 +3098,40 @@ var ag;
                 // template gets preference, then cellRenderer, then do it ourselves
                 var colDef = this.column.colDef;
                 var resultCellRenderer;
-                var getNestedValue = function (obj, key) {
-                    return key.split(".").reduce(function (result, key) {
-                        if (result)
-                            return result[key];
-                    }, obj);
-                };
-                if (colDef.pathAttribute) {
-                    if (typeof (colDef.pathAttribute) == "object") {
-                        var splitPathArray = colDef.pathAttribute.reduce(function (res, next) {
-                            res.push(next.split(".").splice(-1, 1)[0]);
-                            return res;
-                        }, []);
-                        var splitPath = colDef.pathAttribute[0].split(".");
-                        splitPath.splice(-1, 1);
-                        splitPath.push("originKeyAttributes");
-                        var originKeyAttributes = getNestedValue(this.data, splitPath.join("."));
-                        if (originKeyAttributes && splitPathArray.some(function (item) { return originKeyAttributes.indexOf(item) == -1; })) {
-                            resultCellRenderer = colDef.notAccessTemplateCell();
-                            this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
-                            return;
-                        }
-                    }
-                    else {
-                        var splitPath = colDef.pathAttribute.split(".");
-                        var detected = splitPath.splice(-1, 1)[0];
-                        splitPath.push("originKeyAttributes");
-                        var originKeyAttributes = getNestedValue(this.data, splitPath.join("."));
-                        if (originKeyAttributes && originKeyAttributes.indexOf(detected) == -1) {
-                            resultCellRenderer = colDef.notAccessTemplateCell();
-                            this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
-                            return;
-                        }
-                    }
-                }
+                // var getNestedValue = function (obj, key) {
+                //     return key.split(".").reduce(function(result, key) {
+                //         if (result)
+                //             return result[key]
+                //     }, obj);
+                // }
+                // if (colDef.pathAttribute){
+                //     if (typeof(colDef.pathAttribute) == "object"){
+                //         var splitPathArray = colDef.pathAttribute.reduce(function(res, next){
+                //             res.push(next.split(".").splice(-1, 1)[0])
+                //             return res
+                //         }, [])
+                //         var splitPath = colDef.pathAttribute[0].split(".")
+                //         splitPath.splice(-1, 1)
+                //         splitPath.push("originKeyAttributes")
+                //         var originKeyAttributes = getNestedValue(this.data, splitPath.join("."))
+                //         if ( originKeyAttributes && splitPathArray.some(function (item) {return originKeyAttributes.indexOf(item) == -1}) ){
+                //             resultCellRenderer = colDef.notAccessTemplateCell()
+                //             this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
+                //             return
+                //         }
+                //     }
+                //     else{
+                //         var splitPath = colDef.pathAttribute.split(".")
+                //         var detected = splitPath.splice(-1, 1)[0]
+                //         splitPath.push("originKeyAttributes")
+                //         var originKeyAttributes = getNestedValue(this.data, splitPath.join("."))
+                //         if ( originKeyAttributes && originKeyAttributes.indexOf(detected) == -1){
+                //             resultCellRenderer = colDef.notAccessTemplateCell()
+                //             this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
+                //             return
+                //         }
+                //     }
+                // }            
                 if (colDef.template) {
                     this.vParentOfValue.setInnerHtml(colDef.template);
                 }
@@ -3207,6 +3176,18 @@ var ag;
                     eGridCell: this.vGridCell,
                     rowsNeeded: 0
                 };
+                // if access state field lists defined in data item
+                var _a = this.gridOptionsWrapper.getStubTemplates(), notIncludedTemplate = _a[0], prohibitedTemplate = _a[1];
+                if (colDef.accessCode && Array.isArray(this.node.data._fieldsShown)) {
+                    var fieldNotIncluded = !~(this.node.data._fieldsShown).indexOf(colDef.accessCode);
+                    var fieldProhibited = ~(this.node.data._fieldsProhibited || []).indexOf(colDef.accessCode);
+                    if (fieldNotIncluded) {
+                        cellRenderer = notIncludedTemplate;
+                    }
+                    else if (fieldProhibited) {
+                        cellRenderer = prohibitedTemplate;
+                    }
+                }
                 // start duplicated code
                 var actualCellRenderer;
                 if (typeof cellRenderer === 'object' && cellRenderer !== null) {

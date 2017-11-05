@@ -644,45 +644,45 @@ module ag.grid {
             var colDef = this.column.colDef;
             var resultCellRenderer: any;
 
-            var getNestedValue = function (obj, key) {
-                return key.split(".").reduce(function(result, key) {
-                    if (result)
-                        return result[key]
-                }, obj);
-            }
-            if (colDef.pathAttribute){
-                if (typeof(colDef.pathAttribute) == "object"){
-                    var splitPathArray = colDef.pathAttribute.reduce(function(res, next){
-                        res.push(next.split(".").splice(-1, 1)[0])
-                        return res
-                    }, [])
+            // var getNestedValue = function (obj, key) {
+            //     return key.split(".").reduce(function(result, key) {
+            //         if (result)
+            //             return result[key]
+            //     }, obj);
+            // }
+            // if (colDef.pathAttribute){
+            //     if (typeof(colDef.pathAttribute) == "object"){
+            //         var splitPathArray = colDef.pathAttribute.reduce(function(res, next){
+            //             res.push(next.split(".").splice(-1, 1)[0])
+            //             return res
+            //         }, [])
 
-                    var splitPath = colDef.pathAttribute[0].split(".")
-                    splitPath.splice(-1, 1)
-                    splitPath.push("originKeyAttributes")
-                    var originKeyAttributes = getNestedValue(this.data, splitPath.join("."))
+            //         var splitPath = colDef.pathAttribute[0].split(".")
+            //         splitPath.splice(-1, 1)
+            //         splitPath.push("originKeyAttributes")
+            //         var originKeyAttributes = getNestedValue(this.data, splitPath.join("."))
 
-                    if ( originKeyAttributes && splitPathArray.some(function (item) {return originKeyAttributes.indexOf(item) == -1}) ){
-                        resultCellRenderer = colDef.notAccessTemplateCell()
-                        this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
-                        return
-                    }
-                }
-                else{
-                    var splitPath = colDef.pathAttribute.split(".")
-                    var detected = splitPath.splice(-1, 1)[0]
-                    splitPath.push("originKeyAttributes")
+            //         if ( originKeyAttributes && splitPathArray.some(function (item) {return originKeyAttributes.indexOf(item) == -1}) ){
+            //             resultCellRenderer = colDef.notAccessTemplateCell()
+            //             this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
+            //             return
+            //         }
+            //     }
+            //     else{
+            //         var splitPath = colDef.pathAttribute.split(".")
+            //         var detected = splitPath.splice(-1, 1)[0]
+            //         splitPath.push("originKeyAttributes")
 
-                    var originKeyAttributes = getNestedValue(this.data, splitPath.join("."))
-                    if ( originKeyAttributes && originKeyAttributes.indexOf(detected) == -1){
+            //         var originKeyAttributes = getNestedValue(this.data, splitPath.join("."))
+            //         if ( originKeyAttributes && originKeyAttributes.indexOf(detected) == -1){
 
-                        resultCellRenderer = colDef.notAccessTemplateCell()
-                        this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
-                        return
-                    }
-                }
+            //             resultCellRenderer = colDef.notAccessTemplateCell()
+            //             this.useCellRenderer({ renderer: 'multiline' }, resultCellRenderer);
+            //             return
+            //         }
+            //     }
 
-            }            
+            // }            
 
             if (colDef.template) {
                 this.vParentOfValue.setInnerHtml(colDef.template);
@@ -727,6 +727,23 @@ module ag.grid {
                 eGridCell: this.vGridCell,
                 rowsNeeded: 0
             };
+
+
+            // if access state field lists defined in data item
+            const [notIncludedTemplate, prohibitedTemplate] = this.gridOptionsWrapper.getStubTemplates();
+
+            if (colDef.accessCode && Array.isArray(this.node.data._fieldsShown)) {
+                const fieldNotIncluded = !~(this.node.data._fieldsShown).indexOf(colDef.accessCode);
+                const fieldProhibited = ~(this.node.data._fieldsProhibited || []).indexOf(colDef.accessCode);
+                if (fieldNotIncluded) {
+                    cellRenderer = notIncludedTemplate
+                }
+                else if (fieldProhibited) {
+                    cellRenderer = prohibitedTemplate
+                }
+            }
+
+
             // start duplicated code
             var actualCellRenderer: Function;
             if (typeof cellRenderer === 'object' && cellRenderer !== null) {

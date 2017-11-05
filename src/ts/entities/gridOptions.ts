@@ -47,7 +47,8 @@ module ag.grid {
         isRowDrop: any;
         metrics: any;
         actionTemplate: any;
-
+        notShownTemplateCell: any;
+        notAccessTemplateCell: any;
         // just set once
         heightOption: number;
         localeText?: any;

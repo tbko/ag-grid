@@ -40,10 +40,22 @@ module ag.grid {
             }
 
             this.checkForDeprecated();
-            if (this.gridOptions.oldDecisionCheckAccess)
-                this.accessViewCell();
         }
 
+        public getStubTemplates() {
+            const rowData = this.gridOptions.rowData;
+            const multipleAccessIds = _.compact(_.uniq(rowData.map(rowEl => rowEl.entityAccessId))) || [];
+            var templates = [];
+            
+            if (multipleAccessIds) {
+                templates = [
+                    this.gridOptions.notShownTemplateCell,
+                    this.gridOptions.notAccessTemplateCell,
+                ];
+            }
+
+            return templates;
+        }
         public selectionCardinality() { return this.gridOptions.cardinality; }
         public isRowSelection() { return this.gridOptions.rowSelection === "single" || this.gridOptions.rowSelection === "multiple"; }
         public isRowDeselection() { return isTrue(this.gridOptions.rowDeselection); }
@@ -225,48 +237,6 @@ module ag.grid {
                 console.warn('ag-grid: as of v1.12.4 suppressDescSort is not used. Please use sortOrder instead.');
             }
         }
-        private accessViewCell() {
-            var rowData = this.gridOptions.rowData;
-            var columns = this.gridOptions.columnDefs;
-            var fieldsAccesses, me = this;
-            var permissionRoles;
-            if (this.gridOptions.permissionRoles)
-                permissionRoles = this.gridOptions.permissionRoles.items 
-              
-            if (!rowData[0] || !rowData[0].entityAccessId || !permissionRoles)
-                return;
-            var entityAccessId = rowData[0].entityAccessId;
-            if (entityAccessId.split(".")[0] == "models")
-                entityAccessId = entityAccessId.split(".").slice(1).join(".");
-            fieldsAccesses = permissionRoles[entityAccessId].fieldsAccesses || [];
-            fieldsAccesses = fieldsAccesses.reduce((function(result, item) {
-                result[item.fieldName] = { read: item.read };
-                return result;
-            }), {});
-            var hasAccessReadFun = function(accessAlias, fieldsAccesses) {
-                var accessAliasArr, hasRead;
-                if (!accessAlias)
-                    return true
-                accessAliasArr = accessAlias.split(" ");
-                hasRead = true;
-                _.each(accessAliasArr, (function(_this) {
-                    return function(item) {
-                        if (fieldsAccesses[item] && !fieldsAccesses[item].read && (typeof fieldsAccesses[item].read === "boolean")) {
-                            return hasRead = false;
-                        }
-                    };
-                })(this));
-                return hasRead;
-            }
-
-            _.forEach(columns, function(column) {
-                var a, columnRule;
-                hasAccessRead = hasAccessReadFun(column.accessCode, fieldsAccesses)
-                if (column.accessCode && !hasAccessRead) {
-                    return column.cellRenderer = me.gridOptions.notAccessTemplateCell;
-                }
-            });
-        };
 
 
         public getPinnedColCount() {

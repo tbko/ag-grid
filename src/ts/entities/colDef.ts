@@ -3,6 +3,8 @@ module ag.grid {
     export interface ColDef {
         headerSupressCheckboxSelection?: boolean;
 
+        accessCode?: string;
+
         /** If apply wrap text into multiple string after other renderers */
         wrapped?: boolean;
 
@@ -65,6 +67,9 @@ module ag.grid {
 
         /** A function for rendering a cell. */
         cellRenderer?: Function | {};
+
+        /** A function for rendering a cell when no data available. */
+        cellNoDataRenderer?: Function | {};
 
         /** A function for rendering a floating cell. */
         floatingCellRenderer?: Function | {};

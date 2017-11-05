@@ -208,6 +208,7 @@ declare module ag.grid {
 declare module ag.grid {
     interface ColDef {
         headerSupressCheckboxSelection?: boolean;
+        accessCode?: string;
         /** If apply wrap text into multiple string after other renderers */
         wrapped?: boolean;
         /** If sorting by default, set it here. Set to 'asc' or 'desc' */
@@ -251,6 +252,8 @@ declare module ag.grid {
         cellStyle?: {} | ((params: any) => {});
         /** A function for rendering a cell. */
         cellRenderer?: Function | {};
+        /** A function for rendering a cell when no data available. */
+        cellNoDataRenderer?: Function | {};
         /** A function for rendering a floating cell. */
         floatingCellRenderer?: Function | {};
         /** Name of function to use for aggregation. One of [sum,min,max]. */
@@ -429,6 +432,7 @@ declare module ag.grid {
         private floatingTopRowData;
         private floatingBottomRowData;
         init(gridOptions: GridOptions, eventService: EventService): void;
+        getStubTemplates(): any[];
         selectionCardinality(): string;
         isRowSelection(): boolean;
         isRowDeselection(): boolean;
@@ -520,7 +524,6 @@ declare module ag.grid {
         getColWidth(): number;
         getRowBuffer(): number;
         private checkForDeprecated();
-        private accessViewCell();
         getPinnedColCount(): number;
         getLocaleTextFunc(): Function;
         getHeightOption(): number;
@@ -1613,6 +1616,8 @@ declare module ag.grid {
         isRowDrop: any;
         metrics: any;
         actionTemplate: any;
+        notShownTemplateCell: any;
+        notAccessTemplateCell: any;
         heightOption: number;
         localeText?: any;
         localeTextFunc?: Function;
