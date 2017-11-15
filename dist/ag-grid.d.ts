@@ -433,6 +433,7 @@ declare module ag.grid {
         private floatingBottomRowData;
         init(gridOptions: GridOptions, eventService: EventService): void;
         getStubTemplates(): any[];
+        isSuppressFreeze(): boolean;
         selectionCardinality(): string;
         isRowSelection(): boolean;
         isRowDeselection(): boolean;
@@ -1652,6 +1653,7 @@ declare module ag.grid {
         groupHeaders?: boolean;
         headerHeight?: number;
         cardinality: string;
+        suppressFreeze?: boolean;
         groupRowInnerRenderer?(params: any): void;
         groupRowRenderer?: Function | Object;
         isScrollLag?(): boolean;

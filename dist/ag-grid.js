@@ -1836,6 +1836,7 @@ var ag;
                 }
                 return templates;
             };
+            GridOptionsWrapper.prototype.isSuppressFreeze = function () { return this.gridOptions.suppressFreeze; };
             GridOptionsWrapper.prototype.selectionCardinality = function () { return this.gridOptions.cardinality; };
             GridOptionsWrapper.prototype.isRowSelection = function () { return this.gridOptions.rowSelection === "single" || this.gridOptions.rowSelection === "multiple"; };
             GridOptionsWrapper.prototype.isRowDeselection = function () { return isTrue(this.gridOptions.rowDeselection); };
@@ -6776,7 +6777,7 @@ var ag;
                     var renderedHeaderCell = new headerCellRenderer(column, {
                         'frame': true,
                         'sort': true,
-                        'freeze': true,
+                        'freeze': !_this.gridOptionsWrapper.isSuppressFreeze(),
                         'resize': true,
                         'last': idx == lastIndex,
                         'drag': !column.colDef.noDrag

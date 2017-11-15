@@ -56,6 +56,7 @@ module ag.grid {
 
             return templates;
         }
+        public isSuppressFreeze() { return this.gridOptions.suppressFreeze; }
         public selectionCardinality() { return this.gridOptions.cardinality; }
         public isRowSelection() { return this.gridOptions.rowSelection === "single" || this.gridOptions.rowSelection === "multiple"; }
         public isRowDeselection() { return isTrue(this.gridOptions.rowDeselection); }

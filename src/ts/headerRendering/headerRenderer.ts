@@ -202,10 +202,11 @@ module ag.grid {
                     headerCellRenderer = RenderedHeaderCheckerCell;
                 }
                 // debugger;
+
                 var renderedHeaderCell = new headerCellRenderer(column, {
                     'frame': true,
                     'sort': true,
-                    'freeze': true,
+                    'freeze': !this.gridOptionsWrapper.isSuppressFreeze(),
                     'resize': true,
                     'last': idx == lastIndex,
                     'drag': !column.colDef.noDrag

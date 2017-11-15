@@ -90,6 +90,7 @@ module ag.grid {
         groupHeaders?: boolean;
         headerHeight?: number;
         cardinality: string;
+        suppressFreeze?: boolean;
 
         // callbacks
         groupRowInnerRenderer?(params: any): void;
