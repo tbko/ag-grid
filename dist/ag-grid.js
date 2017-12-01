@@ -11810,10 +11810,10 @@ var ag;
             RenderedHeaderCell.prototype.addClasses = function () {
                 _.addCssClass(this.eHeaderCell, 'ag-header-cell');
                 if (this.gridOptionsWrapper.isGroupHeaders() && this.parentGroup && this.parentGroup.getVisibleColumnsCount() > 1) {
-                    _.addCssClass(this.eHeaderCell, 'ag-header-cell-grouped'); // this takes 50% height
+                    _.addCssClass(this.eHeaderCell, 'ag-header-cell-grouped ag-js-draghandler'); // this takes 50% height
                 }
                 else {
-                    _.addCssClass(this.eHeaderCell, 'ag-header-cell-not-grouped'); // this takes 100% height
+                    _.addCssClass(this.eHeaderCell, 'ag-header-cell-not-grouped ag-js-draghandler'); // this takes 100% height
                 }
             };
             RenderedHeaderCell.prototype.addSortIcons = function (headerCellLabel) {
@@ -11898,7 +11898,7 @@ var ag;
                         freezeBlock = "\n                    <div class=\"ag-header-action-lock ag-locked-icon\">\n                      <div class=\"pi-table-column-locked\" >\n                          <label>\n                              <span class=\"checkbox-input\">\n                                  <input id=\"ag-js-freeze\" name=\"locked\" type=\"checkbox\" />\n                                  <span class=\"input-icon\"></span>\n                              </span>\n                          </label>\n                      </div>\n                    </div>\n                    ";
                     }
                     headerCellRenderer = function () {
-                        return "\n                    <div class=\"ag-header-cell-actionbox ag-js-draghandler\" title=\"" + (headerNameHint || headerNameValue || '') + "\" >\n                      <div class=\"ag-header-text\" >\n                        " + (headerNameValue || '') + "\n                      </div>\n                      <div class=\"ag-header-action\">\n                        " + freezeBlock + "    \n                        " + sortBlock + "    \n                      </div>\n                    </div>                    \n                    ";
+                        return "\n                    <div class=\"ag-header-cell-actionbox\" title=\"" + (headerNameHint || headerNameValue || '') + "\" >\n                      <div class=\"ag-header-text\" >\n                        " + (headerNameValue || '') + "\n                      </div>\n                      <div class=\"ag-header-action\">\n                        " + freezeBlock + "    \n                        " + sortBlock + "    \n                      </div>\n                    </div>                    \n                    ";
                     };
                 }
                 if (headerCellRenderer) {
@@ -11922,6 +11922,9 @@ var ag;
                     this.eHeaderCell = headerCellLabel;
                 }
                 var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
+                if (!dragHandler && this.eHeaderCell.classList.contains('ag-js-draghandler')) {
+                    dragHandler = this.eHeaderCell;
+                }
                 if (this.headerElements.drag) {
                     if (dragHandler)
                         this.setupDND(dragHandler);

@@ -86,9 +86,9 @@ module ag.grid {
             _.addCssClass(this.eHeaderCell, 'ag-header-cell');
 
             if (this.gridOptionsWrapper.isGroupHeaders() && this.parentGroup && this.parentGroup.getVisibleColumnsCount() > 1) {
-                _.addCssClass(this.eHeaderCell, 'ag-header-cell-grouped'); // this takes 50% height
+                _.addCssClass(this.eHeaderCell, 'ag-header-cell-grouped ag-js-draghandler'); // this takes 50% height
             } else {
-                _.addCssClass(this.eHeaderCell, 'ag-header-cell-not-grouped'); // this takes 100% height
+                _.addCssClass(this.eHeaderCell, 'ag-header-cell-not-grouped ag-js-draghandler'); // this takes 100% height
             }
         }
 
@@ -206,7 +206,7 @@ module ag.grid {
                 }
                 headerCellRenderer = function() {
                     return `
-                    <div class="ag-header-cell-actionbox ag-js-draghandler" title="${headerNameHint || headerNameValue || ''}" >
+                    <div class="ag-header-cell-actionbox" title="${headerNameHint || headerNameValue || ''}" >
                       <div class="ag-header-text" >
                         ${headerNameValue || ''}
                       </div>
@@ -242,6 +242,9 @@ module ag.grid {
             }
 
             var dragHandler = this.eHeaderCell.querySelector('.ag-js-draghandler');
+            if (!dragHandler && this.eHeaderCell.classList.contains('ag-js-draghandler')) {
+                dragHandler = this.eHeaderCell;
+            }
             if (this.headerElements.drag) {
                 if (dragHandler) this.setupDND(dragHandler);
             } else {
