@@ -11864,7 +11864,7 @@ var ag;
                 // } else {
                 //     headerCellLabel.className = "ag-header-cell-label";
                 // }
-                headerCellLabel.className = "ag-header-cell-label";
+                headerCellLabel.className = "ag-header-cell-label ag-js-draghandler";
                 if (this.gridOptionsWrapper.isGroupHeaders() && this.parentGroup && this.parentGroup.getVisibleColumnsCount() > 1) {
                     headerCellLabel.setAttribute('colId', this.column.colId);
                 }
