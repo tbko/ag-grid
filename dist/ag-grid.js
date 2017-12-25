@@ -6203,7 +6203,10 @@ var ag;
                 this.eHeaderCell.style.width = _.formatWidth(this.column.actualWidth);
                 this.eHeaderCell.addEventListener('click', function (e) {
                     // change select all on click in header area
-                    that.changeSelection();
+                    if (e.currentTarget.classList.contains('ag-header-cell_checkbox_hide'))
+                        e.preventDefault();
+                    else
+                        that.changeSelection();
                 });
                 return eCheckBoxInput;
             };
