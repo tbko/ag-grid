@@ -564,7 +564,7 @@ module ag.grid {
 
             // main check cell container
             var eCheckBox = document.createElement("div");
-            eCheckBox.className = "pi-btn-checkbox";
+            eCheckBox.className  = selectionCardinality === '1' ? "pi-btn-radio" : 'pi-btn-checkbox';
             eCheckBox.appendChild(eCheckBoxLabel);
             // label div
             var headerCellLabel = document.createElement("div");
