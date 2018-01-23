@@ -3040,6 +3040,9 @@ var ag;
                     that.eCheckbox.checked = !that.eCheckbox.checked;
                     checkListener();
                 };
+                headerCellLabel.onfireclick = function () {
+                    checkbox.click();
+                };
                 headerCellLabel.className = "ag-header-cell-label group-checkbox";
                 // headerCellLabel.setAttribute('role', 'gridcell');
                 headerCellLabel.appendChild(eCheckBox);
